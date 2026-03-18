@@ -1,0 +1,36 @@
+appId: com.leasefrance.app
+productName: LeaseFrance
+copyright: Copyright © 2026
+
+# ASAR : code empaqueté et non lisible directement
+asar: true
+asarUnpack:
+  - "**/*.node"   # modules natifs (ex: better-sqlite3)
+
+directories:
+  output: dist
+  buildResources: build
+
+files:
+  - out/**/*
+  - package.json
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: build/icon.ico
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  installerLanguages:
+    - fr_FR
+  language: 1036   # Français
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: LeaseFrance
+
+# Ne pas inclure les devDependencies dans le build final
+npmRebuild: true
+nodeGypRebuild: false

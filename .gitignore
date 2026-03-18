@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+out/
+dist/
+
+# Electron builder output
+release/
+
+# Environment
+.env
+.env.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# TypeScript
+*.tsbuildinfo
