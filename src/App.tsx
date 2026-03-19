@@ -6,6 +6,7 @@ import Dashboard from '@/pages/Dashboard'
 import Login from '@/pages/Login'
 import Setup from '@/pages/Setup'
 import Settings from '@/pages/Settings'
+import Properties from '@/pages/Properties'
 
 export default function App() {
   const { status, init } = useAuthStore()
@@ -28,7 +29,7 @@ export default function App() {
       <Route path="/" element={<Layout />}>
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard"  element={<Dashboard />} />
-        <Route path="properties" element={<PlaceholderPage title="Biens immobiliers" />} />
+        <Route path="properties" element={<Properties />} />
         <Route path="tenants"    element={<PlaceholderPage title="Locataires" />} />
         <Route path="leases"     element={<PlaceholderPage title="Baux" />} />
         <Route path="payments"   element={<PlaceholderPage title="Paiements" />} />

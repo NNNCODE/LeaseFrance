@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   TrendingUp,
@@ -9,11 +10,18 @@ import {
   CheckCircle2,
   Clock,
   XCircle,
+  InboxIcon,
+  Building2,
+  UserPlus,
+  ScrollText,
+  CreditCard,
+  ChevronRight,
+  Sparkles,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { formatCurrency } from '@/lib/utils'
 import {
   AreaChart,
   Area,
@@ -24,49 +32,154 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 
-// ── Mock data ─────────────────────────────────────────────────────────────────
+// ── Onboarding guide ──────────────────────────────────────────────────────────
 
-const revenueData = [
-  { month: 'Jan', revenus: 3200 },
-  { month: 'Fév', revenus: 3200 },
-  { month: 'Mar', revenus: 3400 },
-  { month: 'Avr', revenus: 3400 },
-  { month: 'Mai', revenus: 3600 },
-  { month: 'Jun', revenus: 3600 },
-  { month: 'Jul', revenus: 3600 },
-  { month: 'Aoû', revenus: 3600 },
-  { month: 'Sep', revenus: 3800 },
-  { month: 'Oct', revenus: 3800 },
-  { month: 'Nov', revenus: 3800 },
-  { month: 'Déc', revenus: 3800 },
+const STEPS = [
+  {
+    key: 'properties',
+    icon: Building2,
+    label: 'Ajouter un bien immobilier',
+    description: 'Enregistrez votre premier appartement ou maison.',
+    route: '/properties',
+    color: 'text-primary',
+    bg: 'bg-primary/10',
+    border: 'border-primary/20',
+  },
+  {
+    key: 'tenants',
+    icon: UserPlus,
+    label: 'Ajouter un locataire',
+    description: 'Créez le profil de votre locataire.',
+    route: '/tenants',
+    color: 'text-success',
+    bg: 'bg-success/10',
+    border: 'border-success/20',
+  },
+  {
+    key: 'leases',
+    icon: ScrollText,
+    label: 'Créer un bail',
+    description: 'Associez un bien à un locataire avec les conditions du bail.',
+    route: '/leases',
+    color: 'text-warning',
+    bg: 'bg-warning/10',
+    border: 'border-warning/20',
+  },
+  {
+    key: 'payments',
+    icon: CreditCard,
+    label: 'Enregistrer un paiement',
+    description: 'Saisissez votre premier loyer reçu.',
+    route: '/payments',
+    color: 'text-accent',
+    bg: 'bg-accent/10',
+    border: 'border-accent/20',
+  },
 ]
 
-const recentPayments = [
-  { tenant: 'Sophie Martin',   property: 'Apt. Marais 3P',    amount: 1250, date: '2026-03-05', status: 'paid'    },
-  { tenant: 'Lucas Bernard',   property: 'Studio Bastille',   amount:  780, date: '2026-03-03', status: 'paid'    },
-  { tenant: 'Emma Dupont',     property: 'T2 République',     amount: 1100, date: '2026-03-01', status: 'paid'    },
-  { tenant: 'Thomas Leclerc',  property: 'Apt. Nation 2P',    amount:  950, date: '2026-02-28', status: 'late'    },
-  { tenant: 'Chloé Rousseau',  property: 'Studio Oberkampf',  amount:  720, date: '2026-02-28', status: 'pending' },
-]
+// Simule les compteurs — à remplacer par de vraies données SQLite plus tard
+const counts = { properties: 0, tenants: 0, leases: 0, payments: 0 }
 
-const alerts = [
-  { type: 'irl',      message: 'Révision IRL possible pour Apt. Marais 3P',   date: '2026-03-18' },
-  { type: 'renewal',  message: 'Bail de Lucas Bernard expire dans 2 mois',    date: '2026-05-01' },
-  { type: 'overdue',  message: 'Loyer impayé — Thomas Leclerc (fév. 2026)',   date: '2026-03-01' },
-]
+function OnboardingGuide() {
+  const navigate = useNavigate()
+  const completedCount = Object.values(counts).filter((v) => v > 0).length
+  const allDone = completedCount === STEPS.length
+  if (allDone) return null
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <Card className="border-primary/20 bg-primary/5">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-primary" />
+            <CardTitle className="text-base">Démarrer avec LeaseFrance</CardTitle>
+          </div>
+          <CardDescription>
+            {completedCount} / {STEPS.length} étapes complétées — suivez le guide pour configurer votre espace.
+          </CardDescription>
+          {/* Barre de progression */}
+          <div className="flex gap-1 mt-2">
+            {STEPS.map((s, i) => (
+              <div
+                key={s.key}
+                className={`h-1 flex-1 rounded-full transition-colors duration-500 ${
+                  counts[s.key as keyof typeof counts] > 0 ? 'bg-primary' : i < completedCount ? 'bg-primary' : 'bg-surfaceHigh'
+                }`}
+              />
+            ))}
+          </div>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 gap-3">
+          {STEPS.map((step, i) => {
+            const done = counts[step.key as keyof typeof counts] > 0
+            const Icon = step.icon
+            const locked = i > 0 && counts[STEPS[i - 1].key as keyof typeof counts] === 0
+
+            return (
+              <button
+                key={step.key}
+                onClick={() => !locked && navigate(step.route)}
+                disabled={locked}
+                className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-all duration-200 ${
+                  done
+                    ? 'border-success/20 bg-success/5 opacity-70'
+                    : locked
+                    ? 'border-border bg-surfaceHigh/30 opacity-40 cursor-not-allowed'
+                    : `${step.border} ${step.bg} hover:brightness-110 cursor-pointer`
+                }`}
+              >
+                <div className={`flex items-center justify-center w-8 h-8 rounded-lg shrink-0 ${done ? 'bg-success/10' : step.bg}`}>
+                  {done
+                    ? <CheckCircle2 className="w-4 h-4 text-success" />
+                    : <Icon className={`w-4 h-4 ${step.color}`} />
+                  }
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={`text-xs font-semibold ${done ? 'text-success line-through' : 'text-textPrimary'}`}>
+                    {step.label}
+                  </p>
+                  <p className="text-xs text-textMuted truncate">{step.description}</p>
+                </div>
+                {!done && !locked && <ChevronRight className="w-3.5 h-3.5 text-textMuted shrink-0" />}
+              </button>
+            )
+          })}
+        </CardContent>
+      </Card>
+    </motion.div>
+  )
+}
+
+// ── Empty data ─────────────────────────────────────────────────────────────────
+
+const revenueData: { month: string; revenus: number }[] = []
+
+const recentPayments: {
+  tenant: string
+  property: string
+  amount: number
+  date: string
+  status: 'paid' | 'late' | 'pending'
+}[] = []
+
+const alerts: { type: 'irl' | 'renewal' | 'overdue'; message: string; date: string }[] = []
 
 // ── Components ────────────────────────────────────────────────────────────────
 
 const statusConfig = {
-  paid:    { label: 'Payé',      variant: 'success', icon: CheckCircle2 },
-  late:    { label: 'En retard', variant: 'danger',  icon: XCircle      },
-  pending: { label: 'En attente',variant: 'warning', icon: Clock        },
+  paid:    { label: 'Payé',       variant: 'success', icon: CheckCircle2 },
+  late:    { label: 'En retard',  variant: 'danger',  icon: XCircle      },
+  pending: { label: 'En attente', variant: 'warning', icon: Clock        },
 } as const
 
 const alertConfig = {
-  irl:     { color: 'text-primary', bg: 'bg-primary/10'  },
-  renewal: { color: 'text-warning', bg: 'bg-warning/10'  },
-  overdue: { color: 'text-danger',  bg: 'bg-danger/10'   },
+  irl:     { color: 'text-primary', bg: 'bg-primary/10' },
+  renewal: { color: 'text-warning', bg: 'bg-warning/10' },
+  overdue: { color: 'text-danger',  bg: 'bg-danger/10'  },
 } as const
 
 const container = {
@@ -76,6 +189,15 @@ const container = {
 const item = {
   hidden: { opacity: 0, y: 12 },
   show:   { opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' } },
+}
+
+function EmptyState({ message }: { message: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-2 py-8 text-textMuted">
+      <InboxIcon className="w-8 h-8 opacity-30" />
+      <p className="text-xs">{message}</p>
+    </div>
+  )
 }
 
 // ── Page ──────────────────────────────────────────────────────────────────────
@@ -104,34 +226,38 @@ export default function Dashboard() {
         </Button>
       </motion.div>
 
+      {/* Onboarding */}
+      <motion.div variants={item}>
+        <OnboardingGuide />
+      </motion.div>
+
       {/* KPI Cards */}
       <motion.div variants={item} className="grid grid-cols-4 gap-4">
         <KpiCard
           title="Revenus du mois"
-          value={formatCurrency(3800)}
-          delta="+5.6%"
-          positive
+          value={formatCurrency(0)}
+          delta="Aucun paiement"
           icon={TrendingUp}
           color="primary"
         />
         <KpiCard
           title="Locataires actifs"
-          value="5"
-          delta="stable"
+          value="0"
+          delta="Aucun locataire"
           icon={Users}
           color="success"
         />
         <KpiCard
           title="Baux en cours"
-          value="5"
-          delta="1 expire bientôt"
+          value="0"
+          delta="Aucun bail"
           icon={FileText}
           color="warning"
         />
         <KpiCard
           title="Impayés"
-          value={formatCurrency(950)}
-          delta="1 loyer"
+          value={formatCurrency(0)}
+          delta="Aucun impayé"
           icon={AlertTriangle}
           color="danger"
         />
@@ -148,50 +274,53 @@ export default function Dashboard() {
                   <CardTitle>Revenus locatifs</CardTitle>
                   <CardDescription>Évolution sur 12 mois</CardDescription>
                 </div>
-                <Badge variant="success">+5.6% vs 2025</Badge>
               </div>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={200}>
-                <AreaChart data={revenueData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%"  stopColor="#6366F1" stopOpacity={0.25} />
-                      <stop offset="95%" stopColor="#6366F1" stopOpacity={0}    />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#2A2A3A" />
-                  <XAxis
-                    dataKey="month"
-                    tick={{ fill: '#64748B', fontSize: 11 }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    tick={{ fill: '#64748B', fontSize: 11 }}
-                    axisLine={false}
-                    tickLine={false}
-                    tickFormatter={(v) => `${v}€`}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      background: '#1A1A24',
-                      border: '1px solid #2A2A3A',
-                      borderRadius: '8px',
-                      color: '#E2E8F0',
-                      fontSize: '12px',
-                    }}
-                    formatter={(v: number) => [`${v} €`, 'Revenus']}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="revenus"
-                    stroke="#6366F1"
-                    strokeWidth={2}
-                    fill="url(#colorRev)"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+              {revenueData.length === 0 ? (
+                <EmptyState message="Aucune donnée de revenus disponible" />
+              ) : (
+                <ResponsiveContainer width="100%" height={200}>
+                  <AreaChart data={revenueData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%"  stopColor="#6366F1" stopOpacity={0.25} />
+                        <stop offset="95%" stopColor="#6366F1" stopOpacity={0}    />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#2A2A3A" />
+                    <XAxis
+                      dataKey="month"
+                      tick={{ fill: '#64748B', fontSize: 11 }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tick={{ fill: '#64748B', fontSize: 11 }}
+                      axisLine={false}
+                      tickLine={false}
+                      tickFormatter={(v) => `${v}€`}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        background: '#1A1A24',
+                        border: '1px solid #2A2A3A',
+                        borderRadius: '8px',
+                        color: '#E2E8F0',
+                        fontSize: '12px',
+                      }}
+                      formatter={(v: number) => [`${v} €`, 'Revenus']}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="revenus"
+                      stroke="#6366F1"
+                      strokeWidth={2}
+                      fill="url(#colorRev)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
             </CardContent>
           </Card>
         </motion.div>
@@ -204,18 +333,18 @@ export default function Dashboard() {
               <CardDescription>Actions requises</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-2">
-              {alerts.map((alert, i) => {
-                const cfg = alertConfig[alert.type as keyof typeof alertConfig]
-                return (
-                  <div
-                    key={i}
-                    className={`flex flex-col gap-1 p-3 rounded-lg ${cfg.bg}`}
-                  >
-                    <p className={`text-xs font-medium ${cfg.color}`}>{alert.message}</p>
-                    <p className="text-xs text-textMuted">{formatDate(alert.date)}</p>
-                  </div>
-                )
-              })}
+              {alerts.length === 0 ? (
+                <EmptyState message="Aucune alerte" />
+              ) : (
+                alerts.map((alert, i) => {
+                  const cfg = alertConfig[alert.type]
+                  return (
+                    <div key={i} className={`flex flex-col gap-1 p-3 rounded-lg ${cfg.bg}`}>
+                      <p className={`text-xs font-medium ${cfg.color}`}>{alert.message}</p>
+                    </div>
+                  )
+                })
+              )}
             </CardContent>
           </Card>
         </motion.div>
@@ -228,7 +357,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle>Paiements récents</CardTitle>
-                <CardDescription>Mars 2026</CardDescription>
+                <CardDescription>Derniers mouvements</CardDescription>
               </div>
               <Button variant="ghost" size="sm" className="gap-1 text-primary">
                 Voir tout <ArrowUpRight className="w-3.5 h-3.5" />
@@ -236,42 +365,48 @@ export default function Dashboard() {
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left text-xs text-textMuted font-medium px-5 py-2.5">Locataire</th>
-                  <th className="text-left text-xs text-textMuted font-medium px-5 py-2.5">Bien</th>
-                  <th className="text-left text-xs text-textMuted font-medium px-5 py-2.5">Date</th>
-                  <th className="text-right text-xs text-textMuted font-medium px-5 py-2.5">Montant</th>
-                  <th className="text-right text-xs text-textMuted font-medium px-5 py-2.5">Statut</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentPayments.map((p, i) => {
-                  const cfg = statusConfig[p.status as keyof typeof statusConfig]
-                  const Icon = cfg.icon
-                  return (
-                    <tr
-                      key={i}
-                      className="border-b border-border/50 last:border-0 hover:bg-surfaceHigh/50 transition-colors"
-                    >
-                      <td className="px-5 py-3 text-sm font-medium text-textPrimary">{p.tenant}</td>
-                      <td className="px-5 py-3 text-sm text-textMuted">{p.property}</td>
-                      <td className="px-5 py-3 text-sm text-textMuted">{formatDate(p.date)}</td>
-                      <td className="px-5 py-3 text-sm font-semibold text-textPrimary text-right">
-                        {formatCurrency(p.amount)}
-                      </td>
-                      <td className="px-5 py-3 text-right">
-                        <Badge variant={cfg.variant as 'success' | 'danger' | 'warning'} className="ml-auto">
-                          <Icon className="w-3 h-3" />
-                          {cfg.label}
-                        </Badge>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+            {recentPayments.length === 0 ? (
+              <div className="px-5 pb-5">
+                <EmptyState message="Aucun paiement enregistré" />
+              </div>
+            ) : (
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left text-xs text-textMuted font-medium px-5 py-2.5">Locataire</th>
+                    <th className="text-left text-xs text-textMuted font-medium px-5 py-2.5">Bien</th>
+                    <th className="text-left text-xs text-textMuted font-medium px-5 py-2.5">Date</th>
+                    <th className="text-right text-xs text-textMuted font-medium px-5 py-2.5">Montant</th>
+                    <th className="text-right text-xs text-textMuted font-medium px-5 py-2.5">Statut</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentPayments.map((p, i) => {
+                    const cfg = statusConfig[p.status]
+                    const Icon = cfg.icon
+                    return (
+                      <tr
+                        key={i}
+                        className="border-b border-border/50 last:border-0 hover:bg-surfaceHigh/50 transition-colors"
+                      >
+                        <td className="px-5 py-3 text-sm font-medium text-textPrimary">{p.tenant}</td>
+                        <td className="px-5 py-3 text-sm text-textMuted">{p.property}</td>
+                        <td className="px-5 py-3 text-sm text-textMuted">{p.date}</td>
+                        <td className="px-5 py-3 text-sm font-semibold text-textPrimary text-right">
+                          {formatCurrency(p.amount)}
+                        </td>
+                        <td className="px-5 py-3 text-right">
+                          <Badge variant={cfg.variant} className="ml-auto">
+                            <Icon className="w-3 h-3" />
+                            {cfg.label}
+                          </Badge>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            )}
           </CardContent>
         </Card>
       </motion.div>

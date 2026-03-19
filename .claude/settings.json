@@ -5,7 +5,8 @@
       "Bash(echo \"ELECTRON_RUN_AS_NODE=$ELECTRON_RUN_AS_NODE\")",
       "Bash(env)",
       "Bash(ls d:/leaseFrance/*.config.ts)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(npx electron-rebuild:*)"
     ]
   }
 }

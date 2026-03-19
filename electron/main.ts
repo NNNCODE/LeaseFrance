@@ -4,6 +4,7 @@ import {
   hasPassword, setupPassword, verifyPassword,
   changePassword, updateProfile, deleteAccount, getProfile,
 } from './auth'
+import * as propertiesDb from './db/queries/properties'
 
 const isDev = process.env['ELECTRON_RENDERER_URL'] !== undefined
 
@@ -72,6 +73,13 @@ ipcMain.handle('auth:verify',   (_e, pwd: string)                              =
 ipcMain.handle('auth:change',   (_e, oldPwd: string, newPwd: string)           => changePassword(oldPwd, newPwd))
 ipcMain.handle('auth:updateProfile', (_e, name: string, email: string)         => updateProfile(name, email))
 ipcMain.handle('auth:delete',   (_e, pwd: string)                              => deleteAccount(pwd))
+
+// Properties IPC
+ipcMain.handle('properties:getAll',  () => propertiesDb.getAll())
+ipcMain.handle('properties:count',   () => propertiesDb.count())
+ipcMain.handle('properties:create',  (_e, data) => propertiesDb.create(data))
+ipcMain.handle('properties:update',  (_e, id, data) => propertiesDb.update(id, data))
+ipcMain.handle('properties:delete',  (_e, id) => propertiesDb.remove(id))
 
 // Window controls via IPC
 ipcMain.on('window:minimize', () => mainWindow?.minimize())

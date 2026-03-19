@@ -6,6 +6,26 @@ interface UserProfile {
   createdAt: string
 }
 
+interface Property {
+  id: number
+  name: string
+  address: string
+  city: string
+  zip: string
+  type: string
+  area_m2: number | null
+  created_at: string
+}
+
+interface PropertyInput {
+  name: string
+  address: string
+  city: string
+  zip: string
+  type: string
+  area_m2?: number | null
+}
+
 interface Window {
   api: {
     window: {
@@ -21,6 +41,13 @@ interface Window {
       change:        (old: string, next: string) => Promise<boolean>
       updateProfile: (name: string, email: string) => Promise<boolean>
       delete:        (pwd: string) => Promise<boolean>
+    }
+    properties: {
+      getAll: () => Promise<Property[]>
+      count:  () => Promise<number>
+      create: (data: PropertyInput) => Promise<Property>
+      update: (id: number, data: PropertyInput) => Promise<Property>
+      delete: (id: number) => Promise<boolean>
     }
   }
 }

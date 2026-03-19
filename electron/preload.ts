@@ -15,4 +15,11 @@ contextBridge.exposeInMainWorld('api', {
     updateProfile: (name: string, email: string) => ipcRenderer.invoke('auth:updateProfile', name, email),
     delete:        (pwd: string) => ipcRenderer.invoke('auth:delete', pwd),
   },
+  properties: {
+    getAll: () => ipcRenderer.invoke('properties:getAll'),
+    count:  () => ipcRenderer.invoke('properties:count'),
+    create: (data: unknown) => ipcRenderer.invoke('properties:create', data),
+    update: (id: number, data: unknown) => ipcRenderer.invoke('properties:update', id, data),
+    delete: (id: number) => ipcRenderer.invoke('properties:delete', id),
+  },
 })

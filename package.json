@@ -8,7 +8,8 @@
     "build": "node scripts/build.mjs",
     "dist": "node scripts/build.mjs && electron-builder --config electron-builder.yml",
     "preview": "cross-env ELECTRON_RUN_AS_NODE= electron-vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "postinstall": "electron-rebuild -f -w better-sqlite3"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
@@ -35,6 +36,7 @@
     "zustand": "^4.5.4"
   },
   "devDependencies": {
+    "@electron/rebuild": "^4.0.3",
     "@types/better-sqlite3": "^7.6.11",
     "@types/node": "^20.14.10",
     "@types/react": "^18.3.3",
