@@ -32,7 +32,7 @@ lease-france/
 │   ├── preload.ts       # Bridge sécurisé renderer ↔ main (contextBridge)
 │   ├── auth.ts          # Authentification : hash scrypt, auth.json dans %APPDATA%
 │   └── db/
-│       ├── schema.sql   # Schéma SQLite
+│       ├── database.ts   # Init DB + schéma SQLite embarqué dans initSchema()
 │       └── queries/     # Requêtes SQL organisées par module
 ├── scripts/
 │   ├── dev.mjs          # Lance electron-vite en supprimant ELECTRON_RUN_AS_NODE
@@ -51,10 +51,11 @@ lease-france/
 │   │   ├── Setup/       # Inscription compte propriétaire (formulaire unique)
 │   │   ├── Dashboard/   # Vue d'ensemble + KPIs + graphiques
 │   │   ├── Settings/    # Profil, changement MDP, suppression compte
-│   │   ├── Tenants/     # Gestion locataires (à implémenter)
-│   │   ├── Leases/      # Gestion baux (à implémenter)
-│   │   ├── Payments/    # Suivi loyers et charges (à implémenter)
-│   │   └── Documents/   # Génération PDF quittances (à implémenter)
+│   │   ├── Properties/  # CRUD biens immobiliers
+│   │   ├── Tenants/     # CRUD locataires + liaison baux
+│   │   ├── Leases/      # CRUD baux + révision IRL
+│   │   ├── Payments/    # Suivi loyers, marquage payé, résumé
+│   │   └── Documents/   # Génération PDF quittances
 │   ├── stores/
 │   │   └── useAuthStore.ts  # État auth : loading/setup/locked/unlocked
 │   ├── hooks/           # Custom React hooks
@@ -295,10 +296,19 @@ npm run typecheck
 
 1. **Phase 1** ✅ — Structure & Layout : sidebar, routing, thème dark
 2. **Phase 1b** ✅ — Authentification : login, inscription, paramètres compte, suppression
-3. **Phase 2** — Propriétés (`/properties`) : CRUD biens immobiliers
-4. **Phase 3** — Locataires (`/tenants`) : CRUD + liaison aux baux
-5. **Phase 4** — Baux (`/leases`) : création, alertes, révision IRL
-6. **Phase 5** — Paiements (`/payments`) : saisie, historique, relances
-7. **Phase 6** — Documents PDF (`/documents`) : quittances, avis d'échéance
-8. **Phase 7** — Dashboard (`/dashboard`) : KPIs réels, graphiques, alertes
+3. **Phase 2** ✅ — Propriétés (`/properties`) : CRUD biens immobiliers
+4. **Phase 3** ✅ — Locataires (`/tenants`) : CRUD + liaison aux baux
+5. **Phase 4** ✅ — Baux (`/leases`) : création, révision IRL (calcul INSEE, modal, alertes Dashboard)
+6. **Phase 5** ✅ — Paiements (`/payments`) : saisie, historique, marquage payé, résumé
+7. **Phase 6** ✅ — Documents PDF (`/documents`) : quittances via @react-pdf/renderer
+8. **Phase 7** ✅ — Dashboard (`/dashboard`) : KPIs réels, graphiques Recharts, alertes IRL
 9. **Phase 8** — Export fiscal : données pour déclaration 2044
+
+### Fonctionnalités restantes
+- Alertes d'expiration de bail sur le Dashboard
+- Flux "Mot de passe oublié"
+- Recherche globale dans la Topbar
+- Encadrement des loyers (avertissements zones tendues)
+- Export données (CSV/Excel)
+- Graphiques statistiques enrichis
+- Système de notifications

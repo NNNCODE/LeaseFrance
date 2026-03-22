@@ -1,10 +1,16 @@
-import { app, BrowserWindow, shell, ipcMain } from 'electron'
+import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron'
+import { writeFileSync } from 'fs'
 import { join } from 'path'
 import {
   hasPassword, setupPassword, verifyPassword,
   changePassword, updateProfile, deleteAccount, getProfile,
 } from './auth'
 import * as propertiesDb from './db/queries/properties'
+import * as tenantsDb from './db/queries/tenants'
+import * as leasesDb from './db/queries/leases'
+import * as paymentsDb from './db/queries/payments'
+import * as documentsDb from './db/queries/documents'
+import * as irlDb from './db/queries/irl'
 
 const isDev = process.env['ELECTRON_RENDERER_URL'] !== undefined
 
@@ -81,6 +87,54 @@ ipcMain.handle('properties:create',  (_e, data) => propertiesDb.create(data))
 ipcMain.handle('properties:update',  (_e, id, data) => propertiesDb.update(id, data))
 ipcMain.handle('properties:delete',  (_e, id) => propertiesDb.remove(id))
 
+// Tenants IPC
+ipcMain.handle('tenants:getAll',  () => tenantsDb.getAll())
+ipcMain.handle('tenants:count',   () => tenantsDb.count())
+ipcMain.handle('tenants:create',  (_e, data) => tenantsDb.create(data))
+ipcMain.handle('tenants:update',  (_e, id, data) => tenantsDb.update(id, data))
+ipcMain.handle('tenants:delete',  (_e, id) => tenantsDb.remove(id))
+
+// Leases IPC
+ipcMain.handle('leases:getAll',  () => leasesDb.getAll())
+ipcMain.handle('leases:count',   () => leasesDb.count())
+ipcMain.handle('leases:create',  (_e, data) => leasesDb.create(data))
+ipcMain.handle('leases:update',  (_e, id, data) => leasesDb.update(id, data))
+ipcMain.handle('leases:delete',  (_e, id) => leasesDb.remove(id))
+
+// Payments IPC
+ipcMain.handle('payments:getAll',    () => paymentsDb.getAll())
+ipcMain.handle('payments:getByLease',(_e, leaseId) => paymentsDb.getByLease(leaseId))
+ipcMain.handle('payments:getSummary',() => paymentsDb.getSummary())
+ipcMain.handle('payments:create',    (_e, data) => paymentsDb.create(data))
+ipcMain.handle('payments:update',    (_e, id, data) => paymentsDb.update(id, data))
+ipcMain.handle('payments:markPaid',  (_e, id, date) => paymentsDb.markPaid(id, date))
+ipcMain.handle('payments:delete',    (_e, id) => paymentsDb.remove(id))
+
+// Documents IPC
+ipcMain.handle('documents:getAll', () => documentsDb.getAll())
+ipcMain.handle('documents:delete', (_e, id) => documentsDb.remove(id))
+ipcMain.handle('documents:savePdf', async (_e, leaseId: number, fileName: string, buffer: number[]) => {
+  const { filePath, canceled } = await dialog.showSaveDialog({
+    title: 'Enregistrer la quittance',
+    defaultPath: fileName,
+    filters: [{ name: 'PDF', extensions: ['pdf'] }],
+  })
+  if (canceled || !filePath) return { saved: false, path: null }
+  writeFileSync(filePath, Buffer.from(buffer))
+  documentsDb.create(leaseId, 'quittance', filePath)
+  return { saved: true, path: filePath }
+})
+ipcMain.handle('documents:openFile', (_e, filePath: string) => {
+  shell.openPath(filePath)
+})
+
+// IRL IPC
+ipcMain.handle('irl:getAll',            () => irlDb.getAll())
+ipcMain.handle('irl:getByQuarter',      (_e, year: number, quarter: number) => irlDb.getByQuarter(year, quarter))
+ipcMain.handle('irl:getLatestForQuarter',(_e, quarter: number) => irlDb.getLatestForQuarter(quarter))
+ipcMain.handle('irl:upsert',           (_e, year: number, quarter: number, value: number) => irlDb.upsert(year, quarter, value))
+ipcMain.handle('irl:delete',           (_e, id: number) => irlDb.remove(id))
+
 // Window controls via IPC
 ipcMain.on('window:minimize', () => mainWindow?.minimize())
 ipcMain.on('window:maximize', () => {
@@ -99,6 +153,9 @@ app.whenReady().then(() => {
   }
 
   createWindow()
+
+  // Seed IRL indices with real INSEE data
+  irlDb.seedIfEmpty()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

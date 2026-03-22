@@ -6,7 +6,9 @@
       "Bash(env)",
       "Bash(ls d:/leaseFrance/*.config.ts)",
       "Bash(npm run:*)",
-      "Bash(npx electron-rebuild:*)"
+      "Bash(npx electron-rebuild:*)",
+      "Bash(grep -r \"irl\\\\|IRL\" d:/leaseFrance/src --include=*.ts --include=*.tsx)",
+      "Bash(grep -r \"irl\\\\|IRL\" d:/leaseFrance/electron --include=*.ts)"
     ]
   }
 }

@@ -254,8 +254,12 @@ function PropertyFormModal({
     if (!form.city.trim())    return setError('La ville est requise.')
     if (!form.zip.trim())     return setError('Le code postal est requis.')
     setSaving(true)
-    await onSave(form)
-    setSaving(false)
+    try {
+      await onSave(form)
+    } catch (err) {
+      setError(`Erreur : ${err instanceof Error ? err.message : String(err)}`)
+      setSaving(false)
+    }
   }
 
   return (

@@ -7,6 +7,10 @@ import Login from '@/pages/Login'
 import Setup from '@/pages/Setup'
 import Settings from '@/pages/Settings'
 import Properties from '@/pages/Properties'
+import Tenants from '@/pages/Tenants'
+import Leases from '@/pages/Leases'
+import Payments from '@/pages/Payments'
+import Documents from '@/pages/Documents'
 
 export default function App() {
   const { status, init } = useAuthStore()
@@ -30,10 +34,10 @@ export default function App() {
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard"  element={<Dashboard />} />
         <Route path="properties" element={<Properties />} />
-        <Route path="tenants"    element={<PlaceholderPage title="Locataires" />} />
-        <Route path="leases"     element={<PlaceholderPage title="Baux" />} />
-        <Route path="payments"   element={<PlaceholderPage title="Paiements" />} />
-        <Route path="documents"  element={<PlaceholderPage title="Documents" />} />
+        <Route path="tenants"    element={<Tenants />} />
+        <Route path="leases"     element={<Leases />} />
+        <Route path="payments"   element={<Payments />} />
+        <Route path="documents"  element={<Documents />} />
         <Route path="settings"   element={<Settings />} />
       </Route>
     </Routes>
@@ -47,15 +51,6 @@ function Splash() {
         <div className="w-10 h-10 rounded-xl bg-primary/20 animate-pulse" />
         <p className="text-sm text-textMuted">Chargement...</p>
       </div>
-    </div>
-  )
-}
-
-function PlaceholderPage({ title }: { title: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center h-full gap-3">
-      <p className="text-2xl font-semibold text-textPrimary">{title}</p>
-      <p className="text-textMuted text-sm">Page en cours de développement</p>
     </div>
   )
 }
