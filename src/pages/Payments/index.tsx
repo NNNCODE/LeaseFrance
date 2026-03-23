@@ -3,13 +3,17 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Plus, CreditCard, CheckCircle2, Clock, AlertCircle,
   Building2, User, Euro, CalendarDays, X, Save,
-  Trash2, AlertTriangle, Pencil, ChevronDown, StickyNote,
+  Trash2, AlertTriangle, Pencil, ChevronDown, StickyNote, Receipt,
 } from 'lucide-react'
+import { pdf } from '@react-pdf/renderer'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { formatCurrency, formatDate } from '@/lib/utils'
+import { QuittancePDF, type QuittanceData } from '@/lib/pdf/quittance'
+import { RecuPDF, type RecuData } from '@/lib/pdf/recu'
+import { useAuthStore } from '@/stores/useAuthStore'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -61,6 +65,7 @@ const emptyForm = (): PaymentInput => ({
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function Payments() {
+  const { profile } = useAuthStore()
   const [payments, setPayments] = useState<Payment[]>([])
   const [leases,   setLeases]   = useState<Lease[]>([])
   const [loading,  setLoading]  = useState(true)
@@ -130,6 +135,49 @@ export default function Payments() {
     await window.api.payments.delete(deleting.id)
     setDeleting(null)
     load()
+  }
+
+  async function handleGenerateDocument(payment: Payment) {
+    const lease = leases.find((l) => l.id === payment.lease_id)
+    if (!lease) return
+
+    const full = payment.rent_amount >= payment.lease_rent_amount
+      && payment.charges_amount >= payment.lease_charges_amount
+
+    const baseData = {
+      landlordName:    profile?.name ?? 'Propri\u00e9taire',
+      landlordAddress: profile?.address,
+      landlordPhone:   profile?.phone,
+      tenantFirstName: payment.tenant_first_name,
+      tenantLastName:  payment.tenant_last_name,
+      propertyName:    payment.property_name,
+      propertyAddress: lease.property_address,
+      propertyCity:    payment.property_city,
+      propertyZip:     lease.property_zip ?? '',
+      periodMonth:     payment.period_month,
+      periodYear:      payment.period_year,
+      rentAmount:      payment.rent_amount,
+      chargesAmount:   payment.charges_amount,
+      paymentDate:     payment.payment_date,
+      paymentMethod:   payment.payment_method,
+      leaseType:       lease.type,
+    }
+
+    const month = MONTHS[payment.period_month - 1]
+    let blob: Blob, fileName: string, docType: string
+
+    if (full) {
+      blob     = await pdf(<QuittancePDF data={baseData as QuittanceData} />).toBlob()
+      fileName = `Quittance_${payment.tenant_last_name}_${month}_${payment.period_year}.pdf`
+      docType  = 'quittance'
+    } else {
+      blob     = await pdf(<RecuPDF data={baseData as RecuData} />).toBlob()
+      fileName = `Recu_${payment.tenant_last_name}_${month}_${payment.period_year}.pdf`
+      docType  = 'recu'
+    }
+
+    const buffer = Array.from(new Uint8Array(await blob.arrayBuffer()))
+    await window.api.documents.savePdf(payment.lease_id, fileName, buffer, docType)
   }
 
   const noLeases = leases.filter((l) => l.status === 'active').length === 0
@@ -221,6 +269,7 @@ export default function Payments() {
                           onMarkPaid={() => handleMarkPaid(p)}
                           onEdit={() => { setEditing(p); setShowForm(true) }}
                           onDelete={() => setDeleting(p)}
+                          onGenerateDocument={() => handleGenerateDocument(p)}
                         />
                       ))}
                     </motion.div>
@@ -272,11 +321,12 @@ function EmptyState() {
 
 // ── Payment row ────────────────────────────────────────────────────────────────
 
-function PaymentRow({ payment: p, onMarkPaid, onEdit, onDelete }: {
+function PaymentRow({ payment: p, onMarkPaid, onEdit, onDelete, onGenerateDocument }: {
   payment: Payment
   onMarkPaid: () => void
   onEdit: () => void
   onDelete: () => void
+  onGenerateDocument: () => void
 }) {
   const cfg = STATUS_CONFIG[p.status]
   const Icon = cfg.icon
@@ -354,6 +404,15 @@ function PaymentRow({ payment: p, onMarkPaid, onEdit, onDelete }: {
                 className="p-1.5 rounded-lg hover:bg-success/10 text-textMuted hover:text-success transition-colors"
               >
                 <CheckCircle2 className="w-3.5 h-3.5" />
+              </button>
+            )}
+            {p.status === 'paid' && (
+              <button
+                onClick={onGenerateDocument}
+                title="G\u00e9n\u00e9rer quittance ou re\u00e7u"
+                className="p-1.5 rounded-lg hover:bg-accent/10 text-textMuted hover:text-accent transition-colors"
+              >
+                <Receipt className="w-3.5 h-3.5" />
               </button>
             )}
             <button onClick={onEdit} className="p-1.5 rounded-lg hover:bg-surfaceHigh text-textMuted hover:text-textPrimary transition-colors">

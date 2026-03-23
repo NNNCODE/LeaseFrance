@@ -66,12 +66,17 @@ function ParisIllustration() {
   const c = NAVY
   return (
     <Svg viewBox="0 0 160 120" style={{ width: 130, height: 97 }}>
+      {/* Background wash */}
       <Ellipse cx={80} cy={90} rx={75} ry={30} fill={c} opacity={0.03} />
+
+      {/* Left buildings */}
       <Rect x={0} y={50} width={18} height={70} fill={c} opacity={0.13} />
       <Path d="M 0 50 L 9 42 L 18 50 Z" fill={c} opacity={0.13} />
       <Rect x={20} y={58} width={14} height={62} fill={c} opacity={0.11} />
       <Path d="M 20 58 L 27 52 L 34 58 Z" fill={c} opacity={0.11} />
       <Rect x={36} y={68} width={11} height={52} fill={c} opacity={0.09} />
+
+      {/* Windows left */}
       <Rect x={4} y={56} width={3} height={4} fill={CREAM} opacity={0.5} />
       <Rect x={11} y={56} width={3} height={4} fill={CREAM} opacity={0.5} />
       <Rect x={4} y={64} width={3} height={4} fill={CREAM} opacity={0.5} />
@@ -80,26 +85,45 @@ function ParisIllustration() {
       <Rect x={23} y={64} width={3} height={3} fill={CREAM} opacity={0.4} />
       <Rect x={29} y={64} width={3} height={3} fill={CREAM} opacity={0.4} />
       <Rect x={23} y={72} width={3} height={3} fill={CREAM} opacity={0.4} />
+
+      {/* Tree left */}
       <Ellipse cx={50} cy={86} rx={7} ry={9} fill={c} opacity={0.07} />
       <Rect x={49} y={95} width={2} height={14} fill={c} opacity={0.09} />
+
+      {/* EIFFEL TOWER */}
       <Circle cx={80} cy={4} r={1.5} fill={c} opacity={0.25} />
       <Rect x={79} y={5} width={2} height={12} fill={c} opacity={0.25} />
+      {/* Top section */}
       <Path d="M 77 17 L 83 17 L 85 32 L 75 32 Z" fill={c} opacity={0.22} />
+      {/* First platform */}
       <Rect x={73} y={32} width={14} height={2.5} fill={c} opacity={0.22} />
+      {/* Middle section */}
       <Path d="M 74 34.5 L 86 34.5 L 92 58 L 68 58 Z" fill={c} opacity={0.18} />
+      {/* Second platform */}
       <Rect x={66} y={58} width={28} height={3} fill={c} opacity={0.2} />
+      {/* Arch */}
       <Path d="M 68 58 Q 80 50 92 58" fill="none" stroke={c} strokeWidth={1.2} opacity={0.15} />
+      {/* Left leg */}
       <Path d="M 67 61 L 50 120 L 58 120 L 73 69 Z" fill={c} opacity={0.15} />
+      {/* Right leg */}
       <Path d="M 93 61 L 110 120 L 102 120 L 87 69 Z" fill={c} opacity={0.15} />
+      {/* Base arch */}
       <Path d="M 58 120 Q 80 98 102 120" fill="none" stroke={c} strokeWidth={1} opacity={0.12} />
+      {/* Cross-braces */}
       <Path d="M 70 78 L 90 78" fill="none" stroke={c} strokeWidth={0.6} opacity={0.1} />
       <Path d="M 65 95 L 95 95" fill="none" stroke={c} strokeWidth={0.6} opacity={0.1} />
+
+      {/* Tree right */}
       <Ellipse cx={108} cy={84} rx={6} ry={8} fill={c} opacity={0.07} />
       <Rect x={107} y={92} width={2} height={12} fill={c} opacity={0.09} />
+
+      {/* Right buildings */}
       <Rect x={116} y={54} width={14} height={66} fill={c} opacity={0.11} />
       <Path d="M 116 54 L 123 48 L 130 54 Z" fill={c} opacity={0.11} />
       <Rect x={132} y={62} width={15} height={58} fill={c} opacity={0.09} />
       <Rect x={149} y={68} width={11} height={52} fill={c} opacity={0.11} />
+
+      {/* Windows right */}
       <Rect x={120} y={60} width={3} height={3} fill={CREAM} opacity={0.4} />
       <Rect x={125} y={60} width={3} height={3} fill={CREAM} opacity={0.4} />
       <Rect x={120} y={68} width={3} height={3} fill={CREAM} opacity={0.4} />
@@ -116,10 +140,15 @@ function FleurDeLis() {
   const c = NAVY
   return (
     <Svg viewBox="0 0 30 28" style={{ width: 18, height: 17 }}>
+      {/* Center petal */}
       <Path d="M 15 2 Q 12 8 15 16 Q 18 8 15 2" fill={c} opacity={0.65} />
+      {/* Left petal */}
       <Path d="M 15 16 Q 8 9 5 12 Q 8 17 15 16" fill={c} opacity={0.65} />
+      {/* Right petal */}
       <Path d="M 15 16 Q 22 9 25 12 Q 22 17 15 16" fill={c} opacity={0.65} />
+      {/* Stem */}
       <Rect x={13} y={16} width={4} height={7} fill={c} opacity={0.6} />
+      {/* Base bar */}
       <Rect x={9} y={22} width={12} height={2} fill={c} opacity={0.55} />
     </Svg>
   )
@@ -137,6 +166,8 @@ const s = StyleSheet.create({
     paddingHorizontal: 48,
     backgroundColor: CREAM,
   },
+
+  /* Header */
   header: { flexDirection: 'row', marginBottom: 14 },
   headerLeft: { width: 135 },
   headerRight: { flex: 1, paddingLeft: 14, justifyContent: 'flex-start', paddingTop: 10 },
@@ -144,13 +175,21 @@ const s = StyleSheet.create({
   hLabel: { fontSize: 9, color: NAVY, marginRight: 4 },
   hUL: { flex: 1, borderBottomWidth: 0.5, borderBottomColor: LINE_BLUE, paddingBottom: 2 },
   hVal: { fontFamily: 'Times-Bold', fontSize: 9.5, color: NAVY },
+
+  /* Double decorative lines */
   dblWrap: { marginVertical: 1 },
   lineHeavy: { height: 1.5, backgroundColor: LINE_BLUE, opacity: 0.7 },
   lineLight: { height: 0.5, backgroundColor: LINE_BLUE, opacity: 0.5, marginTop: 2 },
+
+  /* Title */
   titleBlock: { alignItems: 'center', paddingVertical: 8 },
-  title: { fontSize: 22, fontFamily: 'Times-Bold', color: NAVY, letterSpacing: 4, textAlign: 'center' },
+  title: { fontSize: 24, fontFamily: 'Times-Bold', color: NAVY, letterSpacing: 5, textAlign: 'center' },
   ornamentWrap: { alignItems: 'center', marginTop: 4 },
+
+  /* Separator */
   sep: { height: 0.5, backgroundColor: LINE_BLUE, opacity: 0.35, marginVertical: 10 },
+
+  /* Form field rows */
   fRow: { flexDirection: 'row', alignItems: 'flex-end', marginBottom: 12 },
   fLabel: { fontFamily: 'Times-Italic', fontSize: 10, color: NAVY },
   fHint: { fontFamily: 'Times-Roman', fontSize: 8, color: NAVY_LIGHT, marginLeft: 4 },
@@ -159,7 +198,11 @@ const s = StyleSheet.create({
   fValBig: { fontFamily: 'Times-Bold', fontSize: 13, color: NAVY, textAlign: 'right' },
   fEuro: { fontFamily: 'Times-Bold', fontSize: 13, color: NAVY, marginLeft: 6, paddingBottom: 1 },
   wordsVal: { fontFamily: 'Times-Italic', fontSize: 9, color: NAVY_LIGHT },
+
+  /* Body text */
   bodyText: { fontFamily: 'Times-Italic', fontSize: 10, color: NAVY, marginBottom: 12 },
+
+  /* Checkboxes */
   cbBlock: { marginVertical: 8, paddingVertical: 8, paddingHorizontal: 12, borderWidth: 0.5, borderColor: LINE_BLUE, width: '58%' },
   cbRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
   cbBox: { width: 11, height: 11, borderWidth: 0.8, borderColor: NAVY, marginRight: 8 },
@@ -167,10 +210,9 @@ const s = StyleSheet.create({
   cbMark: { fontSize: 7, color: '#FFFFFF', fontFamily: 'Times-Bold' },
   cbLabel: { fontSize: 9.5, color: NAVY },
   cbVal: { fontSize: 9.5, fontFamily: 'Times-Bold', color: NAVY, marginLeft: 4 },
-  /* Legal mention */
-  legalBox: { marginTop: 6, paddingVertical: 8, paddingHorizontal: 10, borderWidth: 0.5, borderColor: LINE_BLUE, borderRadius: 2 },
-  legalText: { fontFamily: 'Times-Italic', fontSize: 8.5, color: NAVY_LIGHT, lineHeight: 1.5, textAlign: 'justify' },
-  footer: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 16 },
+
+  /* Footer */
+  footer: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 20 },
   footerL: { flex: 1 },
   footerR: { flex: 1, alignItems: 'center' },
   footerLabel: { fontFamily: 'Times-Italic', fontSize: 9, color: NAVY, marginBottom: 2 },
@@ -179,13 +221,15 @@ const s = StyleSheet.create({
   sigRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   sigLine: { width: 50, borderTopWidth: 0.5, borderTopColor: NAVY },
   sigCachet: { fontFamily: 'Times-Roman', fontSize: 8.5, color: NAVY, marginHorizontal: 6 },
+
+  /* Doc footer */
   docFooter: { position: 'absolute', bottom: 20, left: 48, right: 48, flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 0.5, borderTopColor: LINE_BLUE, paddingTop: 5 },
   docFooterText: { fontSize: 6.5, fontFamily: 'Times-Roman', color: '#94a3b8' },
 })
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
-export interface QuittanceData {
+export interface RecuData {
   landlordName: string
   landlordAddress?: string
   landlordPhone?: string
@@ -228,7 +272,7 @@ function formatDateFr(iso: string | null) {
 
 // ── Document ────────────────────────────────────────────────────────────────
 
-export function QuittancePDF({ data }: { data: QuittanceData }) {
+export function RecuPDF({ data }: { data: RecuData }) {
   const total = data.rentAmount + data.chargesAmount
   const period = `${MONTHS[data.periodMonth - 1]} ${data.periodYear}`
   const genDate = formatDateFr(new Date().toISOString())
@@ -270,7 +314,7 @@ export function QuittancePDF({ data }: { data: QuittanceData }) {
         </View>
 
         <View style={s.titleBlock}>
-          <Text style={s.title}>{'QUITTANCE DE LOYER'}</Text>
+          <Text style={s.title}>{'RE\u00c7U DE LOYER'}</Text>
           <View style={s.ornamentWrap}>
             <FleurDeLis />
           </View>
@@ -285,23 +329,12 @@ export function QuittancePDF({ data }: { data: QuittanceData }) {
 
         {/* ── Je soussigné(e) ── */}
         <View style={s.fRow}>
-          <Text style={s.fLabel}>{'Je soussign\u00e9(e), '}</Text>
+          <Text style={s.fLabel}>{'Je soussign\u00e9(e). '}</Text>
           <Text style={s.fHint}>{'(Nom du Propri\u00e9taire)'}</Text>
           <View style={s.fUL}><Text style={s.fVal}>{data.landlordName}</Text></View>
         </View>
 
-        <Text style={s.bodyText}>{'d\u00e9clare avoir re\u00e7u de :'}</Text>
-
-        {/* ── De la part de ── */}
-        <View style={s.fRow}>
-          <Text style={s.fLabel}>{'Locataire : '}</Text>
-          <Text style={s.fHint}>{'(Nom du Locataire)'}</Text>
-          <View style={s.fUL}>
-            <Text style={s.fVal}>{(data.tenantFirstName + ' ' + data.tenantLastName).toUpperCase()}</Text>
-          </View>
-        </View>
-
-        <Text style={s.bodyText}>{'la somme de :'}</Text>
+        <Text style={s.bodyText}>{'atteste avoir re\u00e7u la somme de :'}</Text>
 
         {/* ── Montant en euros ── */}
         <View style={s.fRow}>
@@ -321,6 +354,15 @@ export function QuittancePDF({ data }: { data: QuittanceData }) {
 
         <View style={s.sep} />
 
+        {/* ── De la part de ── */}
+        <View style={s.fRow}>
+          <Text style={s.fLabel}>{'De la part de : '}</Text>
+          <Text style={s.fHint}>{'(Nom du Locataire)'}</Text>
+          <View style={s.fUL}>
+            <Text style={s.fVal}>{(data.tenantFirstName + ' ' + data.tenantLastName).toUpperCase()}</Text>
+          </View>
+        </View>
+
         {/* ── Adresse du logement ── */}
         <View style={s.fRow}>
           <Text style={s.fLabel}>{'Adresse du Logement : '}</Text>
@@ -328,6 +370,8 @@ export function QuittancePDF({ data }: { data: QuittanceData }) {
             <Text style={s.fVal}>{addr}</Text>
           </View>
         </View>
+
+        <View style={s.sep} />
 
         {/* ── Période ── */}
         <View style={s.fRow}>
@@ -340,7 +384,7 @@ export function QuittancePDF({ data }: { data: QuittanceData }) {
         <View style={s.cbBlock}>
           <View style={s.cbRow}>
             <View style={s.cbBoxOn}><Text style={s.cbMark}>x</Text></View>
-            <Text style={s.cbLabel}>Loyer hors charges</Text>
+            <Text style={s.cbLabel}>Loyer Mensuel</Text>
             <View style={{ flex: 1 }} />
             <Text style={s.cbVal}>{formatEur(data.rentAmount)}</Text>
           </View>
@@ -348,7 +392,7 @@ export function QuittancePDF({ data }: { data: QuittanceData }) {
             <View style={hasCharges ? s.cbBoxOn : s.cbBox}>
               {hasCharges && <Text style={s.cbMark}>x</Text>}
             </View>
-            <Text style={s.cbLabel}>Provisions sur charges</Text>
+            <Text style={s.cbLabel}>Charges Comprises</Text>
             <View style={{ flex: 1 }} />
             <Text style={s.cbVal}>{hasCharges ? formatEur(data.chargesAmount) : '\u2014'}</Text>
           </View>
@@ -367,13 +411,6 @@ export function QuittancePDF({ data }: { data: QuittanceData }) {
           <View style={s.fUL}>
             <Text style={s.fVal}>{METHODS[data.paymentMethod] ?? data.paymentMethod}</Text>
           </View>
-        </View>
-
-        {/* ── Mention légale (quittance-specific) ── */}
-        <View style={s.legalBox}>
-          <Text style={s.legalText}>
-            {'Cette quittance annule tous les re\u00e7us qui auraient pu \u00eatre \u00e9tablis pr\u00e9c\u00e9demment en cas de paiement partiel du loyer. Elle ne pr\u00e9juge pas du paiement des termes ant\u00e9rieurs non acquitt\u00e9s. (Loi du 6 juillet 1989, art. 21)'}
-          </Text>
         </View>
 
         {/* ── Footer: Fait à + Signature ── */}
@@ -396,7 +433,7 @@ export function QuittancePDF({ data }: { data: QuittanceData }) {
 
         {/* ── Document footer ── */}
         <View style={s.docFooter} fixed>
-          <Text style={s.docFooterText}>{'Quittance de loyer g\u00e9n\u00e9r\u00e9e le '}{genDate}{' via LeaseFrance'}</Text>
+          <Text style={s.docFooterText}>{'Re\u00e7u de loyer g\u00e9n\u00e9r\u00e9 le '}{genDate}{' via LeaseFrance'}</Text>
           <Text style={s.docFooterText}>{'Document non fiscal \u2014 \u00e0 conserver'}</Text>
         </View>
 

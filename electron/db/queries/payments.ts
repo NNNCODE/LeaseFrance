@@ -14,7 +14,9 @@ export interface Payment {
   created_at: string
   // Joined
   property_name: string
+  property_address: string
   property_city: string
+  property_zip: string
   tenant_first_name: string
   tenant_last_name: string
   lease_rent_amount: number
@@ -37,7 +39,9 @@ const SELECT = `
   SELECT
     pay.*,
     p.name        AS property_name,
+    p.address     AS property_address,
     p.city        AS property_city,
+    p.zip         AS property_zip,
     t.first_name  AS tenant_first_name,
     t.last_name   AS tenant_last_name,
     l.rent_amount    AS lease_rent_amount,

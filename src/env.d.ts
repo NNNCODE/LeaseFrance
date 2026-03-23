@@ -3,6 +3,8 @@
 interface UserProfile {
   name: string
   email: string
+  address: string
+  phone: string
   createdAt: string
 }
 
@@ -43,6 +45,7 @@ interface Lease {
   property_name: string
   property_address: string
   property_city: string
+  property_zip: string
   tenant_first_name: string
   tenant_last_name: string
 }
@@ -98,7 +101,9 @@ interface Payment {
   notes: string | null
   created_at: string
   property_name: string
+  property_address: string
   property_city: string
+  property_zip: string
   tenant_first_name: string
   tenant_last_name: string
   lease_rent_amount: number
@@ -155,7 +160,7 @@ interface Window {
       setup:         (pwd: string, name: string, email: string) => Promise<boolean>
       verify:        (pwd: string) => Promise<boolean>
       change:        (old: string, next: string) => Promise<boolean>
-      updateProfile: (name: string, email: string) => Promise<boolean>
+      updateProfile: (name: string, email: string, address?: string, phone?: string) => Promise<boolean>
       delete:        (pwd: string) => Promise<boolean>
     }
     properties: {
@@ -191,7 +196,7 @@ interface Window {
     documents: {
       getAll:   () => Promise<DocumentRecord[]>
       delete:   (id: number) => Promise<boolean>
-      savePdf:  (leaseId: number, fileName: string, buffer: number[]) => Promise<{ saved: boolean; path: string | null }>
+      savePdf:  (leaseId: number, fileName: string, buffer: number[], docType?: string) => Promise<{ saved: boolean; path: string | null }>
       openFile: (filePath: string) => Promise<void>
     }
     irl: {

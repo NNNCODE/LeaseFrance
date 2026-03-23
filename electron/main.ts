@@ -77,7 +77,7 @@ ipcMain.handle('auth:getProfile',  () => getProfile())
 ipcMain.handle('auth:setup',    (_e, pwd: string, name: string, email: string) => setupPassword(pwd, name, email))
 ipcMain.handle('auth:verify',   (_e, pwd: string)                              => verifyPassword(pwd))
 ipcMain.handle('auth:change',   (_e, oldPwd: string, newPwd: string)           => changePassword(oldPwd, newPwd))
-ipcMain.handle('auth:updateProfile', (_e, name: string, email: string)         => updateProfile(name, email))
+ipcMain.handle('auth:updateProfile', (_e, name: string, email: string, address?: string, phone?: string) => updateProfile(name, email, address, phone))
 ipcMain.handle('auth:delete',   (_e, pwd: string)                              => deleteAccount(pwd))
 
 // Properties IPC
@@ -113,15 +113,16 @@ ipcMain.handle('payments:delete',    (_e, id) => paymentsDb.remove(id))
 // Documents IPC
 ipcMain.handle('documents:getAll', () => documentsDb.getAll())
 ipcMain.handle('documents:delete', (_e, id) => documentsDb.remove(id))
-ipcMain.handle('documents:savePdf', async (_e, leaseId: number, fileName: string, buffer: number[]) => {
+ipcMain.handle('documents:savePdf', async (_e, leaseId: number, fileName: string, buffer: number[], docType?: string) => {
+  const titleMap: Record<string, string> = { quittance: 'Enregistrer la quittance', recu: 'Enregistrer le reçu de loyer' }
   const { filePath, canceled } = await dialog.showSaveDialog({
-    title: 'Enregistrer la quittance',
+    title: titleMap[docType ?? 'quittance'] ?? 'Enregistrer le document',
     defaultPath: fileName,
     filters: [{ name: 'PDF', extensions: ['pdf'] }],
   })
   if (canceled || !filePath) return { saved: false, path: null }
   writeFileSync(filePath, Buffer.from(buffer))
-  documentsDb.create(leaseId, 'quittance', filePath)
+  documentsDb.create(leaseId, docType ?? 'quittance', filePath)
   return { saved: true, path: filePath }
 })
 ipcMain.handle('documents:openFile', (_e, filePath: string) => {

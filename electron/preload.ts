@@ -12,7 +12,7 @@ contextBridge.exposeInMainWorld('api', {
     setup:         (pwd: string, name: string, email: string) => ipcRenderer.invoke('auth:setup', pwd, name, email),
     verify:        (pwd: string) => ipcRenderer.invoke('auth:verify', pwd),
     change:        (old: string, next: string) => ipcRenderer.invoke('auth:change', old, next),
-    updateProfile: (name: string, email: string) => ipcRenderer.invoke('auth:updateProfile', name, email),
+    updateProfile: (name: string, email: string, address?: string, phone?: string) => ipcRenderer.invoke('auth:updateProfile', name, email, address, phone),
     delete:        (pwd: string) => ipcRenderer.invoke('auth:delete', pwd),
   },
   properties: {
@@ -48,7 +48,7 @@ contextBridge.exposeInMainWorld('api', {
   documents: {
     getAll:    () => ipcRenderer.invoke('documents:getAll'),
     delete:    (id: number) => ipcRenderer.invoke('documents:delete', id),
-    savePdf:   (leaseId: number, fileName: string, buffer: number[]) => ipcRenderer.invoke('documents:savePdf', leaseId, fileName, buffer),
+    savePdf:   (leaseId: number, fileName: string, buffer: number[], docType?: string) => ipcRenderer.invoke('documents:savePdf', leaseId, fileName, buffer, docType),
     openFile:  (filePath: string) => ipcRenderer.invoke('documents:openFile', filePath),
   },
   irl: {

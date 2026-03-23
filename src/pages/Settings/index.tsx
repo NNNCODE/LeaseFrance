@@ -1,85 +1,52 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { User, Lock, Trash2, Eye, EyeOff, Save, AlertTriangle, CheckCircle2 } from 'lucide-react'
+import { UserCircle2, Lock, Trash2, Eye, EyeOff, AlertTriangle, CheckCircle2, ChevronRight } from 'lucide-react'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { formatDate } from '@/lib/utils'
 
 export default function Settings() {
   return (
     <div className="flex flex-col gap-6 max-w-2xl">
       <div>
-        <h1 className="text-2xl font-semibold text-textPrimary">Paramètres</h1>
-        <p className="text-textMuted text-sm mt-1">Gérez votre compte et vos préférences</p>
+        <h1 className="text-2xl font-semibold text-textPrimary">Param\u00e8tres</h1>
+        <p className="text-textMuted text-sm mt-1">G\u00e9rez votre compte et vos pr\u00e9f\u00e9rences</p>
       </div>
-      <ProfileSection />
+      <ProfileLink />
       <PasswordSection />
       <DangerZone />
     </div>
   )
 }
 
-// ── Profil ────────────────────────────────────────────────────────────────────
+// ── Link to Profile page ──────────────────────────────────────────────────────
 
-function ProfileSection() {
-  const { profile, updateProfile } = useAuthStore()
-  const [name, setName]   = useState(profile?.name  ?? '')
-  const [email, setEmail] = useState(profile?.email ?? '')
-  const [status, setStatus] = useState<'idle' | 'saved' | 'error'>('idle')
-
-  async function handleSave(e: React.FormEvent) {
-    e.preventDefault()
-    if (!name.trim() || !email.trim()) return
-    const ok = await updateProfile(name, email)
-    setStatus(ok ? 'saved' : 'error')
-    setTimeout(() => setStatus('idle'), 2500)
-  }
+function ProfileLink() {
+  const { profile } = useAuthStore()
+  const navigate = useNavigate()
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <User className="w-4 h-4 text-primary" />
-          <CardTitle>Informations du compte</CardTitle>
-        </div>
-        {profile?.createdAt && (
-          <CardDescription>Compte créé le {formatDate(profile.createdAt)}</CardDescription>
-        )}
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSave} className="flex flex-col gap-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-textMuted">Nom complet</label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Jean Dupont" />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-textMuted">Adresse e-mail</label>
-              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="jean@email.fr" />
-            </div>
-          </div>
-
+    <Card
+      className="cursor-pointer hover:border-primary/40 transition-colors"
+      onClick={() => navigate('/profile')}
+    >
+      <CardContent className="pt-5 pb-5">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Button type="submit" size="sm">
-              <Save className="w-3.5 h-3.5" />
-              Enregistrer
-            </Button>
-            <AnimatePresence>
-              {status === 'saved' && (
-                <motion.span
-                  initial={{ opacity: 0, x: -4 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0 }}
-                  className="flex items-center gap-1.5 text-xs text-success"
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5" /> Modifications enregistrées
-                </motion.span>
-              )}
-            </AnimatePresence>
+            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/15">
+              <UserCircle2 className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-textPrimary">
+                {profile?.name || 'Propri\u00e9taire'}
+              </p>
+              <p className="text-xs text-textMuted">{profile?.email || 'Voir le profil'}</p>
+            </div>
           </div>
-        </form>
+          <ChevronRight className="w-4 h-4 text-textMuted" />
+        </div>
       </CardContent>
     </Card>
   )

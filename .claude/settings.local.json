@@ -4,7 +4,8 @@
       "Bash(npm install:*)",
       "Bash(npx tsc:*)",
       "Bash(npx electron-vite:*)",
-      "Bash(node -e \"const e = require\\(''d:/leaseFrance/node_modules/electron''\\); console.log\\(typeof e, Object.keys\\(e || {}\\).join\\('',''\\)\\)\")"
+      "Bash(node -e \"const e = require\\(''d:/leaseFrance/node_modules/electron''\\); console.log\\(typeof e, Object.keys\\(e || {}\\).join\\('',''\\)\\)\")",
+      "Bash(npx eslint:*)"
     ]
   }
 }

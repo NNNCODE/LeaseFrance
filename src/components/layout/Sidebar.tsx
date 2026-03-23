@@ -10,6 +10,7 @@ import {
   Settings,
   Home,
   Lock,
+  UserCircle2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/useAuthStore'
@@ -24,7 +25,8 @@ const navItems = [
 ]
 
 const bottomItems = [
-  { to: '/settings', icon: Settings, label: 'Paramètres' },
+  { to: '/profile',  icon: UserCircle2, label: 'Propri\u00e9taire' },
+  { to: '/settings', icon: Settings,    label: 'Param\u00e8tres' },
 ]
 
 export default function Sidebar() {

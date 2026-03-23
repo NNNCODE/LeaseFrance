@@ -11,6 +11,7 @@ import Tenants from '@/pages/Tenants'
 import Leases from '@/pages/Leases'
 import Payments from '@/pages/Payments'
 import Documents from '@/pages/Documents'
+import Profile from '@/pages/Profile'
 
 export default function App() {
   const { status, init } = useAuthStore()
@@ -38,6 +39,7 @@ export default function App() {
         <Route path="leases"     element={<Leases />} />
         <Route path="payments"   element={<Payments />} />
         <Route path="documents"  element={<Documents />} />
+        <Route path="profile"    element={<Profile />} />
         <Route path="settings"   element={<Settings />} />
       </Route>
     </Routes>
