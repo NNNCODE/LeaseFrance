@@ -16,9 +16,9 @@ export default function Profile() {
   return (
     <div className="flex flex-col gap-6 max-w-3xl">
       <div>
-        <h1 className="text-2xl font-semibold text-textPrimary">Profil du propri\u00e9taire</h1>
+        <h1 className="text-2xl font-semibold text-textPrimary">Profil du propriétaire</h1>
         <p className="text-textMuted text-sm mt-1">
-          Vos informations personnelles utilis\u00e9es dans les documents officiels
+          Vos informations personnelles utilisées dans les documents officiels
         </p>
       </div>
 
@@ -38,9 +38,9 @@ export default function Profile() {
                 Utilisation de vos informations
               </p>
               <p className="text-xs text-textMuted leading-relaxed">
-                Votre nom, adresse et t\u00e9l\u00e9phone apparaissent sur les quittances de loyer et
-                re\u00e7us g\u00e9n\u00e9r\u00e9s par l'application. Assurez-vous que ces informations sont compl\u00e8tes
-                et \u00e0 jour pour garantir la conformit\u00e9 l\u00e9gale de vos documents.
+                Votre nom, adresse et téléphone apparaissent sur les quittances de loyer et
+                reçus générés par l'application. Assurez-vous que ces informations sont complètes
+                et à jour pour garantir la conformité légale de vos documents.
               </p>
             </div>
           </div>
@@ -58,10 +58,10 @@ function ProfileOverview() {
   if (!profile) return null
 
   const infoItems = [
-    { icon: UserCircle2, label: 'Nom complet', value: profile.name || '\u2014' },
-    { icon: Mail,        label: 'E-mail',      value: profile.email || '\u2014' },
-    { icon: MapPin,      label: 'Adresse',     value: profile.address || 'Non renseign\u00e9e' },
-    { icon: Phone,       label: 'T\u00e9l\u00e9phone',   value: profile.phone || 'Non renseign\u00e9' },
+    { icon: UserCircle2, label: 'Nom complet', value: profile.name || '—' },
+    { icon: Mail,        label: 'E-mail',      value: profile.email || '—' },
+    { icon: MapPin,      label: 'Adresse',     value: profile.address || 'Non renseignée' },
+    { icon: Phone,       label: 'Téléphone',   value: profile.phone || 'Non renseigné' },
   ]
 
   return (
@@ -75,7 +75,7 @@ function ProfileOverview() {
 
           <div className="flex-1 min-w-0">
             <h2 className="text-lg font-semibold text-textPrimary truncate">
-              {profile.name || 'Propri\u00e9taire'}
+              {profile.name || 'Propriétaire'}
             </h2>
             {profile.createdAt && (
               <p className="text-xs text-textMuted mt-0.5">
@@ -135,7 +135,7 @@ function ProfileForm() {
           <CardTitle>Modifier les informations</CardTitle>
         </div>
         <CardDescription>
-          Ces informations seront utilis\u00e9es sur les quittances et re\u00e7us de loyer
+          Ces informations seront utilisées sur les quittances et reçus de loyer
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -151,7 +151,7 @@ function ProfileForm() {
                 placeholder="Jean Dupont"
               />
               <p className="text-[10px] text-textMuted">
-                Nom l\u00e9gal tel qu'il appara\u00eet sur les documents
+                Nom légal tel qu'il apparaît sur les documents
               </p>
             </div>
             <div className="flex flex-col gap-1.5">
@@ -177,14 +177,14 @@ function ProfileForm() {
               placeholder="12 rue de la Paix, 75002 Paris"
             />
             <p className="text-[10px] text-textMuted">
-              Adresse compl\u00e8te du propri\u00e9taire (affich\u00e9e sur les quittances)
+              Adresse complète du propriétaire (affichée sur les quittances)
             </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-textMuted">
-                T\u00e9l\u00e9phone
+                Téléphone
               </label>
               <Input
                 value={phone}
@@ -207,7 +207,7 @@ function ProfileForm() {
                   exit={{ opacity: 0 }}
                   className="flex items-center gap-1.5 text-xs text-success"
                 >
-                  <CheckCircle2 className="w-3.5 h-3.5" /> Modifications enregistr\u00e9es
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Modifications enregistrées
                 </motion.span>
               )}
               {status === 'error' && (
