@@ -73,6 +73,9 @@ contextBridge.exposeInMainWorld('api', {
     savePdf:   (leaseId: number, fileName: string, buffer: number[], docType?: string) => ipcRenderer.invoke('documents:savePdf', leaseId, fileName, buffer, docType),
     openFile:  (filePath: string) => ipcRenderer.invoke('documents:openFile', filePath),
   },
+  exports: {
+    saveFile: (fileName: string, buffer: number[], filters?: unknown) => ipcRenderer.invoke('exports:saveFile', fileName, buffer, filters),
+  },
   irl: {
     getAll:             () => ipcRenderer.invoke('irl:getAll'),
     getByQuarter:       (year: number, quarter: number) => ipcRenderer.invoke('irl:getByQuarter', year, quarter),

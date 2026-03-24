@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Plus, CreditCard, CheckCircle2, Clock, AlertCircle,
   Building2, User, Euro, CalendarDays, X, Save,
-  Trash2, AlertTriangle, Pencil, ChevronDown, StickyNote, Receipt, ScrollText,
+  Trash2, AlertTriangle, Pencil, ChevronDown, StickyNote, Receipt, ScrollText, ArrowRightLeft,
 } from 'lucide-react'
 import { pdf } from '@react-pdf/renderer'
 import { Button } from '@/components/ui/button'
@@ -15,6 +15,7 @@ import { QuittancePDF, type QuittanceData } from '@/lib/pdf/quittance'
 import { RecuPDF, type RecuData } from '@/lib/pdf/recu'
 import { useAuthStore } from '@/stores/useAuthStore'
 import PaymentReminderModal from './PaymentReminderModal'
+import PaymentBankImportModal from './PaymentBankImportModal'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -75,6 +76,7 @@ export default function Payments() {
   const [editing,   setEditing]   = useState<Payment | null>(null)
   const [deleting,  setDeleting]  = useState<Payment | null>(null)
   const [reminding, setReminding] = useState<Payment | null>(null)
+  const [showImport, setShowImport] = useState(false)
 
   async function load() {
     setLoading(true)
@@ -185,6 +187,7 @@ export default function Payments() {
   }
 
   const noLeases = leases.filter((l) => l.status === 'active').length === 0
+  const canImport = leases.some((l) => l.status === 'active') || payments.some((p) => p.status !== 'paid')
 
   return (
     <div className="flex flex-col gap-6">
@@ -199,10 +202,16 @@ export default function Payments() {
             {summary.totalPaid > 0 && ` · ${formatCurrency(summary.totalPaid)} encaissés`}
           </p>
         </div>
-        <Button onClick={() => { setEditing(null); setShowForm(true) }} disabled={noLeases}>
-          <Plus className="w-4 h-4" />
-          Nouveau paiement
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" onClick={() => setShowImport(true)} disabled={!canImport}>
+            <ArrowRightLeft className="w-4 h-4" />
+            Import banque CSV
+          </Button>
+          <Button onClick={() => { setEditing(null); setShowForm(true) }} disabled={noLeases}>
+            <Plus className="w-4 h-4" />
+            Nouveau paiement
+          </Button>
+        </div>
       </div>
 
       {noLeases && payments.length === 0 ? (
@@ -309,6 +318,16 @@ export default function Payments() {
             profile={profile}
             onClose={() => setReminding(null)}
             onSaved={load}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showImport && (
+          <PaymentBankImportModal
+            payments={payments}
+            leases={leases}
+            onApplied={load}
+            onClose={() => setShowImport(false)}
           />
         )}
       </AnimatePresence>

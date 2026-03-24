@@ -268,15 +268,59 @@ Spec:
 
 ### Bank CSV Import
 
-Status: `todo`
+Status: `in_progress`
 Outcome:
 Import bank statements and suggest payment matching against leases or arrears.
 
+Current scope delivered:
+- `Paiements` now includes an `Import banque CSV` entry point
+- CSV parsing supports common `date / libelle / montant` or `credit / debit` shapes
+- only incoming credit transactions are proposed for reconciliation
+- each imported line gets a suggestion:
+  - match an existing unpaid payment
+  - create a new paid payment on an active lease
+  - ignore when confidence is too low
+- applying the import writes directly into the existing `payments` workflow
+
+Still needed before `done`:
+- persist imported bank transactions separately from `payments`
+- support richer CSV presets or per-bank mapping
+- detect duplicate imports across multiple CSV files
+
+Acceptance:
+- user can load a CSV bank export from the `Paiements` page
+- app suggests at least one payment or lease target when confidence is good enough
+- confirmed rows create or update `payments`
+
+Spec:
+- `docs/features/bank-csv-import.md`
+
 ### Annual Fiscal Summary
 
-Status: `todo`
+Status: `in_progress`
 Outcome:
 Export yearly rent and charge summaries for personal tax preparation.
+
+Current MVP shipped:
+- add a dedicated `Fiscal` page with yearly selection
+- derive annual totals from existing `properties`, `leases`, and `payments`
+- show per-property:
+  - occupied months
+  - vacant months
+  - received rent
+  - recovered charges
+  - tracked unpaid amounts
+- export the selected year as:
+  - CSV
+  - PDF
+
+Scope notes:
+- no new database table in the MVP
+- exports are saved as standalone files, not archived in `Documents`
+- expenses and tax-deductible owner charges are still out of scope
+
+Spec:
+- `docs/features/fiscal-summary.md`
 
 ## Working Pattern With Claude Code
 
@@ -289,6 +333,8 @@ After implementation:
 - update the item status
 - note any scope changes
 - add a feature spec if the work introduced new business rules
+
+
 
 
 

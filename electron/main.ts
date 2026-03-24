@@ -167,6 +167,17 @@ ipcMain.handle('documents:openFile', (_e, filePath: string) => {
   shell.openPath(filePath)
 })
 
+ipcMain.handle('exports:saveFile', async (_e, fileName: string, buffer: number[], filters?: Array<{ name: string; extensions: string[] }>) => {
+  const { filePath, canceled } = await dialog.showSaveDialog({
+    title: 'Exporter le fichier',
+    defaultPath: fileName,
+    filters: filters && filters.length > 0 ? filters : undefined,
+  })
+  if (canceled || !filePath) return { saved: false, path: null }
+  writeFileSync(filePath, Buffer.from(buffer))
+  return { saved: true, path: filePath }
+})
+
 // IRL IPC
 ipcMain.handle('irl:getAll',            () => irlDb.getAll())
 ipcMain.handle('irl:getByQuarter',      (_e, year: number, quarter: number) => irlDb.getByQuarter(year, quarter))

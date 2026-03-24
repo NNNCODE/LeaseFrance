@@ -365,6 +365,13 @@ interface Window {
       savePdf:  (leaseId: number, fileName: string, buffer: number[], docType?: string) => Promise<{ saved: boolean; path: string | null }>
       openFile: (filePath: string) => Promise<void>
     }
+    exports: {
+      saveFile: (
+        fileName: string,
+        buffer: number[],
+        filters?: Array<{ name: string; extensions: string[] }>
+      ) => Promise<{ saved: boolean; path: string | null }>
+    }
     irl: {
       getAll:              () => Promise<IrlIndex[]>
       getByQuarter:        (year: number, quarter: number) => Promise<IrlIndex | null>
