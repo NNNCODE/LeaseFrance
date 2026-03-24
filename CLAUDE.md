@@ -15,6 +15,14 @@ This file is for Claude Code. Keep it short, concrete, and repo-specific.
 - Verify assumptions from code, not from this file.
 - Use ASCII in docs and code comments unless a file already requires French accents.
 
+## Planning Files
+
+- Keep `CLAUDE.md` for stable repo rules, constraints, and workflow guidance.
+- Product direction lives in `docs/ROADMAP.md`.
+- Actionable work lives in `docs/BACKLOG.md`.
+- Feature-level design notes live in `docs/features/*.md` when needed.
+- When finishing a backlog item, update its status and any scope changes in the docs.
+
 ## Tech Stack
 
 - Electron 31

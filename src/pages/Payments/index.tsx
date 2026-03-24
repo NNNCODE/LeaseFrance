@@ -147,7 +147,9 @@ export default function Payments() {
     const baseData = {
       landlordName:    profile?.name ?? 'Propriétaire',
       landlordAddress: profile?.address,
+      landlordCity:    profile?.city,
       landlordPhone:   profile?.phone,
+      landlordSignature: profile?.signatureImage,
       tenantFirstName: payment.tenant_first_name,
       tenantLastName:  payment.tenant_last_name,
       propertyName:    payment.property_name,

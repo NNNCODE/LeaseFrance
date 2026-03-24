@@ -3,13 +3,14 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Plus, Users, Mail, Phone, Pencil, Trash2,
   X, Save, AlertTriangle, User, Building2,
-  Euro, CalendarDays, CheckCircle2, AlertCircle,
+  Euro, CalendarDays, CheckCircle2, AlertCircle, ScrollText,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { formatCurrency, formatDate } from '@/lib/utils'
+import TenantLedgerModal from './TenantLedgerModal'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -42,6 +43,7 @@ export default function Tenants() {
   const [showForm, setShowForm]   = useState(false)
   const [editing, setEditing]     = useState<Tenant | null>(null)
   const [deleting, setDeleting]   = useState<Tenant | null>(null)
+  const [ledgerTenant, setLedgerTenant] = useState<Tenant | null>(null)
 
   async function load() {
     setLoading(true)
@@ -145,6 +147,7 @@ export default function Tenants() {
               tenant={t}
               onEdit={() => openEdit(t)}
               onDelete={() => setDeleting(t)}
+              onOpenLedger={() => setLedgerTenant(t)}
             />
           ))}
         </motion.div>
@@ -159,6 +162,11 @@ export default function Tenants() {
       <AnimatePresence>
         {deleting && (
           <DeleteModal tenant={deleting} onConfirm={handleDelete} onClose={() => setDeleting(null)} />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {ledgerTenant && (
+          <TenantLedgerModal tenant={ledgerTenant} onClose={() => setLedgerTenant(null)} />
         )}
       </AnimatePresence>
     </div>
@@ -189,10 +197,11 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
 
 // ── Tenant card ────────────────────────────────────────────────────────────────
 
-function TenantCard({ tenant: t, onEdit, onDelete }: {
+function TenantCard({ tenant: t, onEdit, onDelete, onOpenLedger }: {
   tenant: Tenant
   onEdit: () => void
   onDelete: () => void
+  onOpenLedger: () => void
 }) {
   const hasLease   = !!t.lease_id
   const hasUnpaid  = t.unpaid_count > 0
@@ -301,6 +310,13 @@ function TenantCard({ tenant: t, onEdit, onDelete }: {
               <div className="w-2 h-2 rounded-full bg-textMuted/30" />
               <span className="italic">Aucun bail actif</span>
             </div>
+          )}
+
+          {hasLease && (
+            <Button variant="outline" size="sm" onClick={onOpenLedger} className="w-full">
+              <ScrollText className="w-3.5 h-3.5" />
+              Compte locataire
+            </Button>
           )}
         </CardContent>
       </Card>

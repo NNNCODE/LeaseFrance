@@ -81,8 +81,6 @@ export default function Documents() {
       leaseType:       lease.type,
     }
 
-    console.log('[Documents] landlordSignature present:', !!baseData.landlordSignature, 'length:', baseData.landlordSignature?.length ?? 0, 'starts:', baseData.landlordSignature?.substring(0, 30))
-
     let blob: Blob
     let fileName: string
     let docType: string
