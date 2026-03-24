@@ -40,6 +40,10 @@ interface Lease {
   rent_amount: number
   charges_amount: number
   deposit_amount: number
+  deposit_received_date: string | null
+  deposit_refund_date: string | null
+  deposit_retained_amount: number
+  deposit_notes: string | null
   irl_reference_index: number | null
   irl_reference_quarter: string | null
   status: 'active' | 'ended' | 'terminated'
@@ -61,6 +65,10 @@ interface LeaseInput {
   rent_amount: number
   charges_amount: number
   deposit_amount: number
+  deposit_received_date?: string | null
+  deposit_refund_date?: string | null
+  deposit_retained_amount?: number
+  deposit_notes?: string | null
   irl_reference_index?: number | null
   irl_reference_quarter?: string | null
   status?: string
@@ -130,6 +138,28 @@ interface PaymentSummary {
   total_late: number
 }
 
+interface PaymentReminder {
+  id: number
+  payment_id: number
+  stage: 'relance_amiable' | 'mise_en_demeure' | 'proposition_echeancier'
+  sent_at: string
+  notes: string | null
+  created_at: string
+  lease_id: number
+  property_name: string
+  tenant_first_name: string
+  tenant_last_name: string
+  period_month: number
+  period_year: number
+}
+
+interface PaymentReminderInput {
+  payment_id: number
+  stage: string
+  sent_at: string
+  notes?: string | null
+}
+
 interface DocumentRecord {
   id: number
   lease_id: number
@@ -194,6 +224,10 @@ interface Window {
       update:     (id: number, data: Partial<PaymentInput>) => Promise<Payment>
       markPaid:   (id: number, date: string) => Promise<Payment>
       delete:     (id: number) => Promise<boolean>
+    }
+    paymentReminders: {
+      getByPayment: (paymentId: number) => Promise<PaymentReminder[]>
+      create:       (data: PaymentReminderInput) => Promise<PaymentReminder>
     }
     documents: {
       getAll:   () => Promise<DocumentRecord[]>

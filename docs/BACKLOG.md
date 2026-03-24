@@ -49,14 +49,28 @@ Likely touch points:
 
 ### Deposit Management MVP
 
-Status: `todo`
+Status: `in_progress`
 Outcome:
 Track deposit amount, collection date, retained amount, refund date, and refund status.
+
+Current scope delivered:
+- deposit collection and refund fields stored directly on `leases`
+- dedicated `Depot de garantie` management modal from the `Baux` page
+- derived statuses for `a encaisser`, `detenu`, `restitue`, `restitue partiellement`, and `retenu`
+- lease rows now show deposit status and amount still to return
+
+Still needed before `done`:
+- deposit settlement PDF or printable handover summary
+- explicit attachment or justification management for deductions
+- dashboard surfacing for deposits still held vs already returned
 
 Acceptance:
 - deposit data can be stored at lease level
 - user can record refund and deductions
 - data is visible from the lease workflow
+
+Spec:
+- `docs/features/deposit-management.md`
 
 Likely touch points:
 - `electron/db/database.ts`
@@ -66,14 +80,28 @@ Likely touch points:
 
 ### Unpaid Rent Follow-up
 
-Status: `todo`
+Status: `in_progress`
 Outcome:
 Record reminder stages and generate follow-up letters for unpaid rent.
+
+Current scope delivered:
+- reminder history stored per payment in `payment_reminders`
+- reminder workflow available from the `Paiements` page
+- PDF generation for `relance amiable`, `mise en demeure amiable`, and `proposition d'echeancier`
+- saved reminder PDFs now appear in the `Documents` list with dedicated labels
+
+Still needed before `done`:
+- filtering or dashboard surfacing for reminded payments
+- optional payment-plan fields beyond free-form notes
+- stronger handling for legal timelines if the product later goes beyond amicable reminders
 
 Acceptance:
 - payment or lease can store reminder state and dates
 - user can generate at least one reminder letter PDF
 - reminder history is visible in the UI
+
+Spec:
+- `docs/features/unpaid-rent-follow-up.md`
 
 Likely touch points:
 - `electron/db/database.ts`

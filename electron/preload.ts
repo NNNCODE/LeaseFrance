@@ -45,6 +45,10 @@ contextBridge.exposeInMainWorld('api', {
     markPaid:   (id: number, date: string) => ipcRenderer.invoke('payments:markPaid', id, date),
     delete:     (id: number) => ipcRenderer.invoke('payments:delete', id),
   },
+  paymentReminders: {
+    getByPayment: (paymentId: number) => ipcRenderer.invoke('paymentReminders:getByPayment', paymentId),
+    create:       (data: unknown) => ipcRenderer.invoke('paymentReminders:create', data),
+  },
   documents: {
     getAll:    () => ipcRenderer.invoke('documents:getAll'),
     delete:    (id: number) => ipcRenderer.invoke('documents:delete', id),

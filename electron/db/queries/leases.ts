@@ -10,6 +10,10 @@ export interface Lease {
   rent_amount: number
   charges_amount: number
   deposit_amount: number
+  deposit_received_date: string | null
+  deposit_refund_date: string | null
+  deposit_retained_amount: number
+  deposit_notes: string | null
   irl_reference_index: number | null
   irl_reference_quarter: string | null
   status: 'active' | 'ended' | 'terminated'
@@ -32,6 +36,10 @@ export interface LeaseInput {
   rent_amount: number
   charges_amount: number
   deposit_amount: number
+  deposit_received_date?: string | null
+  deposit_refund_date?: string | null
+  deposit_retained_amount?: number
+  deposit_notes?: string | null
   irl_reference_index?: number | null
   irl_reference_quarter?: string | null
   status?: string
@@ -64,14 +72,20 @@ export function create(data: LeaseInput): Lease {
     INSERT INTO leases
       (property_id, tenant_id, type, start_date, end_date,
        rent_amount, charges_amount, deposit_amount,
+       deposit_received_date, deposit_refund_date, deposit_retained_amount, deposit_notes,
        irl_reference_index, irl_reference_quarter, status)
     VALUES
       (@property_id, @tenant_id, @type, @start_date, @end_date,
        @rent_amount, @charges_amount, @deposit_amount,
+       @deposit_received_date, @deposit_refund_date, @deposit_retained_amount, @deposit_notes,
        @irl_reference_index, @irl_reference_quarter, @status)
   `).run({
     ...data,
     end_date: data.end_date ?? null,
+    deposit_received_date: data.deposit_received_date ?? null,
+    deposit_refund_date: data.deposit_refund_date ?? null,
+    deposit_retained_amount: data.deposit_retained_amount ?? 0,
+    deposit_notes: data.deposit_notes ?? null,
     irl_reference_index: data.irl_reference_index ?? null,
     irl_reference_quarter: data.irl_reference_quarter ?? null,
     status: data.status ?? 'active',
@@ -86,6 +100,10 @@ export function update(id: number, data: LeaseInput): Lease | undefined {
       start_date=@start_date, end_date=@end_date,
       rent_amount=@rent_amount, charges_amount=@charges_amount,
       deposit_amount=@deposit_amount,
+      deposit_received_date=@deposit_received_date,
+      deposit_refund_date=@deposit_refund_date,
+      deposit_retained_amount=@deposit_retained_amount,
+      deposit_notes=@deposit_notes,
       irl_reference_index=@irl_reference_index,
       irl_reference_quarter=@irl_reference_quarter,
       status=@status
@@ -93,6 +111,10 @@ export function update(id: number, data: LeaseInput): Lease | undefined {
   `).run({
     ...data,
     end_date: data.end_date ?? null,
+    deposit_received_date: data.deposit_received_date ?? null,
+    deposit_refund_date: data.deposit_refund_date ?? null,
+    deposit_retained_amount: data.deposit_retained_amount ?? 0,
+    deposit_notes: data.deposit_notes ?? null,
     irl_reference_index: data.irl_reference_index ?? null,
     irl_reference_quarter: data.irl_reference_quarter ?? null,
     status: data.status ?? 'active',

@@ -9,6 +9,7 @@ import * as propertiesDb from './db/queries/properties'
 import * as tenantsDb from './db/queries/tenants'
 import * as leasesDb from './db/queries/leases'
 import * as paymentsDb from './db/queries/payments'
+import * as paymentRemindersDb from './db/queries/paymentReminders'
 import * as documentsDb from './db/queries/documents'
 import * as irlDb from './db/queries/irl'
 
@@ -110,11 +111,21 @@ ipcMain.handle('payments:update',    (_e, id, data) => paymentsDb.update(id, dat
 ipcMain.handle('payments:markPaid',  (_e, id, date) => paymentsDb.markPaid(id, date))
 ipcMain.handle('payments:delete',    (_e, id) => paymentsDb.remove(id))
 
+// Payment reminders IPC
+ipcMain.handle('paymentReminders:getByPayment', (_e, paymentId) => paymentRemindersDb.getByPayment(paymentId))
+ipcMain.handle('paymentReminders:create', (_e, data) => paymentRemindersDb.create(data))
+
 // Documents IPC
 ipcMain.handle('documents:getAll', () => documentsDb.getAll())
 ipcMain.handle('documents:delete', (_e, id) => documentsDb.remove(id))
 ipcMain.handle('documents:savePdf', async (_e, leaseId: number, fileName: string, buffer: number[], docType?: string) => {
-  const titleMap: Record<string, string> = { quittance: 'Enregistrer la quittance', recu: 'Enregistrer le reçu de loyer' }
+  const titleMap: Record<string, string> = {
+    quittance: 'Enregistrer la quittance',
+    recu: 'Enregistrer le recu de loyer',
+    relance_amiable: 'Enregistrer la relance amiable',
+    mise_en_demeure: 'Enregistrer la mise en demeure',
+    proposition_echeancier: "Enregistrer la proposition d'echeancier",
+  }
   const { filePath, canceled } = await dialog.showSaveDialog({
     title: titleMap[docType ?? 'quittance'] ?? 'Enregistrer le document',
     defaultPath: fileName,

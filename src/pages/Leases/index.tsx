@@ -11,6 +11,8 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { formatCurrency, formatDate } from '@/lib/utils'
+import DepositManagementModal, { type DepositManagementInput } from './DepositManagementModal'
+import { getDepositReturnedAmount, getDepositStatus, getDepositStatusMeta } from './depositUtils'
 import {
   calculateRevision, isRevisionEligible, isAnniversaryWithinDays,
   parseQuarter, formatQuarter, QUARTER_LABELS,
@@ -44,6 +46,10 @@ const emptyForm: LeaseInput = {
   rent_amount: 0,
   charges_amount: 0,
   deposit_amount: 0,
+  deposit_received_date: null,
+  deposit_refund_date: null,
+  deposit_retained_amount: 0,
+  deposit_notes: null,
   status: 'active',
 }
 
@@ -57,6 +63,7 @@ export default function Leases() {
   const [editing, setEditing]     = useState<Lease | null>(null)
   const [deleting, setDeleting]   = useState<Lease | null>(null)
   const [revising, setRevising]   = useState<Lease | null>(null)
+  const [managingDeposit, setManagingDeposit] = useState<Lease | null>(null)
 
   async function load() {
     setLoading(true)
@@ -104,11 +111,39 @@ export default function Leases() {
       rent_amount: newRent,
       charges_amount: lease.charges_amount,
       deposit_amount: lease.deposit_amount,
+      deposit_received_date: lease.deposit_received_date,
+      deposit_refund_date: lease.deposit_refund_date,
+      deposit_retained_amount: lease.deposit_retained_amount,
+      deposit_notes: lease.deposit_notes,
       irl_reference_index: newIrlValue,
       irl_reference_quarter: newIrlQuarter,
       status: lease.status,
     })
     setRevising(null)
+    load()
+  }
+
+  async function handleSaveDeposit(leaseId: number, data: DepositManagementInput) {
+    const lease = leases.find((entry) => entry.id === leaseId)
+    if (!lease) return
+    await window.api.leases.update(leaseId, {
+      property_id: lease.property_id,
+      tenant_id: lease.tenant_id,
+      type: lease.type,
+      start_date: lease.start_date,
+      end_date: lease.end_date,
+      rent_amount: lease.rent_amount,
+      charges_amount: lease.charges_amount,
+      deposit_amount: lease.deposit_amount,
+      deposit_received_date: data.deposit_received_date,
+      deposit_refund_date: data.deposit_refund_date,
+      deposit_retained_amount: data.deposit_retained_amount,
+      deposit_notes: data.deposit_notes,
+      irl_reference_index: lease.irl_reference_index,
+      irl_reference_quarter: lease.irl_reference_quarter,
+      status: lease.status,
+    })
+    setManagingDeposit(null)
     load()
   }
 
@@ -181,6 +216,7 @@ export default function Leases() {
               irlIndices={irlIndices}
               onEdit={() => openEdit(l)}
               onDelete={() => setDeleting(l)}
+              onManageDeposit={() => setManagingDeposit(l)}
               onRevise={() => setRevising(l)}
             />
           ))}
@@ -207,6 +243,16 @@ export default function Leases() {
             irlIndices={irlIndices}
             onApply={handleApplyRevision}
             onClose={() => setRevising(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {managingDeposit && (
+          <DepositManagementModal
+            lease={managingDeposit}
+            onSave={(data) => handleSaveDeposit(managingDeposit.id, data)}
+            onClose={() => setManagingDeposit(null)}
           />
         )}
       </AnimatePresence>
@@ -238,17 +284,21 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
 
 // ── Lease row ──────────────────────────────────────────────────────────────────
 
-function LeaseRow({ lease, irlIndices, onEdit, onDelete, onRevise }: {
+function LeaseRow({ lease, irlIndices, onEdit, onDelete, onManageDeposit, onRevise }: {
   lease: Lease
   irlIndices: IrlIndex[]
   onEdit: () => void
   onDelete: () => void
+  onManageDeposit: () => void
   onRevise: () => void
 }) {
   const status = STATUS_CONFIG[lease.status]
   const StatusIcon = status.icon
   const canRevise = lease.status === 'active' &&
     isRevisionEligible(lease.type, lease.start_date, lease.irl_reference_index, lease.irl_reference_quarter)
+  const depositStatus = getDepositStatus(lease)
+  const depositMeta = getDepositStatusMeta(depositStatus)
+  const returnedAmount = getDepositReturnedAmount(lease)
 
   return (
     <motion.div
@@ -319,13 +369,33 @@ function LeaseRow({ lease, irlIndices, onEdit, onDelete, onRevise }: {
                 <p className="text-xs text-textMuted">+ {formatCurrency(lease.charges_amount)} charges</p>
               )}
               {lease.deposit_amount > 0 && (
-                <p className="text-xs text-textMuted">Dépôt : {formatCurrency(lease.deposit_amount)}</p>
+                <div className="flex items-center justify-end gap-2">
+                  <p className="text-xs text-textMuted">Dépôt : {formatCurrency(lease.deposit_amount)}</p>
+                  <Badge variant={depositMeta.variant} className="text-[10px]">{depositMeta.label}</Badge>
+                </div>
+              )}
+              {lease.deposit_amount > 0 && depositStatus !== 'awaiting' && (
+                <p className="text-xs text-textMuted">
+                  {depositStatus === 'held'
+                    ? `Encaisse le ${formatDate(lease.deposit_received_date!)}`
+                    : `A restituer : ${formatCurrency(returnedAmount)}`
+                  }
+                </p>
               )}
             </div>
           </div>
 
           {/* Actions */}
           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+            {lease.deposit_amount > 0 && (
+              <button
+                onClick={onManageDeposit}
+                title="Gerer le depot de garantie"
+                className="p-1.5 rounded-lg hover:bg-primary/10 text-textMuted hover:text-primary transition-colors"
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+              </button>
+            )}
             {canRevise && (
               <button
                 onClick={onRevise}
@@ -371,6 +441,10 @@ function LeaseFormModal({
           rent_amount: initial.rent_amount,
           charges_amount: initial.charges_amount,
           deposit_amount: initial.deposit_amount,
+          deposit_received_date: initial.deposit_received_date,
+          deposit_refund_date: initial.deposit_refund_date,
+          deposit_retained_amount: initial.deposit_retained_amount,
+          deposit_notes: initial.deposit_notes,
           irl_reference_index: initial.irl_reference_index,
           irl_reference_quarter: initial.irl_reference_quarter,
           status: initial.status,

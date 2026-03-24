@@ -26,6 +26,21 @@ function isFullPayment(p: Payment): boolean {
   return p.rent_amount >= p.lease_rent_amount && p.charges_amount >= p.lease_charges_amount
 }
 
+function getDocumentMeta(type: string) {
+  switch (type) {
+    case 'recu':
+      return { label: 'Reçu', variant: 'warning' as const, icon: Receipt, iconClass: 'text-accent', iconBg: 'bg-accent/10' }
+    case 'relance_amiable':
+      return { label: 'Relance amiable', variant: 'default' as const, icon: Info, iconClass: 'text-warning', iconBg: 'bg-warning/10' }
+    case 'mise_en_demeure':
+      return { label: 'Mise en demeure', variant: 'danger' as const, icon: Info, iconClass: 'text-danger', iconBg: 'bg-danger/10' }
+    case 'proposition_echeancier':
+      return { label: 'Échéancier', variant: 'success' as const, icon: Info, iconClass: 'text-success', iconBg: 'bg-success/10' }
+    default:
+      return { label: 'Quittance', variant: 'muted' as const, icon: FileText, iconClass: 'text-primary', iconBg: 'bg-primary/10' }
+  }
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function Documents() {
@@ -207,7 +222,8 @@ function DocRow({ doc, onOpen, onDelete }: {
   onOpen: () => void
   onDelete: () => void
 }) {
-  const isRecu = doc.type === 'recu'
+  const meta = getDocumentMeta(doc.type)
+  const Icon = meta.icon
 
   return (
     <motion.div
@@ -218,11 +234,8 @@ function DocRow({ doc, onOpen, onDelete }: {
     >
       <Card className="group hover:border-primary/30 transition-colors duration-200">
         <CardContent className="py-3 px-4 flex items-center gap-4">
-          <div className={`flex items-center justify-center w-9 h-9 rounded-xl shrink-0 ${isRecu ? 'bg-accent/10' : 'bg-primary/10'}`}>
-            {isRecu
-              ? <Receipt className="w-4 h-4 text-accent" />
-              : <FileText className="w-4 h-4 text-primary" />
-            }
+          <div className={`flex items-center justify-center w-9 h-9 rounded-xl shrink-0 ${meta.iconBg}`}>
+            <Icon className={`w-4 h-4 ${meta.iconClass}`} />
           </div>
           <div className="flex-1 min-w-0 grid grid-cols-3 gap-3 items-center">
             <div className="min-w-0">
@@ -232,8 +245,8 @@ function DocRow({ doc, onOpen, onDelete }: {
               <p className="text-xs text-textMuted truncate">{doc.property_name}</p>
             </div>
             <div>
-              <Badge variant={isRecu ? 'warning' : 'muted'}>
-                {isRecu ? 'Reçu' : 'Quittance'}
+              <Badge variant={meta.variant}>
+                {meta.label}
               </Badge>
             </div>
             <div className="text-xs text-textMuted">

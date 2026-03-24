@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Plus, CreditCard, CheckCircle2, Clock, AlertCircle,
   Building2, User, Euro, CalendarDays, X, Save,
-  Trash2, AlertTriangle, Pencil, ChevronDown, StickyNote, Receipt,
+  Trash2, AlertTriangle, Pencil, ChevronDown, StickyNote, Receipt, ScrollText,
 } from 'lucide-react'
 import { pdf } from '@react-pdf/renderer'
 import { Button } from '@/components/ui/button'
@@ -14,6 +14,7 @@ import { formatCurrency, formatDate } from '@/lib/utils'
 import { QuittancePDF, type QuittanceData } from '@/lib/pdf/quittance'
 import { RecuPDF, type RecuData } from '@/lib/pdf/recu'
 import { useAuthStore } from '@/stores/useAuthStore'
+import PaymentReminderModal from './PaymentReminderModal'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -73,6 +74,7 @@ export default function Payments() {
   const [showForm,  setShowForm]  = useState(false)
   const [editing,   setEditing]   = useState<Payment | null>(null)
   const [deleting,  setDeleting]  = useState<Payment | null>(null)
+  const [reminding, setReminding] = useState<Payment | null>(null)
 
   async function load() {
     setLoading(true)
@@ -269,6 +271,7 @@ export default function Payments() {
                           key={p.id}
                           payment={p}
                           onMarkPaid={() => handleMarkPaid(p)}
+                          onReminder={() => setReminding(p)}
                           onEdit={() => { setEditing(p); setShowForm(true) }}
                           onDelete={() => setDeleting(p)}
                           onGenerateDocument={() => handleGenerateDocument(p)}
@@ -299,6 +302,16 @@ export default function Payments() {
           <DeleteModal payment={deleting} onConfirm={handleDelete} onClose={() => setDeleting(null)} />
         )}
       </AnimatePresence>
+      <AnimatePresence>
+        {reminding && (
+          <PaymentReminderModal
+            payment={reminding}
+            profile={profile}
+            onClose={() => setReminding(null)}
+            onSaved={load}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }
@@ -323,9 +336,10 @@ function EmptyState() {
 
 // ── Payment row ────────────────────────────────────────────────────────────────
 
-function PaymentRow({ payment: p, onMarkPaid, onEdit, onDelete, onGenerateDocument }: {
+function PaymentRow({ payment: p, onMarkPaid, onReminder, onEdit, onDelete, onGenerateDocument }: {
   payment: Payment
   onMarkPaid: () => void
+  onReminder: () => void
   onEdit: () => void
   onDelete: () => void
   onGenerateDocument: () => void
@@ -399,6 +413,15 @@ function PaymentRow({ payment: p, onMarkPaid, onEdit, onDelete, onGenerateDocume
 
           {/* Actions */}
           <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+            {p.status !== 'paid' && (
+              <button
+                onClick={onReminder}
+                title="Relancer cet impayé"
+                className="p-1.5 rounded-lg hover:bg-warning/10 text-textMuted hover:text-warning transition-colors"
+              >
+                <ScrollText className="w-3.5 h-3.5" />
+              </button>
+            )}
             {p.status !== 'paid' && (
               <button
                 onClick={onMarkPaid}
