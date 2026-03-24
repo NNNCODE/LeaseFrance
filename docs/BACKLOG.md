@@ -237,9 +237,34 @@ Spec:
 
 ### Tenant and Guarantor File
 
-Status: `todo`
+Status: `in_progress`
 Outcome:
 Store guarantor details, supporting document completeness, and emergency contacts.
+
+Current scope delivered:
+- tenant records now store guarantor contact details
+- tenant records now store emergency contact name, relation, and phone
+- `Locataires` includes a dedicated `Dossier locatif` modal
+- the dossier modal tracks completion of core supporting documents:
+  - identity document
+  - proof of income
+  - proof of activity
+  - tax notice
+  - bank details
+- tenant cards now surface `Garant` and `Dossier x/5` status
+
+Still needed before `done`:
+- actual attachment or file upload support for each supporting document
+- optional guarantor-specific supporting documents
+- dashboard or reminder surfacing for incomplete tenant files
+
+Acceptance:
+- user can save guarantor information on a tenant
+- user can track whether core dossier items were received
+- dossier completeness is visible from the tenant list
+
+Spec:
+- `docs/features/tenant-guarantor-file.md`
 
 ### Bank CSV Import
 
@@ -264,5 +289,6 @@ After implementation:
 - update the item status
 - note any scope changes
 - add a feature spec if the work introduced new business rules
+
 
 

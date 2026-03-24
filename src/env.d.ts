@@ -80,6 +80,19 @@ interface Tenant {
   last_name: string
   email: string | null
   phone: string | null
+  guarantor_name: string | null
+  guarantor_email: string | null
+  guarantor_phone: string | null
+  guarantor_address: string | null
+  emergency_contact_name: string | null
+  emergency_contact_phone: string | null
+  emergency_contact_relation: string | null
+  dossier_id_document: boolean
+  dossier_income_proof: boolean
+  dossier_employment_proof: boolean
+  dossier_tax_notice: boolean
+  dossier_bank_details: boolean
+  dossier_notes: string | null
   created_at: string
   lease_id: number | null
   lease_type: string | null
@@ -96,6 +109,19 @@ interface TenantInput {
   last_name: string
   email?: string | null
   phone?: string | null
+  guarantor_name?: string | null
+  guarantor_email?: string | null
+  guarantor_phone?: string | null
+  guarantor_address?: string | null
+  emergency_contact_name?: string | null
+  emergency_contact_phone?: string | null
+  emergency_contact_relation?: string | null
+  dossier_id_document?: boolean
+  dossier_income_proof?: boolean
+  dossier_employment_proof?: boolean
+  dossier_tax_notice?: boolean
+  dossier_bank_details?: boolean
+  dossier_notes?: string | null
 }
 
 interface Payment {

@@ -40,12 +40,25 @@ function initSchema(db: Database.Database): void {
     );
 
     CREATE TABLE IF NOT EXISTS tenants (
-      id         INTEGER PRIMARY KEY AUTOINCREMENT,
-      first_name TEXT NOT NULL,
-      last_name  TEXT NOT NULL,
-      email      TEXT,
-      phone      TEXT,
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      id                         INTEGER PRIMARY KEY AUTOINCREMENT,
+      first_name                 TEXT    NOT NULL,
+      last_name                  TEXT    NOT NULL,
+      email                      TEXT,
+      phone                      TEXT,
+      guarantor_name             TEXT,
+      guarantor_email            TEXT,
+      guarantor_phone            TEXT,
+      guarantor_address          TEXT,
+      emergency_contact_name     TEXT,
+      emergency_contact_phone    TEXT,
+      emergency_contact_relation TEXT,
+      dossier_id_document        INTEGER NOT NULL DEFAULT 0,
+      dossier_income_proof       INTEGER NOT NULL DEFAULT 0,
+      dossier_employment_proof   INTEGER NOT NULL DEFAULT 0,
+      dossier_tax_notice         INTEGER NOT NULL DEFAULT 0,
+      dossier_bank_details       INTEGER NOT NULL DEFAULT 0,
+      dossier_notes              TEXT,
+      created_at                 TEXT    NOT NULL DEFAULT (datetime('now'))
     );
 
     CREATE TABLE IF NOT EXISTS leases (
@@ -147,4 +160,17 @@ function initSchema(db: Database.Database): void {
   ensureColumnExists(db, 'leases', 'deposit_refund_date', 'TEXT')
   ensureColumnExists(db, 'leases', 'deposit_retained_amount', 'REAL NOT NULL DEFAULT 0')
   ensureColumnExists(db, 'leases', 'deposit_notes', 'TEXT')
+  ensureColumnExists(db, 'tenants', 'guarantor_name', 'TEXT')
+  ensureColumnExists(db, 'tenants', 'guarantor_email', 'TEXT')
+  ensureColumnExists(db, 'tenants', 'guarantor_phone', 'TEXT')
+  ensureColumnExists(db, 'tenants', 'guarantor_address', 'TEXT')
+  ensureColumnExists(db, 'tenants', 'emergency_contact_name', 'TEXT')
+  ensureColumnExists(db, 'tenants', 'emergency_contact_phone', 'TEXT')
+  ensureColumnExists(db, 'tenants', 'emergency_contact_relation', 'TEXT')
+  ensureColumnExists(db, 'tenants', 'dossier_id_document', 'INTEGER NOT NULL DEFAULT 0')
+  ensureColumnExists(db, 'tenants', 'dossier_income_proof', 'INTEGER NOT NULL DEFAULT 0')
+  ensureColumnExists(db, 'tenants', 'dossier_employment_proof', 'INTEGER NOT NULL DEFAULT 0')
+  ensureColumnExists(db, 'tenants', 'dossier_tax_notice', 'INTEGER NOT NULL DEFAULT 0')
+  ensureColumnExists(db, 'tenants', 'dossier_bank_details', 'INTEGER NOT NULL DEFAULT 0')
+  ensureColumnExists(db, 'tenants', 'dossier_notes', 'TEXT')
 }

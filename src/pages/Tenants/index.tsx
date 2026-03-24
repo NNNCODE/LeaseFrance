@@ -1,24 +1,51 @@
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useEffect, useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import {
-  Plus, Users, Mail, Phone, Pencil, Trash2,
-  X, Save, AlertTriangle, User, Building2,
-  Euro, CalendarDays, CheckCircle2, AlertCircle, ScrollText,
+  AlertCircle,
+  AlertTriangle,
+  Building2,
+  CalendarDays,
+  CheckCircle2,
+  Euro,
+  FileText,
+  Mail,
+  Pencil,
+  Phone,
+  Plus,
+  Save,
+  ScrollText,
+  ShieldCheck,
+  Trash2,
+  User,
+  Users,
+  X,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { formatCurrency, formatDate } from '@/lib/utils'
+import TenantFileModal from './TenantFileModal'
 import TenantLedgerModal from './TenantLedgerModal'
+import {
+  DOSSIER_ITEMS,
+  buildTenantInputFromTenant,
+  getCompletedDossierCount,
+  getDossierStatusVariant,
+  getMissingDossierItems,
+  hasGuarantor,
+} from './tenantFileHelpers'
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function initials(t: Tenant) {
-  return (t.first_name[0] ?? '') + (t.last_name[0] ?? '')
+function initials(tenant: Tenant) {
+  return `${tenant.first_name[0] ?? ''}${tenant.last_name[0] ?? ''}`
 }
 
-const emptyForm: TenantInput = { first_name: '', last_name: '', email: '', phone: '' }
+const emptyForm: TenantInput = {
+  first_name: '',
+  last_name: '',
+  email: '',
+  phone: '',
+}
 
 const AVATAR_COLORS = [
   'bg-primary/20 text-primary',
@@ -26,24 +53,26 @@ const AVATAR_COLORS = [
   'bg-warning/20 text-warning',
   'bg-accent/20 text-accent',
 ]
-function avatarColor(id: number) { return AVATAR_COLORS[id % AVATAR_COLORS.length] }
 
 const LEASE_TYPE_LABELS: Record<string, string> = {
-  vide:      'Bail vide',
-  meuble:    'Bail meublé',
-  mobilite:  'Bail mobilité',
+  vide: 'Bail vide',
+  meuble: 'Bail meuble',
+  mobilite: 'Bail mobilite',
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
+function avatarColor(id: number) {
+  return AVATAR_COLORS[id % AVATAR_COLORS.length]
+}
 
 export default function Tenants() {
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [loading, setLoading] = useState(true)
-  const [search, setSearch]   = useState('')
-  const [showForm, setShowForm]   = useState(false)
-  const [editing, setEditing]     = useState<Tenant | null>(null)
-  const [deleting, setDeleting]   = useState<Tenant | null>(null)
+  const [search, setSearch] = useState('')
+  const [showForm, setShowForm] = useState(false)
+  const [editing, setEditing] = useState<Tenant | null>(null)
+  const [deleting, setDeleting] = useState<Tenant | null>(null)
   const [ledgerTenant, setLedgerTenant] = useState<Tenant | null>(null)
+  const [dossierTenant, setDossierTenant] = useState<Tenant | null>(null)
 
   async function load() {
     setLoading(true)
@@ -54,30 +83,59 @@ export default function Tenants() {
 
   useEffect(() => { load() }, [])
 
-  const filtered = tenants.filter((t) => {
+  const filtered = tenants.filter((tenant) => {
     const q = search.toLowerCase()
     return (
-      t.first_name.toLowerCase().includes(q) ||
-      t.last_name.toLowerCase().includes(q) ||
-      (t.email ?? '').toLowerCase().includes(q) ||
-      (t.property_name ?? '').toLowerCase().includes(q)
+      tenant.first_name.toLowerCase().includes(q)
+      || tenant.last_name.toLowerCase().includes(q)
+      || (tenant.email ?? '').toLowerCase().includes(q)
+      || (tenant.property_name ?? '').toLowerCase().includes(q)
+      || (tenant.guarantor_name ?? '').toLowerCase().includes(q)
     )
   })
 
-  const withLease    = tenants.filter((t) => t.lease_id).length
-  const withUnpaid   = tenants.filter((t) => t.unpaid_count > 0).length
+  const withLease = tenants.filter((tenant) => tenant.lease_id).length
+  const withUnpaid = tenants.filter((tenant) => tenant.unpaid_count > 0).length
+  const withIncompleteFile = tenants.filter((tenant) => getCompletedDossierCount(tenant) < DOSSIER_ITEMS.length).length
 
-  function openAdd()           { setEditing(null); setShowForm(true) }
-  function openEdit(t: Tenant) { setEditing(t); setShowForm(true) }
-  function closeForm()         { setShowForm(false); setEditing(null) }
+  function openAdd() {
+    setEditing(null)
+    setShowForm(true)
+  }
+
+  function openEdit(tenant: Tenant) {
+    setEditing(tenant)
+    setShowForm(true)
+  }
+
+  function closeForm() {
+    setShowForm(false)
+    setEditing(null)
+  }
 
   async function handleSave(data: TenantInput) {
     if (editing) {
-      await window.api.tenants.update(editing.id, data)
+      await window.api.tenants.update(editing.id, {
+        ...buildTenantInputFromTenant(editing),
+        ...data,
+      })
     } else {
       await window.api.tenants.create(data)
     }
+
     closeForm()
+    load()
+  }
+
+  async function handleSaveDossier(data: TenantInput) {
+    if (!dossierTenant) return
+
+    await window.api.tenants.update(dossierTenant.id, {
+      ...buildTenantInputFromTenant(dossierTenant),
+      ...data,
+    })
+
+    setDossierTenant(null)
     load()
   }
 
@@ -90,15 +148,15 @@ export default function Tenants() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Header */}
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-textPrimary">Locataires</h1>
           <p className="text-textMuted text-sm mt-1">
             {tenants.length} locataire{tenants.length !== 1 ? 's' : ''}
             {withLease > 0 && ` · ${withLease} avec bail actif`}
-            {withUnpaid > 0 && ` · `}
-            {withUnpaid > 0 && <span className="text-danger">{withUnpaid} impayé{withUnpaid !== 1 ? 's' : ''}</span>}
+            {withUnpaid > 0 && ' · '}
+            {withUnpaid > 0 && <span className="text-danger">{withUnpaid} impaye{withUnpaid !== 1 ? 's' : ''}</span>}
+            {withIncompleteFile > 0 && ` · ${withIncompleteFile} dossier${withIncompleteFile !== 1 ? 's' : ''} a completer`}
           </p>
         </div>
         <Button onClick={openAdd}>
@@ -107,24 +165,22 @@ export default function Tenants() {
         </Button>
       </div>
 
-      {/* Search */}
       {tenants.length > 0 && (
         <div className="relative max-w-sm">
           <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-textMuted" />
           <Input
             className="pl-9"
-            placeholder="Nom, email, bien…"
+            placeholder="Nom, garant, email, bien..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(event) => setSearch(event.target.value)}
           />
         </div>
       )}
 
-      {/* List */}
       {loading ? (
         <div className="grid grid-cols-2 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-44 bg-surface border border-border rounded-2xl animate-pulse" />
+          {[1, 2, 3, 4].map((index) => (
+            <div key={index} className="h-60 bg-surface border border-border rounded-2xl animate-pulse" />
           ))}
         </div>
       ) : tenants.length === 0 ? (
@@ -132,7 +188,7 @@ export default function Tenants() {
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center gap-2 py-16 text-textMuted">
           <User className="w-8 h-8 opacity-30" />
-          <p className="text-sm">Aucun résultat pour « {search} »</p>
+          <p className="text-sm">Aucun resultat pour "{search}"</p>
         </div>
       ) : (
         <motion.div
@@ -141,39 +197,49 @@ export default function Tenants() {
           animate="show"
           variants={{ hidden: {}, show: { transition: { staggerChildren: 0.05 } } }}
         >
-          {filtered.map((t) => (
+          {filtered.map((tenant) => (
             <TenantCard
-              key={t.id}
-              tenant={t}
-              onEdit={() => openEdit(t)}
-              onDelete={() => setDeleting(t)}
-              onOpenLedger={() => setLedgerTenant(t)}
+              key={tenant.id}
+              tenant={tenant}
+              onEdit={() => openEdit(tenant)}
+              onDelete={() => setDeleting(tenant)}
+              onOpenLedger={() => setLedgerTenant(tenant)}
+              onOpenDossier={() => setDossierTenant(tenant)}
             />
           ))}
         </motion.div>
       )}
 
-      {/* Modals */}
       <AnimatePresence>
         {showForm && (
           <TenantFormModal initial={editing} onSave={handleSave} onClose={closeForm} />
         )}
       </AnimatePresence>
+
       <AnimatePresence>
         {deleting && (
           <DeleteModal tenant={deleting} onConfirm={handleDelete} onClose={() => setDeleting(null)} />
         )}
       </AnimatePresence>
+
       <AnimatePresence>
         {ledgerTenant && (
           <TenantLedgerModal tenant={ledgerTenant} onClose={() => setLedgerTenant(null)} />
         )}
       </AnimatePresence>
+
+      <AnimatePresence>
+        {dossierTenant && (
+          <TenantFileModal
+            tenant={dossierTenant}
+            onSave={handleSaveDossier}
+            onClose={() => setDossierTenant(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }
-
-// ── Empty state ────────────────────────────────────────────────────────────────
 
 function EmptyState({ onAdd }: { onAdd: () => void }) {
   return (
@@ -182,9 +248,9 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
         <Users className="w-8 h-8 text-success" />
       </div>
       <div>
-        <p className="text-lg font-semibold text-textPrimary">Aucun locataire enregistré</p>
+        <p className="text-lg font-semibold text-textPrimary">Aucun locataire enregistre</p>
         <p className="text-sm text-textMuted mt-1">
-          Ajoutez vos locataires, puis créez un bail pour les associer à un bien.
+          Ajoutez un locataire, puis completez son dossier avec garant, contact d'urgence et pieces justificatives.
         </p>
       </div>
       <Button onClick={onAdd}>
@@ -195,112 +261,148 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
   )
 }
 
-// ── Tenant card ────────────────────────────────────────────────────────────────
-
-function TenantCard({ tenant: t, onEdit, onDelete, onOpenLedger }: {
+function TenantCard({
+  tenant,
+  onEdit,
+  onDelete,
+  onOpenLedger,
+  onOpenDossier,
+}: {
   tenant: Tenant
   onEdit: () => void
   onDelete: () => void
   onOpenLedger: () => void
+  onOpenDossier: () => void
 }) {
-  const hasLease   = !!t.lease_id
-  const hasUnpaid  = t.unpaid_count > 0
-  const totalRent  = (t.rent_amount ?? 0) + (t.charges_amount ?? 0)
+  const hasLease = Boolean(tenant.lease_id)
+  const hasUnpaid = tenant.unpaid_count > 0
+  const totalRent = (tenant.rent_amount ?? 0) + (tenant.charges_amount ?? 0)
+  const dossierCompleted = getCompletedDossierCount(tenant)
+  const dossierVariant = getDossierStatusVariant(tenant)
+  const missingItems = getMissingDossierItems(tenant)
+  const guarantorPresent = hasGuarantor(tenant)
 
   return (
     <motion.div
       variants={{
         hidden: { opacity: 0, y: 12 },
-        show:   { opacity: 1, y: 0, transition: { duration: 0.25, ease: 'easeOut' } },
+        show: { opacity: 1, y: 0, transition: { duration: 0.25, ease: 'easeOut' } },
       }}
     >
       <Card className={`group h-full transition-colors duration-200 ${
         hasUnpaid ? 'border-danger/30 hover:border-danger/50' : 'hover:border-primary/40'
       }`}>
-        <CardContent className="pt-5 flex flex-col gap-4">
-          {/* Top : avatar + nom + actions */}
+        <CardContent className="pt-5 flex flex-col gap-4 h-full">
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-center gap-3">
-              <div className={`flex items-center justify-center w-11 h-11 rounded-xl text-sm font-bold shrink-0 uppercase ${avatarColor(t.id)}`}>
-                {initials(t)}
+              <div className={`flex items-center justify-center w-11 h-11 rounded-xl text-sm font-bold shrink-0 uppercase ${avatarColor(tenant.id)}`}>
+                {initials(tenant)}
               </div>
               <div>
                 <p className="text-sm font-semibold text-textPrimary">
-                  {t.first_name} {t.last_name}
+                  {tenant.first_name} {tenant.last_name}
                 </p>
                 <p className="text-xs text-textMuted mt-0.5">
-                  Depuis le {formatDate(t.created_at)}
+                  Depuis le {formatDate(tenant.created_at)}
                 </p>
               </div>
             </div>
             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button onClick={onEdit} className="p-1.5 rounded-lg hover:bg-surfaceHigh text-textMuted hover:text-textPrimary transition-colors">
+              <button
+                onClick={onEdit}
+                className="p-1.5 rounded-lg hover:bg-surfaceHigh text-textMuted hover:text-textPrimary transition-colors"
+              >
                 <Pencil className="w-3.5 h-3.5" />
               </button>
-              <button onClick={onDelete} className="p-1.5 rounded-lg hover:bg-danger/10 text-textMuted hover:text-danger transition-colors">
+              <button
+                onClick={onDelete}
+                className="p-1.5 rounded-lg hover:bg-danger/10 text-textMuted hover:text-danger transition-colors"
+              >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
 
-          {/* Contact */}
-          <div className="flex flex-col gap-1.5">
-            {t.email ? (
-              <div className="flex items-center gap-1.5 text-xs text-textMuted">
-                <Mail className="w-3.5 h-3.5 shrink-0" />
-                <span className="truncate">{t.email}</span>
-              </div>
-            ) : null}
-            {t.phone ? (
-              <div className="flex items-center gap-1.5 text-xs text-textMuted">
-                <Phone className="w-3.5 h-3.5 shrink-0" />
-                <span>{t.phone}</span>
-              </div>
-            ) : null}
-            {!t.email && !t.phone && (
-              <p className="text-xs text-textMuted italic opacity-50">Aucun contact renseigné</p>
+          <div className="flex flex-wrap gap-2">
+            <Badge variant={dossierVariant}>
+              <FileText className="w-3 h-3" />
+              Dossier {dossierCompleted}/{DOSSIER_ITEMS.length}
+            </Badge>
+            {guarantorPresent && (
+              <Badge variant="default">
+                <ShieldCheck className="w-3 h-3" />
+                Garant
+              </Badge>
+            )}
+            {hasUnpaid && (
+              <Badge variant="danger">
+                <AlertCircle className="w-3 h-3" />
+                {tenant.unpaid_count} impaye{tenant.unpaid_count > 1 ? 's' : ''}
+              </Badge>
             )}
           </div>
 
-          {/* Séparateur */}
+          <div className="flex flex-col gap-1.5">
+            {tenant.email ? (
+              <div className="flex items-center gap-1.5 text-xs text-textMuted">
+                <Mail className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">{tenant.email}</span>
+              </div>
+            ) : null}
+            {tenant.phone ? (
+              <div className="flex items-center gap-1.5 text-xs text-textMuted">
+                <Phone className="w-3.5 h-3.5 shrink-0" />
+                <span>{tenant.phone}</span>
+              </div>
+            ) : null}
+            {!tenant.email && !tenant.phone && (
+              <p className="text-xs text-textMuted italic opacity-60">Aucun contact direct renseigne</p>
+            )}
+          </div>
+
+          <div className="rounded-xl border border-border bg-surfaceHigh/40 px-3 py-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs font-medium text-textPrimary">Suivi du dossier</p>
+              <span className="text-[11px] text-textMuted">
+                {missingItems.length === 0 ? 'Complet' : `${missingItems.length} piece${missingItems.length > 1 ? 's' : ''} manquante${missingItems.length > 1 ? 's' : ''}`}
+              </span>
+            </div>
+            <p className="text-xs text-textMuted mt-1.5 line-clamp-2">
+              {missingItems.length === 0
+                ? 'Toutes les pieces principales sont marquees comme recues.'
+                : `Manque: ${missingItems.slice(0, 3).map((item) => item.label).join(', ')}${missingItems.length > 3 ? '...' : ''}`}
+            </p>
+          </div>
+
           <div className="border-t border-border" />
 
-          {/* Bail actif ou non */}
           {hasLease ? (
             <div className="flex flex-col gap-2">
-              {/* Bien */}
               <div className="flex items-center gap-1.5 text-xs">
                 <Building2 className="w-3.5 h-3.5 text-primary shrink-0" />
-                <span className="font-medium text-textPrimary truncate">{t.property_name}</span>
-                <span className="text-textMuted shrink-0">{t.property_city}</span>
+                <span className="font-medium text-textPrimary truncate">{tenant.property_name}</span>
+                <span className="text-textMuted shrink-0">{tenant.property_city}</span>
               </div>
 
-              {/* Loyer + type */}
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5 text-xs text-textMuted">
                   <CalendarDays className="w-3.5 h-3.5 shrink-0" />
-                  <span>Depuis {formatDate(t.lease_start_date!)}</span>
+                  <span>Depuis {formatDate(tenant.lease_start_date!)}</span>
                 </div>
                 <Badge variant="muted" className="text-[10px]">
-                  {LEASE_TYPE_LABELS[t.lease_type ?? ''] ?? t.lease_type}
+                  {LEASE_TYPE_LABELS[tenant.lease_type ?? ''] ?? tenant.lease_type}
                 </Badge>
               </div>
 
-              {/* Montant + statut paiement */}
               <div className="flex items-center justify-between mt-0.5">
                 <div className="flex items-center gap-1 text-sm font-semibold text-textPrimary">
                   <Euro className="w-3.5 h-3.5 text-primary" />
                   {formatCurrency(totalRent)} / mois
                 </div>
-                {hasUnpaid ? (
-                  <div className="flex items-center gap-1 text-xs text-danger">
-                    <AlertCircle className="w-3.5 h-3.5" />
-                    {t.unpaid_count} impayé{t.unpaid_count > 1 ? 's' : ''}
-                  </div>
-                ) : (
+                {!hasUnpaid && (
                   <div className="flex items-center gap-1 text-xs text-success">
                     <CheckCircle2 className="w-3.5 h-3.5" />
-                    À jour
+                    A jour
                   </div>
                 )}
               </div>
@@ -312,43 +414,59 @@ function TenantCard({ tenant: t, onEdit, onDelete, onOpenLedger }: {
             </div>
           )}
 
-          {hasLease && (
-            <Button variant="outline" size="sm" onClick={onOpenLedger} className="w-full">
-              <ScrollText className="w-3.5 h-3.5" />
-              Compte locataire
+          <div className={`grid gap-2 mt-auto ${hasLease ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            <Button variant="outline" size="sm" onClick={onOpenDossier} className="w-full">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              Dossier locatif
             </Button>
-          )}
+            {hasLease && (
+              <Button variant="outline" size="sm" onClick={onOpenLedger} className="w-full">
+                <ScrollText className="w-3.5 h-3.5" />
+                Compte locataire
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
     </motion.div>
   )
 }
 
-// ── Form modal ─────────────────────────────────────────────────────────────────
-
-function TenantFormModal({ initial, onSave, onClose }: {
+function TenantFormModal({
+  initial,
+  onSave,
+  onClose,
+}: {
   initial: Tenant | null
   onSave: (data: TenantInput) => Promise<void>
   onClose: () => void
 }) {
   const [form, setForm] = useState<TenantInput>(
     initial
-      ? { first_name: initial.first_name, last_name: initial.last_name, email: initial.email ?? '', phone: initial.phone ?? '' }
+      ? {
+          first_name: initial.first_name,
+          last_name: initial.last_name,
+          email: initial.email ?? '',
+          phone: initial.phone ?? '',
+        }
       : emptyForm
   )
-  const [error, setError]   = useState('')
+  const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
 
-  function set(field: keyof TenantInput, value: string) {
-    setForm((f) => ({ ...f, [field]: value }))
+  function setField(field: keyof TenantInput, value: string) {
+    setForm((current) => ({ ...current, [field]: value }))
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault()
     setError('')
-    if (!form.first_name.trim()) return setError('Le prénom est requis.')
-    if (!form.last_name.trim())  return setError('Le nom est requis.')
+
+    if (!form.first_name.trim()) return setError('Le prenom est requis.')
+    if (!form.last_name.trim()) return setError('Le nom est requis.')
+
     setSaving(true)
+
     try {
       await onSave({
         ...form,
@@ -367,7 +485,7 @@ function TenantFormModal({ initial, onSave, onClose }: {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
+      onClick={(event) => event.target === event.currentTarget && onClose()}
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.96, y: 12 }}
@@ -388,29 +506,55 @@ function TenantFormModal({ initial, onSave, onClose }: {
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-6">
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-textMuted">Prénom</label>
-              <Input value={form.first_name} onChange={(e) => set('first_name', e.target.value)} placeholder="Jean" autoFocus />
+              <label className="text-xs font-medium text-textMuted">Prenom</label>
+              <Input
+                value={form.first_name}
+                onChange={(event) => setField('first_name', event.target.value)}
+                placeholder="Jean"
+                autoFocus
+              />
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-textMuted">Nom</label>
-              <Input value={form.last_name} onChange={(e) => set('last_name', e.target.value)} placeholder="Dupont" />
+              <Input
+                value={form.last_name}
+                onChange={(event) => setField('last_name', event.target.value)}
+                placeholder="Dupont"
+              />
             </div>
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-textMuted">Adresse e-mail — optionnel</label>
+            <label className="text-xs font-medium text-textMuted">Adresse e-mail - optionnel</label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-textMuted" />
-              <Input className="pl-9" type="email" value={form.email ?? ''} onChange={(e) => set('email', e.target.value)} placeholder="jean.dupont@email.fr" />
+              <Input
+                className="pl-9"
+                type="email"
+                value={form.email ?? ''}
+                onChange={(event) => setField('email', event.target.value)}
+                placeholder="jean.dupont@email.fr"
+              />
             </div>
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-textMuted">Téléphone — optionnel</label>
+            <label className="text-xs font-medium text-textMuted">Telephone - optionnel</label>
             <div className="relative">
               <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-textMuted" />
-              <Input className="pl-9" type="tel" value={form.phone ?? ''} onChange={(e) => set('phone', e.target.value)} placeholder="06 12 34 56 78" />
+              <Input
+                className="pl-9"
+                type="tel"
+                value={form.phone ?? ''}
+                onChange={(event) => setField('phone', event.target.value)}
+                placeholder="06 12 34 56 78"
+              />
             </div>
+          </div>
+
+          <div className="rounded-xl border border-border bg-surfaceHigh/40 px-3 py-2.5 text-xs text-textMuted">
+            Le garant, le contact d'urgence et les pieces justificatives se gerent ensuite via le bouton
+            {' '}<span className="text-textPrimary font-medium">Dossier locatif</span>.
           </div>
 
           {error && <p className="text-xs text-danger bg-danger/10 rounded-lg px-3 py-2">{error}</p>}
@@ -428,9 +572,11 @@ function TenantFormModal({ initial, onSave, onClose }: {
   )
 }
 
-// ── Delete modal ───────────────────────────────────────────────────────────────
-
-function DeleteModal({ tenant, onConfirm, onClose }: {
+function DeleteModal({
+  tenant,
+  onConfirm,
+  onClose,
+}: {
   tenant: Tenant
   onConfirm: () => void
   onClose: () => void
@@ -441,7 +587,7 @@ function DeleteModal({ tenant, onConfirm, onClose }: {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
+      onClick={(event) => event.target === event.currentTarget && onClose()}
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.96 }}
@@ -457,7 +603,7 @@ function DeleteModal({ tenant, onConfirm, onClose }: {
           <div>
             <p className="text-sm font-semibold text-textPrimary">Supprimer ce locataire ?</p>
             <p className="text-xs text-textMuted mt-0.5">
-              « {tenant.first_name} {tenant.last_name} » sera supprimé définitivement.
+              "{tenant.first_name} {tenant.last_name}" sera supprime definitivement.
             </p>
           </div>
         </div>
