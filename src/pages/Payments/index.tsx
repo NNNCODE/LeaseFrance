@@ -145,7 +145,7 @@ export default function Payments() {
       && payment.charges_amount >= payment.lease_charges_amount
 
     const baseData = {
-      landlordName:    profile?.name ?? 'Propri\u00e9taire',
+      landlordName:    profile?.name ?? 'Propriétaire',
       landlordAddress: profile?.address,
       landlordPhone:   profile?.phone,
       tenantFirstName: payment.tenant_first_name,
@@ -409,7 +409,7 @@ function PaymentRow({ payment: p, onMarkPaid, onEdit, onDelete, onGenerateDocume
             {p.status === 'paid' && (
               <button
                 onClick={onGenerateDocument}
-                title="G\u00e9n\u00e9rer quittance ou re\u00e7u"
+                title="Générer quittance ou reçu"
                 className="p-1.5 rounded-lg hover:bg-accent/10 text-textMuted hover:text-accent transition-colors"
               >
                 <Receipt className="w-3.5 h-3.5" />

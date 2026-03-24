@@ -11,7 +11,7 @@ interface AuthState {
   login:         (password: string) => Promise<boolean>
   setup:         (password: string, name: string, email: string) => Promise<boolean>
   lock:          () => void
-  updateProfile: (name: string, email: string, address?: string, phone?: string) => Promise<boolean>
+  updateProfile: (name: string, email: string, address?: string, city?: string, phone?: string, signatureImage?: string) => Promise<boolean>
   changePassword:(oldPwd: string, newPwd: string) => Promise<boolean>
   deleteAccount: (password: string) => Promise<boolean>
 }
@@ -53,11 +53,17 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   lock: () => set({ status: 'locked', error: null }),
 
-  updateProfile: async (name, email, address?, phone?) => {
-    const ok = await window.api.auth.updateProfile(name, email, address, phone)
+  updateProfile: async (name, email, address?, city?, phone?, signatureImage?) => {
+    const ok = await window.api.auth.updateProfile(name, email, address, city, phone, signatureImage)
     if (ok) set((s) => ({
       profile: s.profile
-        ? { ...s.profile, name, email, ...(address !== undefined && { address }), ...(phone !== undefined && { phone }) }
+        ? {
+            ...s.profile, name, email,
+            ...(address !== undefined && { address }),
+            ...(city !== undefined && { city }),
+            ...(phone !== undefined && { phone }),
+            ...(signatureImage !== undefined && { signatureImage }),
+          }
         : null,
     }))
     return ok

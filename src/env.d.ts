@@ -4,7 +4,9 @@ interface UserProfile {
   name: string
   email: string
   address: string
+  city: string
   phone: string
+  signatureImage: string
   createdAt: string
 }
 
@@ -160,7 +162,7 @@ interface Window {
       setup:         (pwd: string, name: string, email: string) => Promise<boolean>
       verify:        (pwd: string) => Promise<boolean>
       change:        (old: string, next: string) => Promise<boolean>
-      updateProfile: (name: string, email: string, address?: string, phone?: string) => Promise<boolean>
+      updateProfile: (name: string, email: string, address?: string, city?: string, phone?: string, signatureImage?: string) => Promise<boolean>
       delete:        (pwd: string) => Promise<boolean>
     }
     properties: {

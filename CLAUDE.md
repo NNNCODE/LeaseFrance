@@ -1,314 +1,191 @@
-# LeaseFrance — Guide Claude
+# CLAUDE.md
 
-## Présentation du projet
+## Purpose
 
-Application desktop Windows pour **propriétaires bailleurs privés en France**.
-Gestion complète : locataires, baux, loyers, quittances, conformité légale française.
+LeaseFrance is a Windows desktop app for private landlords in France.
+It manages properties, tenants, leases, payments, IRL reference data, and PDF rent documents.
 
-## Stack technique
+This file is for Claude Code. Keep it short, concrete, and repo-specific.
 
-| Couche | Technologie |
-|---|---|
-| Desktop runtime | **Electron** |
-| Frontend framework | **React 18 + TypeScript** |
-| Build tool | **electron-vite** (`electron.vite.config.ts`) |
-| Styles | **Tailwind CSS v3** |
-| Composants UI | **shadcn/ui** (source copiée dans `src/components/ui/`) |
-| Animations | **Framer Motion** |
-| Graphiques | **Recharts** |
-| Icônes | **Lucide React** |
-| Base de données | **SQLite** via `better-sqlite3` |
-| PDF | **@react-pdf/renderer** |
-| State management | **Zustand** |
-| Formulaires | **React Hook Form + Zod** (pas encore utilisé) |
-| Routing | **React Router v6** |
+## Working Style
 
-## Architecture des dossiers
+- Prefer small targeted changes over broad refactors.
+- Keep the app local-first. Do not introduce remote services, cloud sync, or telemetry.
+- Preserve current architecture unless there is a clear defect.
+- Verify assumptions from code, not from this file.
+- Use ASCII in docs and code comments unless a file already requires French accents.
 
-```
-lease-france/
-├── electron/
-│   ├── main.ts          # Processus principal Electron + IPC handlers
-│   ├── preload.ts       # Bridge sécurisé renderer ↔ main (contextBridge)
-│   ├── auth.ts          # Authentification : hash scrypt, auth.json dans %APPDATA%
-│   └── db/
-│       ├── database.ts   # Init DB + schéma SQLite embarqué dans initSchema()
-│       └── queries/     # Requêtes SQL organisées par module
-├── scripts/
-│   ├── dev.mjs          # Lance electron-vite en supprimant ELECTRON_RUN_AS_NODE
-│   ├── build.mjs        # Build production + obfuscation
-│   └── obfuscate.mjs    # Obfuscation JS du main et preload
-├── src/
-│   ├── main.tsx         # Point d'entrée React
-│   ├── App.tsx          # Router principal + flux auth (Login → Setup → App)
-│   ├── env.d.ts         # Types TypeScript pour window.api
-│   ├── components/
-│   │   ├── ui/          # Composants shadcn/ui (Button, Input, Card, Badge…)
-│   │   ├── layout/      # Sidebar, Topbar, Layout wrapper
-│   │   └── shared/      # Composants réutilisables métier
-│   ├── pages/
-│   │   ├── Login/       # Écran de connexion (email + mot de passe)
-│   │   ├── Setup/       # Inscription compte propriétaire (formulaire unique)
-│   │   ├── Dashboard/   # Vue d'ensemble + KPIs + graphiques
-│   │   ├── Settings/    # Profil, changement MDP, suppression compte
-│   │   ├── Properties/  # CRUD biens immobiliers
-│   │   ├── Tenants/     # CRUD locataires + liaison baux
-│   │   ├── Leases/      # CRUD baux + révision IRL
-│   │   ├── Payments/    # Suivi loyers, marquage payé, résumé
-│   │   └── Documents/   # Génération PDF quittances
-│   ├── stores/
-│   │   └── useAuthStore.ts  # État auth : loading/setup/locked/unlocked
-│   ├── hooks/           # Custom React hooks
-│   ├── lib/
-│   │   ├── utils.ts     # cn(), formatCurrency(), formatDate(), formatMonth()
-│   │   ├── irl.ts       # Calcul révision IRL (INSEE)
-│   │   └── pdf/         # Templates PDF
-│   └── types/           # Types TypeScript globaux
-├── public/
-├── CLAUDE.md
-├── electron.vite.config.ts   # Config electron-vite (NB: points, pas tirets)
-├── electron-builder.yml      # Config packaging .exe (ASAR, NSIS)
-├── tailwind.config.ts
-├── tsconfig.json
-├── tsconfig.node.json        # Pour electron.vite.config.ts (CommonJS)
-├── tsconfig.web.json         # Pour le renderer React (ESM + JSX)
-├── postcss.config.cjs        # PostCSS en CommonJS (évite conflit ESM)
-└── package.json              # Pas de "type":"module" (incompatible Electron)
-```
+## Tech Stack
 
-## Design system
+- Electron 31
+- React 18
+- TypeScript
+- electron-vite
+- Tailwind CSS
+- Zustand
+- SQLite via `better-sqlite3`
+- `@react-pdf/renderer`
 
-### Thème : Dark élégant (défaut)
-
-```ts
-// Palette principale
-colors: {
-  background:  '#0F0F13',   // Fond principal
-  surface:     '#1A1A24',   // Cartes, panneaux
-  surfaceHigh: '#22222F',   // Éléments surélevés, hover
-  border:      '#2A2A3A',   // Séparateurs
-  primary:     '#6366F1',   // Indigo — actions principales
-  accent:      '#F59E0B',   // Ambre — highlights, badges
-  success:     '#10B981',   // Vert — paiements OK
-  warning:     '#F59E0B',   // Orange — retards
-  danger:      '#EF4444',   // Rouge — impayés
-  textPrimary: '#E2E8F0',   // Texte principal
-  textMuted:   '#64748B',   // Texte secondaire
-}
-```
-
-### Principes UI
-
-- **Densité moyenne** : pas trop compact, pas trop aéré
-- **Coins arrondis** : `rounded-xl` pour les cartes, `rounded-lg` pour les boutons
-- **Ombres subtiles** : `shadow-lg shadow-black/20`
-- **Animations** : transitions douces Framer Motion (durée 200-300ms)
-- **Glassmorphism** ponctuel : `backdrop-blur` sur modals et overlays
-- Chaque page doit avoir un **header clair** avec titre + action principale (bouton CTA)
-
-### Layout
-
-```
-┌──────────────┬──────────────────────────────────────┐
-│   Sidebar    │  Topbar (recherche globale + notifs)  │
-│   240px      ├──────────────────────────────────────┤
-│              │                                      │
-│  Navigation  │   Contenu principal                  │
-│  principale  │   padding: 24px                      │
-│              │                                      │
-│  (icône +    │                                      │
-│   label)     │                                      │
-└──────────────┴──────────────────────────────────────┘
-```
-
-## Domaine métier : règles France
-
-### Bail (contrat de location)
-- **Bail vide** : durée minimale 3 ans (loi ALUR)
-- **Bail meublé** : durée minimale 1 an (9 mois si étudiant)
-- **Bail mobilité** : 1 à 10 mois, non renouvelable
-- Dépôt de garantie : max 1 mois de loyer HC (vide), 2 mois (meublé)
-
-### Révision de loyer (IRL)
-- Révision annuelle basée sur l'**Indice de Référence des Loyers** (INSEE)
-- Formule : `nouveau_loyer = ancien_loyer × (IRL_nouveau / IRL_référence)`
-- IRL mis à jour trimestriellement (T1/T2/T3/T4)
-- L'app doit alerter quand une révision est applicable
-
-### Quittance de loyer
-- Obligation légale de délivrer sur demande du locataire (gratuit)
-- Doit contenir : période, montant HC, charges, total TTC, adresse, parties
-
-### Encadrement des loyers
-- Applicable à Paris, Lyon, Bordeaux, Montpellier, etc.
-- Afficher un avertissement si le bien est en zone tendue
-
-### Déclaration fiscale
-- Revenus fonciers : **formulaire 2044** (régime réel) ou micro-foncier (<15 000€/an)
-- Export des données pour faciliter la déclaration
-
-## Conventions de code
-
-### TypeScript
-- Types stricts : `strict: true` dans tsconfig
-- Pas de `any` sauf cas exceptionnels documentés
-- Interfaces pour les entités métier, `type` pour les unions/helpers
-
-### Composants React
-- Functional components uniquement
-- Props typées avec interface nommée `{ComponentName}Props`
-- Fichier par composant, export nommé (pas default pour les composants partagés)
-
-### Nommage
-- Fichiers composants : `PascalCase.tsx`
-- Fichiers utilitaires : `camelCase.ts`
-- Stores Zustand : `use{Name}Store.ts`
-- Hooks : `use{Name}.ts`
-
-### Base de données (SQLite)
-- Toutes les requêtes dans `electron/db/queries/`
-- Utiliser des requêtes préparées (jamais de concaténation SQL)
-- Migrations numérotées : `001_init.sql`, `002_add_irl.sql`
-
-### Communication Electron
-- Toujours passer par `ipcRenderer`/`ipcMain` via `preload.ts`
-- Exposer uniquement les fonctions nécessaires dans `contextBridge`
-- Nommage des canaux IPC : `module:action` (ex: `tenants:getAll`, `payments:create`)
-
-## Entités principales (schéma SQLite)
-
-```sql
--- Biens immobiliers
-properties (id, name, address, city, zip, type, area_m2, created_at)
-
--- Locataires
-tenants (id, first_name, last_name, email, phone, created_at)
-
--- Baux
-leases (id, property_id, tenant_id, type, start_date, end_date,
-        rent_amount, charges_amount, deposit_amount, irl_reference_index,
-        irl_reference_quarter, status, created_at)
-
--- Paiements
-payments (id, lease_id, period_month, period_year, rent_amount,
-          charges_amount, payment_date, payment_method, status, notes)
-
--- Documents générés
-documents (id, lease_id, type, generated_at, file_path)
-
--- Indices IRL
-irl_indices (id, year, quarter, value, published_at)
-```
-
-## Système d'authentification
-
-### Flux d'écrans
-```
-init()
-  ├── hasPassword = false  →  status: 'setup'   →  Login (+ bouton "Créer un compte" → Setup)
-  └── hasPassword = true   →  status: 'locked'  →  Login
-                                                       └── login OK → status: 'unlocked' → App
-```
-
-- **Toujours afficher Login en premier** — même si aucun compte n'existe encore
-- Login demande : **email + mot de passe** (l'email est vérifié contre le profil stocké)
-- Setup (inscription) : formulaire unique avec nom, email, mot de passe, confirmation
-- Après inscription réussie → directement `status: 'unlocked'`
-
-### Stockage
-- `electron/auth.ts` stocke les données dans `%APPDATA%/LeaseFrance/auth.json`
-- Mot de passe haché avec `crypto.scryptSync` + sel aléatoire (32 bytes)
-- Comparaison avec `timingSafeEqual` (protection timing attacks)
-- Format : `{ hash, salt, name, email, createdAt }`
-
-### Canaux IPC auth
-| Canal | Description |
-|---|---|
-| `auth:hasPassword` | Vérifie si un compte existe |
-| `auth:getProfile` | Retourne `{ name, email, createdAt }` |
-| `auth:setup` | Crée le compte (pwd, name, email) |
-| `auth:verify` | Vérifie le mot de passe |
-| `auth:change` | Change le mot de passe (old, new) |
-| `auth:updateProfile` | Met à jour nom et email |
-| `auth:delete` | Supprime le compte (nécessite le mot de passe) |
-
-### Store Zustand (`useAuthStore`)
-```ts
-status: 'loading' | 'setup' | 'locked' | 'unlocked'
-profile: { name, email, createdAt } | null
-```
-
-## Sécurité & protection du code
-
-### Mesures en place
-| Mesure | Où | Effet |
-|---|---|---|
-| DevTools désactivés | `electron/main.ts` | Bloque F12, Ctrl+Shift+I en production |
-| Menu contextuel bloqué | `electron/main.ts` | Pas de clic droit en production |
-| Menu applicatif supprimé | `electron/main.ts` | Pas d'accès via la barre de menu |
-| ASAR packaging | `electron-builder.yml` | Code empaqueté, non lisible directement |
-| Obfuscation JS | `scripts/obfuscate.mjs` | Main + preload rendus illisibles |
-| Minification Vite | automatique en build | Renderer minifié |
-
-### Principe : isDev
-```ts
-const isDev = process.env['ELECTRON_RENDERER_URL'] !== undefined
-```
-Toutes les protections sont actives uniquement quand `isDev === false` (production).
-En développement, DevTools restent accessibles normalement.
-
-### Commandes build
-```bash
-npm run build   # compile + obfuscate (sans packager)
-npm run dist    # build + electron-builder → génère le .exe installable
-```
-
-### Note VSCode / Claude Code (CRITIQUE)
-L'environnement VSCode/Claude Code définit `ELECTRON_RUN_AS_NODE=1`, ce qui désactive les APIs Electron.
-- `require('electron')` retourne un string (chemin) au lieu de l'API
-- `process.type` est `undefined` au lieu de `'browser'`
-- **Solution** : `scripts/dev.mjs` supprime (pas vide — supprime) la variable avant de lancer electron-vite
-- `cross-env ELECTRON_RUN_AS_NODE=` (vide) ne fonctionne pas — il faut `delete env.ELECTRON_RUN_AS_NODE`
-
-### Contraintes esbuild (preload.ts)
-Les fonctions arrow dans `preload.ts` doivent être sur **une seule ligne** — esbuild rejette les annotations de type multilignes avant `=>`.
-
-## Commandes de développement
+## Key Commands
 
 ```bash
-# Installer les dépendances
 npm install
-
-# Développement (Vite + Electron en parallèle)
 npm run dev
-
-# Build production (.exe Windows)
+npm run typecheck
 npm run build
+npm run dist
+```
 
-# Linter
-npm run lint
+Notes:
 
-# Type check
+- There is no `lint` script in `package.json`.
+- `npm run dev` goes through `scripts/dev.mjs`.
+- `npm run dist` builds first, then packages with `electron-builder`.
+
+## Critical Runtime Constraint
+
+VS Code / Claude Code may set `ELECTRON_RUN_AS_NODE=1`.
+This breaks Electron APIs during local development.
+
+- Do not replace the current dev flow with `cross-env ELECTRON_RUN_AS_NODE=`.
+- `scripts/dev.mjs` must keep deleting `ELECTRON_RUN_AS_NODE` from the child environment before starting Electron.
+
+## Repo Map
+
+- `electron/main.ts`
+  Main process, BrowserWindow setup, and all IPC registration.
+- `electron/preload.ts`
+  Safe API exposed to the renderer through `window.api`.
+- `electron/auth.ts`
+  Local account storage and password verification.
+- `electron/db/database.ts`
+  SQLite connection and schema initialization.
+- `electron/db/queries/*`
+  Database access layer.
+- `src/App.tsx`
+  Top-level auth gate and routes.
+- `src/stores/useAuthStore.ts`
+  Auth lifecycle and profile state.
+- `src/pages/*`
+  Page-level UI.
+- `src/lib/pdf/quittance.tsx`
+  Full-payment rent receipt PDF.
+- `src/lib/pdf/recu.tsx`
+  Partial-payment receipt PDF.
+- `src/pages/Documents/index.tsx`
+  Document generation flow and payment-to-document logic.
+- `src/env.d.ts`
+  Renderer-side entity types and `window.api` typings.
+
+## Architecture Rules
+
+- Renderer code must not use Node or Electron APIs directly.
+- New renderer capabilities must go through all of these layers:
+  1. `electron/main.ts`
+  2. `electron/preload.ts`
+  3. `src/env.d.ts`
+  4. renderer usage in `src/*`
+- If you add or rename DB fields, update:
+  - schema in `electron/db/database.ts`
+  - relevant query files in `electron/db/queries/`
+  - entity typings in `src/env.d.ts`
+  - forms, tables, and PDF data mapping in the renderer
+
+## Auth Invariants
+
+- The app always shows the login screen first when auth is not unlocked.
+- If no account exists, login can route to setup.
+- `src/App.tsx` and `src/stores/useAuthStore.ts` are the source of truth for this flow.
+- Auth statuses are:
+  - `loading`
+  - `setup`
+  - `locked`
+  - `unlocked`
+
+Do not change the auth entry flow casually. Several screens assume this sequence.
+
+## Database Notes
+
+- SQLite lives in `app.getPath('userData')/leasefrance.db`.
+- Schema creation is currently done in `initSchema()` inside `electron/db/database.ts`.
+- There is no real migration system yet.
+- Schema changes must be backward-safe and idempotent.
+
+Current core tables:
+
+- `properties`
+- `tenants`
+- `leases`
+- `payments`
+- `documents`
+- `irl_indices`
+
+## Document and French Domain Rules
+
+These rules already affect product behavior and should stay consistent across UI, storage, and PDF output.
+
+- Full payment for a period produces a `quittance`.
+- Partial payment produces a `recu`.
+- Current detection lives in `src/pages/Documents/index.tsx` via `isFullPayment()`.
+- PDF generation only starts from payments marked `paid`.
+- If payment semantics change, update both:
+  - `src/pages/Documents/index.tsx`
+  - `src/lib/pdf/quittance.tsx`
+  - `src/lib/pdf/recu.tsx`
+
+Be careful with French rental terminology. `quittance` and `recu` are not interchangeable.
+
+## UI Conventions
+
+- Reuse local UI primitives from `src/components/ui/` before creating new ones.
+- Keep page composition consistent with existing layout files under `src/components/layout/`.
+- Follow current route structure instead of adding one-off entry points.
+- Prefer straightforward React state and effects. Do not introduce new abstractions unless duplication is real.
+
+## Security and Packaging
+
+- Production disables DevTools and the context menu in `electron/main.ts`.
+- The production app is frameless.
+- Packaging uses `electron-builder.yml`.
+- Build scripts also run JS obfuscation for main/preload output.
+
+Do not weaken production protections unless the task explicitly requires it.
+
+## Data Shape Discipline
+
+Several pages depend on joined fields returned by query files, not only on base table columns.
+When changing query output, check:
+
+- `src/env.d.ts`
+- the related page in `src/pages/`
+- document generation in `src/pages/Documents/index.tsx`
+
+## Validation Checklist
+
+For most TypeScript changes, run:
+
+```bash
 npm run typecheck
 ```
 
-## Priorités de développement
+Also do targeted checks when relevant:
 
-1. **Phase 1** ✅ — Structure & Layout : sidebar, routing, thème dark
-2. **Phase 1b** ✅ — Authentification : login, inscription, paramètres compte, suppression
-3. **Phase 2** ✅ — Propriétés (`/properties`) : CRUD biens immobiliers
-4. **Phase 3** ✅ — Locataires (`/tenants`) : CRUD + liaison aux baux
-5. **Phase 4** ✅ — Baux (`/leases`) : création, révision IRL (calcul INSEE, modal, alertes Dashboard)
-6. **Phase 5** ✅ — Paiements (`/payments`) : saisie, historique, marquage payé, résumé
-7. **Phase 6** ✅ — Documents PDF (`/documents`) : quittances via @react-pdf/renderer
-8. **Phase 7** ✅ — Dashboard (`/dashboard`) : KPIs réels, graphiques Recharts, alertes IRL
-9. **Phase 8** — Export fiscal : données pour déclaration 2044
+- Electron or preload changes: `npm run build`
+- PDF changes: generate at least one sample document in the app
+- Query or schema changes: verify the affected page still loads and CRUD still works
 
-### Fonctionnalités restantes
-- Alertes d'expiration de bail sur le Dashboard
-- Flux "Mot de passe oublié"
-- Recherche globale dans la Topbar
-- Encadrement des loyers (avertissements zones tendues)
-- Export données (CSV/Excel)
-- Graphiques statistiques enrichis
-- Système de notifications
+## What Not To Assume
+
+- Do not assume a missing feature described in old docs actually exists.
+- Do not assume there is a migration framework.
+- Do not assume there is a linter or test suite beyond TypeScript checks.
+- Do not assume fields in the PDF templates are legally correct without checking the current implementation and product intent.
+
+## Preferred Output From Claude Code
+
+When making changes:
+
+- explain the real files touched
+- mention any cross-layer updates
+- state what was verified
+- call out risks if build or manual checks were not run

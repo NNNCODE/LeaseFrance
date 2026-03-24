@@ -11,7 +11,9 @@ interface AuthData {
   name: string
   email: string
   address: string
+  city: string
   phone: string
+  signatureImage: string
   createdAt: string
 }
 
@@ -19,7 +21,9 @@ export interface UserProfile {
   name: string
   email: string
   address: string
+  city: string
   phone: string
+  signatureImage: string
   createdAt: string
 }
 
@@ -34,7 +38,11 @@ export function hasPassword(): boolean {
 export function getProfile(): UserProfile | null {
   if (!hasPassword()) return null
   const data: AuthData = JSON.parse(readFileSync(AUTH_FILE, 'utf-8'))
-  return { name: data.name, email: data.email, address: data.address ?? '', phone: data.phone ?? '', createdAt: data.createdAt }
+  return {
+    name: data.name, email: data.email, address: data.address ?? '',
+    city: data.city ?? '', phone: data.phone ?? '',
+    signatureImage: data.signatureImage ?? '', createdAt: data.createdAt,
+  }
 }
 
 export function setupPassword(
@@ -51,7 +59,9 @@ export function setupPassword(
     name: name.trim(),
     email: email.trim().toLowerCase(),
     address: '',
+    city: '',
     phone: '',
+    signatureImage: '',
     createdAt: new Date().toISOString(),
   }
   writeFileSync(AUTH_FILE, JSON.stringify(data), 'utf-8')
@@ -76,13 +86,15 @@ export function changePassword(oldPassword: string, newPassword: string): boolea
   return true
 }
 
-export function updateProfile(name: string, email: string, address?: string, phone?: string): boolean {
+export function updateProfile(name: string, email: string, address?: string, city?: string, phone?: string, signatureImage?: string): boolean {
   if (!hasPassword()) return false
   const data: AuthData = JSON.parse(readFileSync(AUTH_FILE, 'utf-8'))
   data.name  = name.trim()
   data.email = email.trim().toLowerCase()
-  if (address !== undefined) data.address = address.trim()
-  if (phone !== undefined)   data.phone   = phone.trim()
+  if (address !== undefined)        data.address        = address.trim()
+  if (city !== undefined)           data.city            = city.trim()
+  if (phone !== undefined)          data.phone           = phone.trim()
+  if (signatureImage !== undefined) data.signatureImage  = signatureImage
   writeFileSync(AUTH_FILE, JSON.stringify(data), 'utf-8')
   return true
 }

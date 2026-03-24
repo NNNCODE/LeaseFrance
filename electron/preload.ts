@@ -12,7 +12,7 @@ contextBridge.exposeInMainWorld('api', {
     setup:         (pwd: string, name: string, email: string) => ipcRenderer.invoke('auth:setup', pwd, name, email),
     verify:        (pwd: string) => ipcRenderer.invoke('auth:verify', pwd),
     change:        (old: string, next: string) => ipcRenderer.invoke('auth:change', old, next),
-    updateProfile: (name: string, email: string, address?: string, phone?: string) => ipcRenderer.invoke('auth:updateProfile', name, email, address, phone),
+    updateProfile: (name: string, email: string, address?: string, city?: string, phone?: string, signatureImage?: string) => ipcRenderer.invoke('auth:updateProfile', name, email, address, city, phone, signatureImage),
     delete:        (pwd: string) => ipcRenderer.invoke('auth:delete', pwd),
   },
   properties: {

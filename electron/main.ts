@@ -77,7 +77,7 @@ ipcMain.handle('auth:getProfile',  () => getProfile())
 ipcMain.handle('auth:setup',    (_e, pwd: string, name: string, email: string) => setupPassword(pwd, name, email))
 ipcMain.handle('auth:verify',   (_e, pwd: string)                              => verifyPassword(pwd))
 ipcMain.handle('auth:change',   (_e, oldPwd: string, newPwd: string)           => changePassword(oldPwd, newPwd))
-ipcMain.handle('auth:updateProfile', (_e, name: string, email: string, address?: string, phone?: string) => updateProfile(name, email, address, phone))
+ipcMain.handle('auth:updateProfile', (_e, name: string, email: string, address?: string, city?: string, phone?: string, signatureImage?: string) => updateProfile(name, email, address, city, phone, signatureImage))
 ipcMain.handle('auth:delete',   (_e, pwd: string)                              => deleteAccount(pwd))
 
 // Properties IPC

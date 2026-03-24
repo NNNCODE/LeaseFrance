@@ -1,5 +1,5 @@
 import {
-  Document, Page, Text, View, StyleSheet,
+  Document, Page, Text, View, StyleSheet, Image,
   Svg, Path, Rect, Circle, Ellipse,
 } from '@react-pdf/renderer'
 
@@ -10,7 +10,7 @@ const UNITS = ['', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'huit
 const TENS = ['', 'dix', 'vingt', 'trente', 'quarante', 'cinquante', 'soixante', 'soixante', 'quatre-vingt', 'quatre-vingt']
 
 function numberToFrenchWords(n: number): string {
-  if (n === 0) return 'z\u00e9ro'
+  if (n === 0) return 'zéro'
   const euros = Math.floor(n)
   const cents = Math.round((n - euros) * 100)
   let result = intToWords(euros) + ' euro' + (euros > 1 ? 's' : '')
@@ -232,7 +232,9 @@ const s = StyleSheet.create({
 export interface RecuData {
   landlordName: string
   landlordAddress?: string
+  landlordCity?: string
   landlordPhone?: string
+  landlordSignature?: string
   tenantFirstName: string
   tenantLastName: string
   propertyName: string
@@ -249,23 +251,23 @@ export interface RecuData {
 }
 
 const MONTHS = [
-  'janvier','f\u00e9vrier','mars','avril','mai','juin',
-  'juillet','ao\u00fbt','septembre','octobre','novembre','d\u00e9cembre',
+  'janvier','février','mars','avril','mai','juin',
+  'juillet','août','septembre','octobre','novembre','décembre',
 ]
 
 const METHODS: Record<string, string> = {
   virement:    'Virement bancaire',
-  cheque:      'Ch\u00e8que',
-  especes:     'Esp\u00e8ces',
-  prelevement: 'Pr\u00e9l\u00e8vement automatique',
+  cheque:      'Chèque',
+  especes:     'Espèces',
+  prelevement: 'Prélèvement automatique',
 }
 
 function formatEur(n: number) {
-  return n.toFixed(2).replace('.', ',') + ' \u20ac'
+  return n.toFixed(2).replace('.', ',') + ' €'
 }
 
 function formatDateFr(iso: string | null) {
-  if (!iso) return '\u2014'
+  if (!iso) return '—'
   const d = new Date(iso)
   return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`
 }
@@ -278,6 +280,7 @@ export function RecuPDF({ data }: { data: RecuData }) {
   const genDate = formatDateFr(new Date().toISOString())
   const totalInWords = numberToFrenchWords(total)
   const hasCharges = data.chargesAmount > 0
+  const landlordCity = data.landlordCity?.trim() || data.propertyCity
   const addr = data.propertyZip
     ? `${data.propertyAddress}, ${data.propertyZip} ${data.propertyCity}`
     : `${data.propertyAddress}, ${data.propertyCity}`
@@ -293,15 +296,15 @@ export function RecuPDF({ data }: { data: RecuData }) {
           </View>
           <View style={s.headerRight}>
             <View style={s.hFieldRow}>
-              <Text style={s.hLabel}>{'Nom du Propri\u00e9taire :'}</Text>
+              <Text style={s.hLabel}>{'Nom du Propriétaire :'}</Text>
               <View style={s.hUL}><Text style={s.hVal}>{data.landlordName}</Text></View>
             </View>
             <View style={s.hFieldRow}>
-              <Text style={s.hLabel}>{'Adresse du Propri\u00e9taire :'}</Text>
+              <Text style={s.hLabel}>{'Adresse du Propriétaire :'}</Text>
               <View style={s.hUL}><Text style={s.hVal}>{data.landlordAddress ?? ''}</Text></View>
             </View>
             <View style={s.hFieldRow}>
-              <Text style={s.hLabel}>{'T\u00e9l\u00e9phone :'}</Text>
+              <Text style={s.hLabel}>{'Téléphone :'}</Text>
               <View style={s.hUL}><Text style={s.hVal}>{data.landlordPhone ?? ''}</Text></View>
             </View>
           </View>
@@ -314,7 +317,7 @@ export function RecuPDF({ data }: { data: RecuData }) {
         </View>
 
         <View style={s.titleBlock}>
-          <Text style={s.title}>{'RE\u00c7U DE LOYER'}</Text>
+          <Text style={s.title}>{'REÇU DE LOYER'}</Text>
           <View style={s.ornamentWrap}>
             <FleurDeLis />
           </View>
@@ -329,12 +332,12 @@ export function RecuPDF({ data }: { data: RecuData }) {
 
         {/* ── Je soussigné(e) ── */}
         <View style={s.fRow}>
-          <Text style={s.fLabel}>{'Je soussign\u00e9(e). '}</Text>
-          <Text style={s.fHint}>{'(Nom du Propri\u00e9taire)'}</Text>
+          <Text style={s.fLabel}>{'Je soussigné(e), '}</Text>
+          <Text style={s.fHint}>{'(Nom du Propriétaire)'}</Text>
           <View style={s.fUL}><Text style={s.fVal}>{data.landlordName}</Text></View>
         </View>
 
-        <Text style={s.bodyText}>{'atteste avoir re\u00e7u la somme de :'}</Text>
+        <Text style={s.bodyText}>{'atteste avoir reçu la somme de :'}</Text>
 
         {/* ── Montant en euros ── */}
         <View style={s.fRow}>
@@ -342,7 +345,7 @@ export function RecuPDF({ data }: { data: RecuData }) {
           <View style={[s.fUL, { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'flex-end' }]}>
             <Text style={s.fValBig}>{total.toFixed(2).replace('.', ',')}</Text>
           </View>
-          <Text style={s.fEuro}>{'\u20ac'}</Text>
+          <Text style={s.fEuro}>{'€'}</Text>
         </View>
 
         {/* ── Montant en toutes lettres ── */}
@@ -376,7 +379,7 @@ export function RecuPDF({ data }: { data: RecuData }) {
         {/* ── Période ── */}
         <View style={s.fRow}>
           <Text style={s.fLabel}>{'Correspondant au loyer du mois de : '}</Text>
-          <Text style={s.fHint}>{'(Mois et Ann\u00e9e)'}</Text>
+          <Text style={s.fHint}>{'(Mois et Année)'}</Text>
           <View style={s.fUL}><Text style={s.fVal}>{period}</Text></View>
         </View>
 
@@ -394,7 +397,7 @@ export function RecuPDF({ data }: { data: RecuData }) {
             </View>
             <Text style={s.cbLabel}>Charges Comprises</Text>
             <View style={{ flex: 1 }} />
-            <Text style={s.cbVal}>{hasCharges ? formatEur(data.chargesAmount) : '\u2014'}</Text>
+            <Text style={s.cbVal}>{formatEur(data.chargesAmount)}</Text>
           </View>
           <View style={[s.cbRow, { marginBottom: 0 }]}>
             <View style={s.cbBox} />
@@ -416,25 +419,29 @@ export function RecuPDF({ data }: { data: RecuData }) {
         {/* ── Footer: Fait à + Signature ── */}
         <View style={s.footer}>
           <View style={s.footerL}>
-            <Text style={s.footerLabel}>{'Fait \u00e0 :'}</Text>
-            <Text style={s.footerVal}>{data.propertyCity}</Text>
+            <Text style={s.footerLabel}>{'Fait à :'}</Text>
+            <Text style={s.footerVal}>{landlordCity}</Text>
             <Text style={s.footerLabel}>Le :</Text>
             <Text style={s.footerVal}>{genDate}</Text>
           </View>
           <View style={s.footerR}>
-            <Text style={s.sigLabel}>{'Signature du Propri\u00e9taire'}</Text>
-            <View style={s.sigRow}>
-              <View style={s.sigLine} />
-              <Text style={s.sigCachet}>(Cachet)</Text>
-              <View style={s.sigLine} />
-            </View>
+            <Text style={s.sigLabel}>{'Signature du Propriétaire'}</Text>
+            {data.landlordSignature && data.landlordSignature.startsWith('data:image') ? (
+              <Image src={data.landlordSignature} style={{ width: 120, height: 60 }} cache={false} />
+            ) : (
+              <View style={s.sigRow}>
+                <View style={s.sigLine} />
+                <Text style={s.sigCachet}>(Cachet)</Text>
+                <View style={s.sigLine} />
+              </View>
+            )}
           </View>
         </View>
 
         {/* ── Document footer ── */}
         <View style={s.docFooter} fixed>
-          <Text style={s.docFooterText}>{'Re\u00e7u de loyer g\u00e9n\u00e9r\u00e9 le '}{genDate}{' via LeaseFrance'}</Text>
-          <Text style={s.docFooterText}>{'Document non fiscal \u2014 \u00e0 conserver'}</Text>
+          <Text style={s.docFooterText}>{'Reçu de loyer généré le '}{genDate}{' via LeaseFrance'}</Text>
+          <Text style={s.docFooterText}>{'Document non fiscal — à conserver'}</Text>
         </View>
 
       </Page>

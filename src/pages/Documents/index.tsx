@@ -17,11 +17,11 @@ import { useAuthStore } from '@/stores/useAuthStore'
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const MONTHS = [
-  'Janvier','F\u00e9vrier','Mars','Avril','Mai','Juin',
-  'Juillet','Ao\u00fbt','Septembre','Octobre','Novembre','D\u00e9cembre',
+  'Janvier','Février','Mars','Avril','Mai','Juin',
+  'Juillet','Août','Septembre','Octobre','Novembre','Décembre',
 ]
 
-/** Full payment → quittance, partial → re\u00e7u (Loi du 6 juillet 1989, art. 21) */
+/** Full payment → quittance, partial → reçu (Loi du 6 juillet 1989, art. 21) */
 function isFullPayment(p: Payment): boolean {
   return p.rent_amount >= p.lease_rent_amount && p.charges_amount >= p.lease_charges_amount
 }
@@ -61,9 +61,11 @@ export default function Documents() {
     const full = isFullPayment(payment)
 
     const baseData = {
-      landlordName:    profile?.name ?? 'Propri\u00e9taire',
-      landlordAddress: profile?.address,
-      landlordPhone:   profile?.phone,
+      landlordName:      profile?.name ?? 'Propriétaire',
+      landlordAddress:   profile?.address,
+      landlordCity:      profile?.city,
+      landlordPhone:     profile?.phone,
+      landlordSignature: profile?.signatureImage,
       tenantFirstName: payment.tenant_first_name,
       tenantLastName:  payment.tenant_last_name,
       propertyName:    payment.property_name,
@@ -78,6 +80,8 @@ export default function Documents() {
       paymentMethod:   payment.payment_method,
       leaseType:       lease.type,
     }
+
+    console.log('[Documents] landlordSignature present:', !!baseData.landlordSignature, 'length:', baseData.landlordSignature?.length ?? 0, 'starts:', baseData.landlordSignature?.substring(0, 30))
 
     let blob: Blob
     let fileName: string
@@ -116,7 +120,7 @@ export default function Documents() {
         <div>
           <h1 className="text-2xl font-semibold text-textPrimary">Documents</h1>
           <p className="text-textMuted text-sm mt-1">
-            {docs.length} document{docs.length !== 1 ? 's' : ''} g\u00e9n\u00e9r\u00e9{docs.length !== 1 ? 's' : ''}
+            {docs.length} document{docs.length !== 1 ? 's' : ''} généré{docs.length !== 1 ? 's' : ''}
           </p>
         </div>
         <Button onClick={() => setShowForm(true)} disabled={paidPayments.length === 0}>
@@ -139,8 +143,8 @@ export default function Documents() {
             <FileText className="w-7 h-7 text-primary" />
           </div>
           <div>
-            <p className="text-base font-semibold text-textPrimary">Aucun document g\u00e9n\u00e9r\u00e9</p>
-            <p className="text-sm text-textMuted mt-1">Cliquez sur \u00ab Nouveau document \u00bb pour g\u00e9n\u00e9rer votre premier PDF.</p>
+            <p className="text-base font-semibold text-textPrimary">Aucun document généré</p>
+            <p className="text-sm text-textMuted mt-1">Cliquez sur « Nouveau document » pour générer votre premier PDF.</p>
           </div>
         </div>
       ) : (
@@ -189,9 +193,9 @@ function EmptyState() {
         <ScrollText className="w-8 h-8 text-primary" />
       </div>
       <div>
-        <p className="text-lg font-semibold text-textPrimary">Aucun paiement pay\u00e9</p>
+        <p className="text-lg font-semibold text-textPrimary">Aucun paiement payé</p>
         <p className="text-sm text-textMuted mt-1">
-          Les documents ne peuvent \u00eatre g\u00e9n\u00e9r\u00e9s que pour les loyers marqu\u00e9s \u00ab Pay\u00e9 \u00bb.
+          Les documents ne peuvent être générés que pour les loyers marqués « Payé ».
         </p>
       </div>
     </div>
@@ -231,11 +235,11 @@ function DocRow({ doc, onOpen, onDelete }: {
             </div>
             <div>
               <Badge variant={isRecu ? 'warning' : 'muted'}>
-                {isRecu ? 'Re\u00e7u' : 'Quittance'}
+                {isRecu ? 'Reçu' : 'Quittance'}
               </Badge>
             </div>
             <div className="text-xs text-textMuted">
-              G\u00e9n\u00e9r\u00e9 le {formatDate(doc.generated_at)}
+              Généré le {formatDate(doc.generated_at)}
             </div>
           </div>
           <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -278,7 +282,7 @@ function GenerateModal({ payments, onGenerate, onClose }: {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!selected) return setError('S\u00e9lectionnez un paiement.')
+    if (!selected) return setError('Sélectionnez un paiement.')
     const payment = payments.find((p) => p.id === selected)
     if (!payment) return
     setGenerating(true)
@@ -310,7 +314,7 @@ function GenerateModal({ payments, onGenerate, onClose }: {
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <div className="flex items-center gap-2">
             <FileText className="w-4 h-4 text-primary" />
-            <h2 className="text-base font-semibold text-textPrimary">G\u00e9n\u00e9rer un document</h2>
+            <h2 className="text-base font-semibold text-textPrimary">Générer un document</h2>
           </div>
           <button onClick={onClose} className="text-textMuted hover:text-textPrimary transition-colors">
             <X className="w-4 h-4" />
@@ -323,25 +327,25 @@ function GenerateModal({ payments, onGenerate, onClose }: {
               <CheckCircle2 className="w-7 h-7 text-success" />
             </div>
             <p className="text-base font-semibold text-textPrimary">
-              {detectedType === 'quittance' ? 'Quittance g\u00e9n\u00e9r\u00e9e !' : 'Re\u00e7u g\u00e9n\u00e9r\u00e9 !'}
+              {detectedType === 'quittance' ? 'Quittance générée !' : 'Reçu généré !'}
             </p>
-            <p className="text-sm text-textMuted">Le fichier PDF a \u00e9t\u00e9 enregistr\u00e9 sur votre ordinateur.</p>
+            <p className="text-sm text-textMuted">Le fichier PDF a été enregistré sur votre ordinateur.</p>
             <Button onClick={onClose} className="mt-2">Fermer</Button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-6">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-textMuted">S\u00e9lectionnez le paiement</label>
+              <label className="text-xs font-medium text-textMuted">Sélectionnez le paiement</label>
               <div className="relative">
                 <select
                   value={selected}
                   onChange={(e) => setSelected(Number(e.target.value))}
                   className="w-full appearance-none bg-surfaceHigh border border-border rounded-lg px-3 py-2 pr-8 text-sm text-textPrimary focus:outline-none focus:border-primary transition-colors"
                 >
-                  <option value={0} disabled>Choisissez un loyer pay\u00e9\u2026</option>
+                  <option value={0} disabled>Choisissez un loyer payé…</option>
                   {payments.map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.tenant_first_name} {p.tenant_last_name} \u00b7 {MONTHS[p.period_month - 1]} {p.period_year} \u00b7 {p.property_name}
+                      {p.tenant_first_name} {p.tenant_last_name} · {MONTHS[p.period_month - 1]} {p.period_year} · {p.property_name}
                     </option>
                   ))}
                 </select>
@@ -364,17 +368,17 @@ function GenerateModal({ payments, onGenerate, onClose }: {
                       <span className="text-textPrimary font-medium">{p.property_name}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>P\u00e9riode</span>
+                      <span>Période</span>
                       <span className="text-textPrimary font-medium">{MONTHS[p.period_month - 1]} {p.period_year}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Loyer d\u00fb (HC + charges)</span>
-                      <span className="text-textPrimary font-medium">{(p.lease_rent_amount + p.lease_charges_amount).toFixed(2)} \u20ac</span>
+                      <span>Loyer dû (HC + charges)</span>
+                      <span className="text-textPrimary font-medium">{(p.lease_rent_amount + p.lease_charges_amount).toFixed(2)} €</span>
                     </div>
                     <div className="flex justify-between border-t border-border pt-1.5 mt-0.5">
-                      <span>Montant pay\u00e9</span>
+                      <span>Montant payé</span>
                       <span className="text-textPrimary font-semibold">
-                        {(p.rent_amount + p.charges_amount).toFixed(2)} \u20ac
+                        {(p.rent_amount + p.charges_amount).toFixed(2)} €
                       </span>
                     </div>
                   </div>
@@ -384,12 +388,12 @@ function GenerateModal({ payments, onGenerate, onClose }: {
                     <Info className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${full ? 'text-primary' : 'text-accent'}`} />
                     <div>
                       <p className={`font-semibold ${full ? 'text-primary' : 'text-accent'}`}>
-                        {full ? 'Quittance de loyer' : 'Re\u00e7u de loyer'}
+                        {full ? 'Quittance de loyer' : 'Reçu de loyer'}
                       </p>
                       <p className="text-textMuted mt-0.5">
                         {full
-                          ? 'Paiement int\u00e9gral — une quittance sera g\u00e9n\u00e9r\u00e9e (art. 21, Loi du 6 juillet 1989).'
-                          : 'Paiement partiel — un re\u00e7u sera g\u00e9n\u00e9r\u00e9 (le montant pay\u00e9 est inf\u00e9rieur au loyer d\u00fb).'}
+                          ? 'Paiement intégral — une quittance sera générée (art. 21, Loi du 6 juillet 1989).'
+                          : 'Paiement partiel — un reçu sera généré (le montant payé est inférieur au loyer dû).'}
                       </p>
                     </div>
                   </div>
@@ -403,7 +407,7 @@ function GenerateModal({ payments, onGenerate, onClose }: {
               <Button type="button" variant="secondary" onClick={onClose} className="flex-1">Annuler</Button>
               <Button type="submit" disabled={!selected || generating} className="flex-1">
                 <Download className="w-3.5 h-3.5" />
-                {generating ? 'G\u00e9n\u00e9ration...' : 'G\u00e9n\u00e9rer le PDF'}
+                {generating ? 'Génération...' : 'Générer le PDF'}
               </Button>
             </div>
           </form>
@@ -442,7 +446,7 @@ function DeleteModal({ doc, onConfirm, onClose }: {
           <div>
             <p className="text-sm font-semibold text-textPrimary">Supprimer ce document ?</p>
             <p className="text-xs text-textMuted mt-0.5">
-              {doc.tenant_first_name} {doc.tenant_last_name} \u00b7 {doc.property_name}
+              {doc.tenant_first_name} {doc.tenant_last_name} · {doc.property_name}
             </p>
           </div>
         </div>
