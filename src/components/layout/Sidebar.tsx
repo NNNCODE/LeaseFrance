@@ -6,6 +6,7 @@ import {
   Users,
   FileText,
   CreditCard,
+  CalendarClock,
   FolderOpen,
   ScrollText,
   Settings,
@@ -22,6 +23,7 @@ const navItems = [
   { to: '/tenants',    icon: Users,           label: 'Locataires'      },
   { to: '/leases',     icon: FileText,        label: 'Baux'            },
   { to: '/payments',   icon: CreditCard,      label: 'Paiements'       },
+  { to: '/reminders',  icon: CalendarClock,   label: 'Echeances'       },
   { to: '/inspections',icon: ScrollText,      label: 'Etats des lieux' },
   { to: '/documents',  icon: FolderOpen,      label: 'Documents'       },
 ]

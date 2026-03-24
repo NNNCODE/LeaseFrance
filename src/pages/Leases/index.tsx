@@ -12,6 +12,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import DepositManagementModal, { type DepositManagementInput } from './DepositManagementModal'
+import ChargeReconciliationModal from './ChargeReconciliationModal'
 import { getDepositReturnedAmount, getDepositStatus, getDepositStatusMeta } from './depositUtils'
 import {
   calculateRevision, isRevisionEligible, isAnniversaryWithinDays,
@@ -64,6 +65,7 @@ export default function Leases() {
   const [deleting, setDeleting]   = useState<Lease | null>(null)
   const [revising, setRevising]   = useState<Lease | null>(null)
   const [managingDeposit, setManagingDeposit] = useState<Lease | null>(null)
+  const [managingCharges, setManagingCharges] = useState<Lease | null>(null)
 
   async function load() {
     setLoading(true)
@@ -217,6 +219,7 @@ export default function Leases() {
               onEdit={() => openEdit(l)}
               onDelete={() => setDeleting(l)}
               onManageDeposit={() => setManagingDeposit(l)}
+              onManageCharges={() => setManagingCharges(l)}
               onRevise={() => setRevising(l)}
             />
           ))}
@@ -256,6 +259,15 @@ export default function Leases() {
           />
         )}
       </AnimatePresence>
+
+      <AnimatePresence>
+        {managingCharges && (
+          <ChargeReconciliationModal
+            lease={managingCharges}
+            onClose={() => setManagingCharges(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }
@@ -284,12 +296,13 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
 
 // ── Lease row ──────────────────────────────────────────────────────────────────
 
-function LeaseRow({ lease, irlIndices, onEdit, onDelete, onManageDeposit, onRevise }: {
+function LeaseRow({ lease, irlIndices, onEdit, onDelete, onManageDeposit, onManageCharges, onRevise }: {
   lease: Lease
   irlIndices: IrlIndex[]
   onEdit: () => void
   onDelete: () => void
   onManageDeposit: () => void
+  onManageCharges: () => void
   onRevise: () => void
 }) {
   const status = STATUS_CONFIG[lease.status]
@@ -387,6 +400,15 @@ function LeaseRow({ lease, irlIndices, onEdit, onDelete, onManageDeposit, onRevi
 
           {/* Actions */}
           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+            {lease.charges_amount > 0 && (
+              <button
+                onClick={onManageCharges}
+                title="Regulariser les charges"
+                className="p-1.5 rounded-lg hover:bg-warning/10 text-textMuted hover:text-warning transition-colors"
+              >
+                <ScrollText className="w-3.5 h-3.5" />
+              </button>
+            )}
             {lease.deposit_amount > 0 && (
               <button
                 onClick={onManageDeposit}

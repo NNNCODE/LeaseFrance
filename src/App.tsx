@@ -10,6 +10,7 @@ import Properties from '@/pages/Properties'
 import Tenants from '@/pages/Tenants'
 import Leases from '@/pages/Leases'
 import Payments from '@/pages/Payments'
+import Reminders from '@/pages/Reminders'
 import Documents from '@/pages/Documents'
 import Inspections from '@/pages/Inspections'
 import Profile from '@/pages/Profile'
@@ -39,6 +40,7 @@ export default function App() {
         <Route path="tenants"    element={<Tenants />} />
         <Route path="leases"     element={<Leases />} />
         <Route path="payments"   element={<Payments />} />
+        <Route path="reminders"  element={<Reminders />} />
         <Route path="inspections" element={<Inspections />} />
         <Route path="documents"  element={<Documents />} />
         <Route path="profile"    element={<Profile />} />

@@ -95,6 +95,23 @@ export function isAnniversaryWithinDays(startDate: string, days: number): boolea
 }
 
 /**
+ * Retourne la date anniversaire pertinente pour les rappels:
+ * - cette annee si elle arrive bientot
+ * - ou celle qui vient de passer si elle est encore recente
+ * - sinon la prochaine
+ */
+export function getRelevantAnniversaryDate(startDate: string, now = new Date()): Date {
+  const start = new Date(startDate)
+  const anniversaryThisYear = new Date(now.getFullYear(), start.getMonth(), start.getDate())
+
+  if (anniversaryThisYear < now) {
+    return anniversaryThisYear
+  }
+
+  return anniversaryThisYear
+}
+
+/**
  * Parse un trimestre au format "2024-T2" → { year: 2024, quarter: 2 }
  */
 export function parseQuarter(q: string): { year: number; quarter: number } | null {

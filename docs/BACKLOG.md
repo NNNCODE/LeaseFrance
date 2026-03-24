@@ -112,32 +112,65 @@ Likely touch points:
 
 ### Annual Charges Reconciliation MVP
 
-Status: `todo`
+Status: `in_progress`
 Outcome:
 Capture annual actual charges and compare them against provisions already collected.
+
+Current scope delivered:
+- lease-level `Regularisation annuelle des charges` modal from the `Baux` page
+- yearly reconciliation records stored in `charge_reconciliations`
+- automatic comparison against paid `payments.charges_amount` for the selected year
+- optional manual override when payment history is incomplete
+- exportable PDF summary saved into `Documents`
+
+Still needed before `done`:
+- optional attachments or invoice lines behind the annual total
+- dashboard surfacing for leases with missing yearly regularisation
+- clearer legal or explanatory copy if the app later supports tenant-facing sending workflows
 
 Acceptance:
 - user can enter annual actual charge totals
 - app shows overpayment or underpayment
 - result can be exported or printed as a simple summary
 
+Spec:
+- `docs/features/charges-reconciliation.md`
+
 Likely touch points:
 - `electron/db/database.ts`
-- `electron/db/queries/leases.ts`
+- `electron/db/queries/chargeReconciliations.ts`
 - `src/pages/Leases/index.tsx`
+- `src/pages/Leases/ChargeReconciliationModal.tsx`
+- `src/lib/pdf/chargeReconciliation.tsx`
 - `src/pages/Documents/index.tsx`
 
 ## P1
 
 ### Reminders and Deadlines Center
 
-Status: `todo`
+Status: `in_progress`
 Outcome:
 Show upcoming lease, IRL, insurance, diagnostics, and tax reminders in one place.
+
+Current scope delivered:
+- dedicated `Echeances` page with sidebar entry
+- automatic reminders derived from active leases:
+  - lease end dates
+  - IRL anniversary windows
+- manual reminders table for insurance, diagnostics, tax, or free-form follow-up
+- manual reminders can be created, edited, marked done, reopened, and deleted
+
+Still needed before `done`:
+- optional dashboard surface of upcoming reminders
+- richer derived rules once the app stores more compliance data
+- notification delivery beyond the in-app center
 
 Acceptance:
 - deadlines are visible from a central screen or dashboard module
 - reminder dates can be derived from lease/profile data or entered manually
+
+Spec:
+- `docs/features/reminders-center.md`
 
 ### Etat des Lieux MVP
 

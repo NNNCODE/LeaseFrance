@@ -111,6 +111,28 @@ function initSchema(db: Database.Database): void {
       created_at        TEXT    NOT NULL DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS charge_reconciliations (
+      id                            INTEGER PRIMARY KEY AUTOINCREMENT,
+      lease_id                      INTEGER NOT NULL REFERENCES leases(id) ON DELETE CASCADE,
+      year                          INTEGER NOT NULL,
+      actual_charges                REAL    NOT NULL,
+      provisions_collected_override REAL,
+      notes                         TEXT,
+      created_at                    TEXT    NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(lease_id, year)
+    );
+
+    CREATE TABLE IF NOT EXISTS manual_reminders (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      lease_id   INTEGER REFERENCES leases(id) ON DELETE SET NULL,
+      title      TEXT    NOT NULL,
+      category   TEXT    NOT NULL DEFAULT 'custom',
+      due_date   TEXT    NOT NULL,
+      notes      TEXT,
+      status     TEXT    NOT NULL DEFAULT 'pending',
+      created_at TEXT    NOT NULL DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS irl_indices (
       id           INTEGER PRIMARY KEY AUTOINCREMENT,
       year         INTEGER NOT NULL,

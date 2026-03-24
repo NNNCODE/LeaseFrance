@@ -11,6 +11,8 @@ import * as leasesDb from './db/queries/leases'
 import * as paymentsDb from './db/queries/payments'
 import * as paymentRemindersDb from './db/queries/paymentReminders'
 import * as inspectionsDb from './db/queries/inspections'
+import * as chargeReconciliationsDb from './db/queries/chargeReconciliations'
+import * as manualRemindersDb from './db/queries/manualReminders'
 import * as documentsDb from './db/queries/documents'
 import * as irlDb from './db/queries/irl'
 
@@ -122,6 +124,18 @@ ipcMain.handle('inspections:create', (_e, data) => inspectionsDb.create(data))
 ipcMain.handle('inspections:update', (_e, id, data) => inspectionsDb.update(id, data))
 ipcMain.handle('inspections:delete', (_e, id) => inspectionsDb.remove(id))
 
+// Charge reconciliations IPC
+ipcMain.handle('chargeReconciliations:getByLease', (_e, leaseId) => chargeReconciliationsDb.getByLease(leaseId))
+ipcMain.handle('chargeReconciliations:create', (_e, data) => chargeReconciliationsDb.create(data))
+ipcMain.handle('chargeReconciliations:update', (_e, id, data) => chargeReconciliationsDb.update(id, data))
+ipcMain.handle('chargeReconciliations:delete', (_e, id) => chargeReconciliationsDb.remove(id))
+
+// Manual reminders IPC
+ipcMain.handle('manualReminders:getAll', () => manualRemindersDb.getAll())
+ipcMain.handle('manualReminders:create', (_e, data) => manualRemindersDb.create(data))
+ipcMain.handle('manualReminders:update', (_e, id, data) => manualRemindersDb.update(id, data))
+ipcMain.handle('manualReminders:delete', (_e, id) => manualRemindersDb.remove(id))
+
 // Documents IPC
 ipcMain.handle('documents:getAll', () => documentsDb.getAll())
 ipcMain.handle('documents:delete', (_e, id) => documentsDb.remove(id))
@@ -134,6 +148,7 @@ ipcMain.handle('documents:savePdf', async (_e, leaseId: number, fileName: string
     proposition_echeancier: "Enregistrer la proposition d'echeancier",
     etat_des_lieux_entree: "Enregistrer l'etat des lieux d'entree",
     etat_des_lieux_sortie: "Enregistrer l'etat des lieux de sortie",
+    regularisation_charges: 'Enregistrer la regularisation annuelle des charges',
   }
   const { filePath, canceled } = await dialog.showSaveDialog({
     title: titleMap[docType ?? 'quittance'] ?? 'Enregistrer le document',

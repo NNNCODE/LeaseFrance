@@ -55,6 +55,18 @@ contextBridge.exposeInMainWorld('api', {
     update:  (id: number, data: unknown) => ipcRenderer.invoke('inspections:update', id, data),
     delete:  (id: number) => ipcRenderer.invoke('inspections:delete', id),
   },
+  chargeReconciliations: {
+    getByLease: (leaseId: number) => ipcRenderer.invoke('chargeReconciliations:getByLease', leaseId),
+    create:     (data: unknown) => ipcRenderer.invoke('chargeReconciliations:create', data),
+    update:     (id: number, data: unknown) => ipcRenderer.invoke('chargeReconciliations:update', id, data),
+    delete:     (id: number) => ipcRenderer.invoke('chargeReconciliations:delete', id),
+  },
+  manualReminders: {
+    getAll:  () => ipcRenderer.invoke('manualReminders:getAll'),
+    create:  (data: unknown) => ipcRenderer.invoke('manualReminders:create', data),
+    update:  (id: number, data: unknown) => ipcRenderer.invoke('manualReminders:update', id, data),
+    delete:  (id: number) => ipcRenderer.invoke('manualReminders:delete', id),
+  },
   documents: {
     getAll:    () => ipcRenderer.invoke('documents:getAll'),
     delete:    (id: number) => ipcRenderer.invoke('documents:delete', id),
