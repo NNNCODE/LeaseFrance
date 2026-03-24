@@ -143,6 +143,9 @@ ipcMain.handle('documents:savePdf', async (_e, leaseId: number, fileName: string
   const titleMap: Record<string, string> = {
     quittance: 'Enregistrer la quittance',
     recu: 'Enregistrer le recu de loyer',
+    avis_revision_loyer: "Enregistrer l'avis de revision du loyer",
+    recu_depot_garantie: 'Enregistrer le recu de depot de garantie',
+    solde_depot_garantie: 'Enregistrer le solde de depot de garantie',
     relance_amiable: 'Enregistrer la relance amiable',
     mise_en_demeure: 'Enregistrer la mise en demeure',
     proposition_echeancier: "Enregistrer la proposition d'echeancier",

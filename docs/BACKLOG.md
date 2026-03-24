@@ -208,15 +208,30 @@ Likely touch points:
 
 ### Expanded Document Templates
 
-Status: `todo`
+Status: `in_progress`
 Outcome:
 Add practical landlord documents beyond quittance and recu.
 
-Target first templates:
-- rent revision notice
-- deposit receipt
-- deposit settlement
-- unpaid rent reminder letter
+Current scope delivered:
+- `Documents` now includes a real template center modal instead of only payment-based generation
+- new templates available from the same page:
+  - rent revision notice
+  - deposit receipt
+  - deposit settlement
+- generated PDFs are saved into the existing document archive with dedicated document types
+
+Still needed before `done`:
+- add a tenant certificate / attestation template
+- optionally expose unpaid rent reminder letter generation directly from `Documents` in addition to the payment workflow
+- consider richer metadata or filters once the archive contains more document families
+
+Acceptance:
+- user can generate practical landlord-facing documents without leaving the document center
+- each new template appears with a readable label in the archive
+- generation relies on existing lease, IRL, and deposit data without adding a new table
+
+Spec:
+- `docs/features/document-templates-center.md`
 
 ## P2
 
@@ -249,4 +264,5 @@ After implementation:
 - update the item status
 - note any scope changes
 - add a feature spec if the work introduced new business rules
+
 

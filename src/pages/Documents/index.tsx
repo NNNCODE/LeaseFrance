@@ -3,37 +3,40 @@ import { pdf } from '@react-pdf/renderer'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   AlertTriangle,
-  CheckCircle2,
-  ChevronDown,
-  Download,
   FileText,
   FolderOpen,
   Info,
-  Plus,
   Receipt,
   ScrollText,
+  ShieldCheck,
   Trash2,
+  TrendingUp,
   X,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import {
+  DepositReceiptPDF,
+  DepositSettlementPDF,
+  RentRevisionNoticePDF,
+  type DepositReceiptPdfData,
+  type DepositSettlementPdfData,
+  type RentRevisionNoticePdfData,
+} from '@/lib/pdf/documentTemplates'
 import { RecuPDF, type RecuData } from '@/lib/pdf/recu'
 import { QuittancePDF, type QuittanceData } from '@/lib/pdf/quittance'
 import { formatDate } from '@/lib/utils'
 import { useAuthStore } from '@/stores/useAuthStore'
-
-const MONTHS = [
-  'Janvier', 'F\u00e9vrier', 'Mars', 'Avril', 'Mai', 'Juin',
-  'Juillet', 'Ao\u00fbt', 'Septembre', 'Octobre', 'Novembre', 'D\u00e9cembre',
-]
-
-function isFullPayment(payment: Payment): boolean {
-  return (
-    payment.rent_amount >= payment.lease_rent_amount
-    && payment.charges_amount >= payment.lease_charges_amount
-  )
-}
+import GenerateDocumentModal, { type GenerateDocumentRequest } from './GenerateDocumentModal'
+import {
+  MONTHS,
+  canGenerateDepositReceipt,
+  canGenerateDepositSettlement,
+  getDepositReturnedAmount,
+  getRevisionTemplateContext,
+  isFullPayment,
+} from './documentTemplateHelpers'
 
 function getDocumentMeta(type: string) {
   switch (type) {
@@ -51,6 +54,12 @@ function getDocumentMeta(type: string) {
       return { label: 'Mise en demeure', variant: 'danger' as const, icon: Info, iconClass: 'text-danger', iconBg: 'bg-danger/10' }
     case 'proposition_echeancier':
       return { label: '\u00c9ch\u00e9ancier', variant: 'success' as const, icon: Info, iconClass: 'text-success', iconBg: 'bg-success/10' }
+    case 'avis_revision_loyer':
+      return { label: 'Avis de r\u00e9vision', variant: 'default' as const, icon: TrendingUp, iconClass: 'text-primary', iconBg: 'bg-primary/10' }
+    case 'recu_depot_garantie':
+      return { label: 'Re\u00e7u de d\u00e9p\u00f4t', variant: 'default' as const, icon: ShieldCheck, iconClass: 'text-primary', iconBg: 'bg-primary/10' }
+    case 'solde_depot_garantie':
+      return { label: 'Solde de d\u00e9p\u00f4t', variant: 'warning' as const, icon: ShieldCheck, iconClass: 'text-warning', iconBg: 'bg-warning/10' }
     default:
       return { label: 'Quittance', variant: 'muted' as const, icon: FileText, iconClass: 'text-primary', iconBg: 'bg-primary/10' }
   }
@@ -61,74 +70,199 @@ export default function Documents() {
   const [docs, setDocs] = useState<DocumentRecord[]>([])
   const [payments, setPayments] = useState<Payment[]>([])
   const [leases, setLeases] = useState<Lease[]>([])
+  const [irlIndices, setIrlIndices] = useState<IrlIndex[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [deleting, setDeleting] = useState<DocumentRecord | null>(null)
 
   async function load() {
     setLoading(true)
-    const [nextDocs, nextPayments, nextLeases] = await Promise.all([
+    const [nextDocs, nextPayments, nextLeases, nextIrl] = await Promise.all([
       window.api.documents.getAll(),
       window.api.payments.getAll(),
       window.api.leases.getAll(),
+      window.api.irl.getAll(),
     ])
     setDocs(nextDocs)
     setPayments(nextPayments)
     setLeases(nextLeases)
+    setIrlIndices(nextIrl)
     setLoading(false)
   }
 
   useEffect(() => { load() }, [])
 
   const paidPayments = payments.filter((payment) => payment.status === 'paid')
+  const revisableLeaseCount = leases.filter((lease) => Boolean(getRevisionTemplateContext(lease, irlIndices))).length
+  const depositReceiptCount = leases.filter(canGenerateDepositReceipt).length
+  const depositSettlementCount = leases.filter(canGenerateDepositSettlement).length
+  const canGenerateAnyDocument = (
+    paidPayments.length > 0
+    || revisableLeaseCount > 0
+    || depositReceiptCount > 0
+    || depositSettlementCount > 0
+  )
 
-  async function handleGenerate(payment: Payment) {
-    const lease = leases.find((entry) => entry.id === payment.lease_id)
-    if (!lease) return
-
-    const full = isFullPayment(payment)
-    const baseData = {
+  async function handleGenerate(request: GenerateDocumentRequest): Promise<boolean> {
+    const landlord = {
       landlordName: profile?.name ?? 'Propri\u00e9taire',
       landlordAddress: profile?.address,
       landlordCity: profile?.city,
       landlordPhone: profile?.phone,
       landlordSignature: profile?.signatureImage,
-      tenantFirstName: payment.tenant_first_name,
-      tenantLastName: payment.tenant_last_name,
-      propertyName: payment.property_name,
-      propertyAddress: lease.property_address,
-      propertyCity: payment.property_city,
-      propertyZip: lease.property_zip ?? '',
-      periodMonth: payment.period_month,
-      periodYear: payment.period_year,
-      rentAmount: payment.rent_amount,
-      chargesAmount: payment.charges_amount,
-      paymentDate: payment.payment_date,
-      paymentMethod: payment.payment_method,
-      leaseType: lease.type,
     }
 
-    let blob: Blob
-    let fileName: string
-    let docType: string
-    const month = MONTHS[payment.period_month - 1]
+    switch (request.kind) {
+      case 'payment_certificate': {
+        const payment = payments.find((entry) => entry.id === request.paymentId)
+        if (!payment) return false
 
-    if (full) {
-      blob = await pdf(<QuittancePDF data={baseData as QuittanceData} />).toBlob()
-      fileName = `Quittance_${payment.tenant_last_name}_${month}_${payment.period_year}.pdf`
-      docType = 'quittance'
-    } else {
-      blob = await pdf(<RecuPDF data={baseData as RecuData} />).toBlob()
-      fileName = `Recu_${payment.tenant_last_name}_${month}_${payment.period_year}.pdf`
-      docType = 'recu'
+        const lease = leases.find((entry) => entry.id === payment.lease_id)
+        if (!lease) return false
+
+        const full = isFullPayment(payment)
+        const baseData = {
+          ...landlord,
+          tenantFirstName: payment.tenant_first_name,
+          tenantLastName: payment.tenant_last_name,
+          propertyName: payment.property_name,
+          propertyAddress: lease.property_address,
+          propertyCity: payment.property_city,
+          propertyZip: lease.property_zip ?? '',
+          periodMonth: payment.period_month,
+          periodYear: payment.period_year,
+          rentAmount: payment.rent_amount,
+          chargesAmount: payment.charges_amount,
+          paymentDate: payment.payment_date,
+          paymentMethod: payment.payment_method,
+          leaseType: lease.type,
+        }
+
+        const month = MONTHS[payment.period_month - 1]
+
+        if (full) {
+          const blob = await pdf(<QuittancePDF data={baseData as QuittanceData} />).toBlob()
+          return saveGeneratedPdf(
+            payment.lease_id,
+            `Quittance_${payment.tenant_last_name}_${month}_${payment.period_year}.pdf`,
+            blob,
+            'quittance',
+          )
+        }
+
+        const blob = await pdf(<RecuPDF data={baseData as RecuData} />).toBlob()
+        return saveGeneratedPdf(
+          payment.lease_id,
+          `Recu_${payment.tenant_last_name}_${month}_${payment.period_year}.pdf`,
+          blob,
+          'recu',
+        )
+      }
+
+      case 'rent_revision_notice': {
+        const lease = leases.find((entry) => entry.id === request.leaseId)
+        if (!lease) return false
+
+        const context = getRevisionTemplateContext(lease, irlIndices)
+        if (!context) return false
+
+        const data: RentRevisionNoticePdfData = {
+          ...landlord,
+          tenantFirstName: lease.tenant_first_name,
+          tenantLastName: lease.tenant_last_name,
+          propertyName: lease.property_name,
+          propertyAddress: lease.property_address,
+          propertyCity: lease.property_city,
+          propertyZip: lease.property_zip,
+          leaseStartDate: lease.start_date,
+          noticeDate: request.noticeDate,
+          effectiveDate: request.effectiveDate,
+          currentRent: context.revision.oldRent,
+          newRent: context.revision.newRent,
+          difference: context.revision.difference,
+          referenceIrl: context.revision.referenceIrl,
+          referenceLabel: context.revision.referenceLabel,
+          newIrl: context.revision.newIrl,
+          newLabel: context.revision.newLabel,
+        }
+
+        const blob = await pdf(<RentRevisionNoticePDF data={data} />).toBlob()
+        return saveGeneratedPdf(
+          lease.id,
+          `Avis_revision_loyer_${lease.tenant_last_name}_${request.effectiveDate}.pdf`,
+          blob,
+          'avis_revision_loyer',
+        )
+      }
+
+      case 'deposit_receipt': {
+        const lease = leases.find((entry) => entry.id === request.leaseId)
+        if (!lease || !lease.deposit_received_date || lease.deposit_amount <= 0) return false
+
+        const data: DepositReceiptPdfData = {
+          ...landlord,
+          tenantFirstName: lease.tenant_first_name,
+          tenantLastName: lease.tenant_last_name,
+          propertyName: lease.property_name,
+          propertyAddress: lease.property_address,
+          propertyCity: lease.property_city,
+          propertyZip: lease.property_zip,
+          leaseType: lease.type,
+          leaseStartDate: lease.start_date,
+          receiptDate: lease.deposit_received_date,
+          depositAmount: lease.deposit_amount,
+        }
+
+        const blob = await pdf(<DepositReceiptPDF data={data} />).toBlob()
+        return saveGeneratedPdf(
+          lease.id,
+          `Recu_depot_garantie_${lease.tenant_last_name}_${lease.deposit_received_date}.pdf`,
+          blob,
+          'recu_depot_garantie',
+        )
+      }
+
+      case 'deposit_settlement': {
+        const lease = leases.find((entry) => entry.id === request.leaseId)
+        if (!lease || !lease.deposit_refund_date || lease.deposit_amount <= 0) return false
+
+        const data: DepositSettlementPdfData = {
+          ...landlord,
+          tenantFirstName: lease.tenant_first_name,
+          tenantLastName: lease.tenant_last_name,
+          propertyName: lease.property_name,
+          propertyAddress: lease.property_address,
+          propertyCity: lease.property_city,
+          propertyZip: lease.property_zip,
+          leaseStartDate: lease.start_date,
+          leaseEndDate: lease.end_date,
+          settlementDate: lease.deposit_refund_date,
+          depositAmount: lease.deposit_amount,
+          retainedAmount: lease.deposit_retained_amount,
+          returnedAmount: getDepositReturnedAmount(lease),
+          notes: lease.deposit_notes,
+        }
+
+        const blob = await pdf(<DepositSettlementPDF data={data} />).toBlob()
+        return saveGeneratedPdf(
+          lease.id,
+          `Solde_depot_garantie_${lease.tenant_last_name}_${lease.deposit_refund_date}.pdf`,
+          blob,
+          'solde_depot_garantie',
+        )
+      }
+
+      default:
+        return false
     }
+  }
 
+  async function saveGeneratedPdf(leaseId: number, fileName: string, blob: Blob, docType: string) {
     const buffer = Array.from(new Uint8Array(await blob.arrayBuffer()))
-    const result = await window.api.documents.savePdf(payment.lease_id, fileName, buffer, docType)
-    if (result.saved) {
-      setShowForm(false)
-      load()
-    }
+    const result = await window.api.documents.savePdf(leaseId, fileName, buffer, docType)
+    if (!result.saved) return false
+    await load()
+    return true
   }
 
   async function handleDelete() {
@@ -147,13 +281,13 @@ export default function Documents() {
             {docs.length} document{docs.length !== 1 ? 's' : ''} g\u00e9n\u00e9r\u00e9{docs.length !== 1 ? 's' : ''}
           </p>
         </div>
-        <Button onClick={() => setShowForm(true)} disabled={paidPayments.length === 0}>
-          <Plus className="w-4 h-4" />
+        <Button onClick={() => setShowForm(true)} disabled={!canGenerateAnyDocument}>
+          <FileText className="w-4 h-4" />
           Nouveau document
         </Button>
       </div>
 
-      {paidPayments.length === 0 && docs.length === 0 ? (
+      {!canGenerateAnyDocument && docs.length === 0 ? (
         <EmptyState />
       ) : loading ? (
         <div className="flex flex-col gap-3">
@@ -169,7 +303,7 @@ export default function Documents() {
           <div>
             <p className="text-base font-semibold text-textPrimary">Aucun document g\u00e9n\u00e9r\u00e9</p>
             <p className="text-sm text-textMuted mt-1">
-              Cliquez sur \u00ab Nouveau document \u00bb pour g\u00e9n\u00e9rer votre premier PDF.
+              Ouvrez le centre de mod\u00e8les pour g\u00e9n\u00e9rer une quittance, un avis de r\u00e9vision ou un document de d\u00e9p\u00f4t.
             </p>
           </div>
         </div>
@@ -193,8 +327,10 @@ export default function Documents() {
 
       <AnimatePresence>
         {showForm && (
-          <GenerateModal
+          <GenerateDocumentModal
             payments={paidPayments}
+            leases={leases}
+            irlIndices={irlIndices}
             onGenerate={handleGenerate}
             onClose={() => setShowForm(false)}
           />
@@ -221,9 +357,10 @@ function EmptyState() {
         <ScrollText className="w-8 h-8 text-primary" />
       </div>
       <div>
-        <p className="text-lg font-semibold text-textPrimary">Aucun paiement pay\u00e9</p>
+        <p className="text-lg font-semibold text-textPrimary">Aucune source de document</p>
         <p className="text-sm text-textMuted mt-1">
-          Les documents ne peuvent \u00eatre g\u00e9n\u00e9r\u00e9s que pour les loyers marqu\u00e9s \u00ab Pay\u00e9 \u00bb.
+          Les mod\u00e8les deviennent disponibles d\u00e8s qu un paiement est marqu\u00e9 pay\u00e9, qu un bail peut \u00eatre r\u00e9vis\u00e9
+          ou qu un d\u00e9p\u00f4t de garantie est encaiss\u00e9 ou restitu\u00e9.
         </p>
       </div>
     </div>
@@ -287,165 +424,6 @@ function DocRow({
           </div>
         </CardContent>
       </Card>
-    </motion.div>
-  )
-}
-
-function GenerateModal({
-  payments,
-  onGenerate,
-  onClose,
-}: {
-  payments: Payment[]
-  onGenerate: (payment: Payment) => Promise<void>
-  onClose: () => void
-}) {
-  const [selected, setSelected] = useState<number>(0)
-  const [generating, setGenerating] = useState(false)
-  const [done, setDone] = useState(false)
-  const [error, setError] = useState('')
-
-  const selectedPayment = payments.find((payment) => payment.id === selected)
-  const detectedType = selectedPayment ? (isFullPayment(selectedPayment) ? 'quittance' : 'recu') : null
-
-  async function handleSubmit(event: React.FormEvent) {
-    event.preventDefault()
-    if (!selected) return setError('S\u00e9lectionnez un paiement.')
-
-    const payment = payments.find((entry) => entry.id === selected)
-    if (!payment) return
-
-    setGenerating(true)
-    setError('')
-
-    try {
-      await onGenerate(payment)
-      setDone(true)
-    } catch (err) {
-      setError(`Erreur : ${err instanceof Error ? err.message : String(err)}`)
-      setGenerating(false)
-    }
-  }
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={(event) => event.target === event.currentTarget && onClose()}
-    >
-      <motion.div
-        initial={{ opacity: 0, scale: 0.96, y: 12 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.96, y: 12 }}
-        transition={{ duration: 0.2, ease: 'easeOut' }}
-        className="w-full max-w-md bg-surface border border-border rounded-2xl shadow-2xl overflow-hidden"
-      >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <div className="flex items-center gap-2">
-            <FileText className="w-4 h-4 text-primary" />
-            <h2 className="text-base font-semibold text-textPrimary">G\u00e9n\u00e9rer un document</h2>
-          </div>
-          <button onClick={onClose} className="text-textMuted hover:text-textPrimary transition-colors">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        {done ? (
-          <div className="flex flex-col items-center gap-3 px-6 py-10">
-            <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-success/10">
-              <CheckCircle2 className="w-7 h-7 text-success" />
-            </div>
-            <p className="text-base font-semibold text-textPrimary">
-              {detectedType === 'quittance' ? 'Quittance g\u00e9n\u00e9r\u00e9e !' : 'Re\u00e7u g\u00e9n\u00e9r\u00e9 !'}
-            </p>
-            <p className="text-sm text-textMuted">Le fichier PDF a \u00e9t\u00e9 enregistr\u00e9 sur votre ordinateur.</p>
-            <Button onClick={onClose} className="mt-2">Fermer</Button>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-6">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-textMuted">S\u00e9lectionnez le paiement</label>
-              <div className="relative">
-                <select
-                  value={selected}
-                  onChange={(event) => setSelected(Number(event.target.value))}
-                  className="w-full appearance-none bg-surfaceHigh border border-border rounded-lg px-3 py-2 pr-8 text-sm text-textPrimary focus:outline-none focus:border-primary transition-colors"
-                >
-                  <option value={0} disabled>Choisissez un loyer pay\u00e9\u2026</option>
-                  {payments.map((payment) => (
-                    <option key={payment.id} value={payment.id}>
-                      {payment.tenant_first_name} {payment.tenant_last_name} {'\u00b7'} {MONTHS[payment.period_month - 1]} {payment.period_year} {'\u00b7'} {payment.property_name}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-textMuted pointer-events-none" />
-              </div>
-            </div>
-
-            {selectedPayment && (() => {
-              const payment = selectedPayment
-              const full = isFullPayment(payment)
-
-              return (
-                <div className="flex flex-col gap-3">
-                  <div className="bg-surfaceHigh rounded-lg p-3 flex flex-col gap-1.5 text-xs text-textMuted">
-                    <div className="flex justify-between">
-                      <span>Locataire</span>
-                      <span className="text-textPrimary font-medium">{payment.tenant_first_name} {payment.tenant_last_name}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Bien</span>
-                      <span className="text-textPrimary font-medium">{payment.property_name}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>P\u00e9riode</span>
-                      <span className="text-textPrimary font-medium">{MONTHS[payment.period_month - 1]} {payment.period_year}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Loyer d\u00fb (HC + charges)</span>
-                      <span className="text-textPrimary font-medium">
-                        {(payment.lease_rent_amount + payment.lease_charges_amount).toFixed(2)} {'\u20ac'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between border-t border-border pt-1.5 mt-0.5">
-                      <span>Montant pay\u00e9</span>
-                      <span className="text-textPrimary font-semibold">
-                        {(payment.rent_amount + payment.charges_amount).toFixed(2)} {'\u20ac'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className={`flex items-start gap-2.5 rounded-lg px-3 py-2.5 text-xs ${full ? 'bg-primary/10 border border-primary/20' : 'bg-accent/10 border border-accent/20'}`}>
-                    <Info className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${full ? 'text-primary' : 'text-accent'}`} />
-                    <div>
-                      <p className={`font-semibold ${full ? 'text-primary' : 'text-accent'}`}>
-                        {full ? 'Quittance de loyer' : 'Re\u00e7u de loyer'}
-                      </p>
-                      <p className="text-textMuted mt-0.5">
-                        {full
-                          ? 'Paiement int\u00e9gral : une quittance sera g\u00e9n\u00e9r\u00e9e (art. 21, Loi du 6 juillet 1989).'
-                          : 'Paiement partiel : un re\u00e7u sera g\u00e9n\u00e9r\u00e9 (le montant pay\u00e9 est inf\u00e9rieur au loyer d\u00fb).'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )
-            })()}
-
-            {error && <p className="text-xs text-danger bg-danger/10 rounded-lg px-3 py-2">{error}</p>}
-
-            <div className="flex gap-2 pt-1">
-              <Button type="button" variant="secondary" onClick={onClose} className="flex-1">Annuler</Button>
-              <Button type="submit" disabled={!selected || generating} className="flex-1">
-                <Download className="w-3.5 h-3.5" />
-                {generating ? 'G\u00e9n\u00e9ration...' : 'G\u00e9n\u00e9rer le PDF'}
-              </Button>
-            </div>
-          </form>
-        )}
-      </motion.div>
     </motion.div>
   )
 }
