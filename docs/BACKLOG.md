@@ -141,14 +141,37 @@ Acceptance:
 
 ### Etat des Lieux MVP
 
-Status: `todo`
+Status: `in_progress`
 Outcome:
 Support structured move-in and move-out inspection reports with notes and signatures.
+
+Current scope delivered:
+- dedicated `Etats des lieux` page with sidebar entry
+- structured entry and exit inspections stored in a dedicated `inspections` table
+- room or area lines with condition and notes, plus general condition and meter readings
+- editable workflow with PDF export and automatic appearance in `Documents`
+- landlord signature image included in the PDF when available, with a tenant signature area left for print signing
+
+Still needed before `done`:
+- actual tenant-side signature capture and persistence in the app
+- optional photo attachments or richer checklist fields for each room
+- faster entry points from the lease workflow if the page alone feels too detached
 
 Acceptance:
 - user can create an entry and exit inspection
 - room-level condition notes are persisted
 - a printable PDF can be generated
+
+Spec:
+- `docs/features/inspection-workflow.md`
+
+Likely touch points:
+- `electron/db/database.ts`
+- `electron/db/queries/inspections.ts`
+- `src/env.d.ts`
+- `src/pages/Inspections/`
+- `src/lib/pdf/inspection.tsx`
+- `src/pages/Documents/index.tsx`
 
 ### Expanded Document Templates
 
@@ -193,3 +216,4 @@ After implementation:
 - update the item status
 - note any scope changes
 - add a feature spec if the work introduced new business rules
+

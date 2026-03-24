@@ -99,6 +99,18 @@ function initSchema(db: Database.Database): void {
       created_at TEXT    NOT NULL DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS inspections (
+      id                INTEGER PRIMARY KEY AUTOINCREMENT,
+      lease_id          INTEGER NOT NULL REFERENCES leases(id) ON DELETE CASCADE,
+      kind              TEXT    NOT NULL,
+      inspection_date   TEXT    NOT NULL,
+      meter_readings    TEXT,
+      general_condition TEXT,
+      notes             TEXT,
+      rooms_json        TEXT    NOT NULL DEFAULT '[]',
+      created_at        TEXT    NOT NULL DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS irl_indices (
       id           INTEGER PRIMARY KEY AUTOINCREMENT,
       year         INTEGER NOT NULL,

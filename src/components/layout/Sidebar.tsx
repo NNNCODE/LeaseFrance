@@ -7,6 +7,7 @@ import {
   FileText,
   CreditCard,
   FolderOpen,
+  ScrollText,
   Settings,
   Home,
   Lock,
@@ -21,6 +22,7 @@ const navItems = [
   { to: '/tenants',    icon: Users,           label: 'Locataires'      },
   { to: '/leases',     icon: FileText,        label: 'Baux'            },
   { to: '/payments',   icon: CreditCard,      label: 'Paiements'       },
+  { to: '/inspections',icon: ScrollText,      label: 'Etats des lieux' },
   { to: '/documents',  icon: FolderOpen,      label: 'Documents'       },
 ]
 

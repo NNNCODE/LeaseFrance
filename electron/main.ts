@@ -10,6 +10,7 @@ import * as tenantsDb from './db/queries/tenants'
 import * as leasesDb from './db/queries/leases'
 import * as paymentsDb from './db/queries/payments'
 import * as paymentRemindersDb from './db/queries/paymentReminders'
+import * as inspectionsDb from './db/queries/inspections'
 import * as documentsDb from './db/queries/documents'
 import * as irlDb from './db/queries/irl'
 
@@ -115,6 +116,12 @@ ipcMain.handle('payments:delete',    (_e, id) => paymentsDb.remove(id))
 ipcMain.handle('paymentReminders:getByPayment', (_e, paymentId) => paymentRemindersDb.getByPayment(paymentId))
 ipcMain.handle('paymentReminders:create', (_e, data) => paymentRemindersDb.create(data))
 
+// Inspections IPC
+ipcMain.handle('inspections:getAll', () => inspectionsDb.getAll())
+ipcMain.handle('inspections:create', (_e, data) => inspectionsDb.create(data))
+ipcMain.handle('inspections:update', (_e, id, data) => inspectionsDb.update(id, data))
+ipcMain.handle('inspections:delete', (_e, id) => inspectionsDb.remove(id))
+
 // Documents IPC
 ipcMain.handle('documents:getAll', () => documentsDb.getAll())
 ipcMain.handle('documents:delete', (_e, id) => documentsDb.remove(id))
@@ -125,6 +132,8 @@ ipcMain.handle('documents:savePdf', async (_e, leaseId: number, fileName: string
     relance_amiable: 'Enregistrer la relance amiable',
     mise_en_demeure: 'Enregistrer la mise en demeure',
     proposition_echeancier: "Enregistrer la proposition d'echeancier",
+    etat_des_lieux_entree: "Enregistrer l'etat des lieux d'entree",
+    etat_des_lieux_sortie: "Enregistrer l'etat des lieux de sortie",
   }
   const { filePath, canceled } = await dialog.showSaveDialog({
     title: titleMap[docType ?? 'quittance'] ?? 'Enregistrer le document',

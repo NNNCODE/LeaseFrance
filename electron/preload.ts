@@ -49,6 +49,12 @@ contextBridge.exposeInMainWorld('api', {
     getByPayment: (paymentId: number) => ipcRenderer.invoke('paymentReminders:getByPayment', paymentId),
     create:       (data: unknown) => ipcRenderer.invoke('paymentReminders:create', data),
   },
+  inspections: {
+    getAll:  () => ipcRenderer.invoke('inspections:getAll'),
+    create:  (data: unknown) => ipcRenderer.invoke('inspections:create', data),
+    update:  (id: number, data: unknown) => ipcRenderer.invoke('inspections:update', id, data),
+    delete:  (id: number) => ipcRenderer.invoke('inspections:delete', id),
+  },
   documents: {
     getAll:    () => ipcRenderer.invoke('documents:getAll'),
     delete:    (id: number) => ipcRenderer.invoke('documents:delete', id),
