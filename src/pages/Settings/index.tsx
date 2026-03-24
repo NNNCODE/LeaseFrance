@@ -1,7 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { UserCircle2, Lock, Trash2, Eye, EyeOff, AlertTriangle, CheckCircle2, ChevronRight } from 'lucide-react'
+import {
+  UserCircle2, Lock, Trash2, Eye, EyeOff, AlertTriangle, CheckCircle2,
+  ChevronRight, Download, Upload, FolderOpen, HardDrive, RefreshCw,
+} from 'lucide-react'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,6 +18,7 @@ export default function Settings() {
         <p className="text-textMuted text-sm mt-1">G\u00e9rez votre compte et vos pr\u00e9f\u00e9rences</p>
       </div>
       <ProfileLink />
+      <BackupSection />
       <PasswordSection />
       <DangerZone />
     </div>
@@ -47,6 +51,163 @@ function ProfileLink() {
           </div>
           <ChevronRight className="w-4 h-4 text-textMuted" />
         </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+// ── Sauvegarde / Restauration ─────────────────────────────────────────────────
+
+function BackupSection() {
+  const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'restoring' | 'error'>('idle')
+  const [message, setMessage] = useState('')
+
+  async function handleBackup() {
+    setStatus('saving')
+    setMessage('')
+    try {
+      const result = await window.api.backup.create()
+      if (result.saved) {
+        setStatus('saved')
+        setMessage(`Sauvegarde enregistrée : ${result.path}`)
+        setTimeout(() => setStatus('idle'), 4000)
+      } else {
+        setStatus('idle')
+      }
+    } catch (err) {
+      setStatus('error')
+      setMessage(err instanceof Error ? err.message : String(err))
+    }
+  }
+
+  async function handleRestore() {
+    setStatus('restoring')
+    setMessage('')
+    try {
+      const result = await window.api.backup.restore()
+      if (result.error) {
+        setStatus('error')
+        setMessage(result.error)
+      } else if (!result.restored) {
+        setStatus('idle')
+      }
+      // If restored, the app will relaunch automatically
+    } catch (err) {
+      setStatus('error')
+      setMessage(err instanceof Error ? err.message : String(err))
+    }
+  }
+
+  async function handleOpenFolder() {
+    await window.api.backup.openDataFolder()
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <HardDrive className="w-4 h-4 text-primary" />
+          <CardTitle>Sauvegarde et restauration</CardTitle>
+        </div>
+        <CardDescription>
+          Protégez vos données en créant des sauvegardes régulières
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        {/* Backup */}
+        <div className="flex items-start justify-between gap-4 p-4 bg-primary/5 border border-primary/15 rounded-xl">
+          <div>
+            <p className="text-sm font-medium text-textPrimary">Sauvegarder</p>
+            <p className="text-xs text-textMuted mt-1">
+              Exporte la base de données et le profil dans un fichier unique.
+            </p>
+          </div>
+          <Button
+            size="sm"
+            onClick={handleBackup}
+            disabled={status === 'saving' || status === 'restoring'}
+            className="shrink-0"
+          >
+            <Download className="w-3.5 h-3.5" />
+            {status === 'saving' ? 'Sauvegarde...' : 'Sauvegarder'}
+          </Button>
+        </div>
+
+        {/* Restore */}
+        <div className="flex items-start justify-between gap-4 p-4 bg-warning/5 border border-warning/15 rounded-xl">
+          <div>
+            <p className="text-sm font-medium text-textPrimary">Restaurer</p>
+            <p className="text-xs text-textMuted mt-1">
+              Remplace les données actuelles par une sauvegarde. L'application redémarrera.
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRestore}
+            disabled={status === 'saving' || status === 'restoring'}
+            className="shrink-0"
+          >
+            <Upload className="w-3.5 h-3.5" />
+            {status === 'restoring' ? 'Restauration...' : 'Restaurer'}
+          </Button>
+        </div>
+
+        {/* Open data folder */}
+        <div className="flex items-start justify-between gap-4 p-4 bg-surfaceHigh/30 border border-border rounded-xl">
+          <div>
+            <p className="text-sm font-medium text-textPrimary">Dossier de données</p>
+            <p className="text-xs text-textMuted mt-1">
+              Ouvrir le répertoire contenant la base de données et le profil.
+            </p>
+          </div>
+          <Button variant="ghost" size="sm" onClick={handleOpenFolder} className="shrink-0">
+            <FolderOpen className="w-3.5 h-3.5" />
+            Ouvrir
+          </Button>
+        </div>
+
+        {/* Status messages */}
+        <AnimatePresence>
+          {status === 'saved' && message && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="flex items-center gap-2 p-3 bg-success/10 border border-success/20 rounded-lg text-xs text-success">
+                <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                <p className="truncate">{message}</p>
+              </div>
+            </motion.div>
+          )}
+          {status === 'error' && message && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="flex items-center gap-2 p-3 bg-danger/10 border border-danger/20 rounded-lg text-xs text-danger">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                <p>{message}</p>
+              </div>
+            </motion.div>
+          )}
+          {status === 'restoring' && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <div className="flex items-center gap-2 p-3 bg-warning/10 border border-warning/20 rounded-lg text-xs text-warning">
+                <RefreshCw className="w-3.5 h-3.5 shrink-0 animate-spin" />
+                <p>Restauration en cours, l'application va redémarrer...</p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </CardContent>
     </Card>
   )

@@ -14,6 +14,7 @@ import {
   Home,
   Lock,
   UserCircle2,
+  Search,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/useAuthStore'
@@ -35,7 +36,7 @@ const bottomItems = [
   { to: '/settings', icon: Settings,    label: 'Param\u00e8tres' },
 ]
 
-export default function Sidebar() {
+export default function Sidebar({ onSearchClick }: { onSearchClick?: () => void }) {
   const { lock } = useAuthStore()
 
   return (
@@ -48,6 +49,20 @@ export default function Sidebar() {
         <span className="font-semibold text-textPrimary text-sm tracking-wide no-drag">
           LeaseFrance
         </span>
+      </div>
+
+      {/* Search trigger */}
+      <div className="px-3 pt-3 pb-1">
+        <button
+          onClick={onSearchClick}
+          className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg border border-border bg-surfaceHigh/50 text-textMuted hover:text-textPrimary hover:border-primary/30 hover:bg-surfaceHigh transition-all text-sm"
+        >
+          <Search className="w-3.5 h-3.5 shrink-0" />
+          <span className="flex-1 text-left text-xs">Rechercher...</span>
+          <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface border border-border">
+            Ctrl K
+          </kbd>
+        </button>
       </div>
 
       {/* Main nav */}

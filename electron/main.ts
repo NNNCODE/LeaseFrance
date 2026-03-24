@@ -1,6 +1,7 @@
 import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron'
-import { writeFileSync } from 'fs'
-import { join } from 'path'
+import { writeFileSync, copyFileSync, existsSync, readFileSync } from 'fs'
+import { join, dirname } from 'path'
+import { closeDb, getDbPath } from './db/database'
 import {
   hasPassword, setupPassword, verifyPassword,
   changePassword, updateProfile, deleteAccount, getProfile,
@@ -184,6 +185,70 @@ ipcMain.handle('irl:getByQuarter',      (_e, year: number, quarter: number) => i
 ipcMain.handle('irl:getLatestForQuarter',(_e, quarter: number) => irlDb.getLatestForQuarter(quarter))
 ipcMain.handle('irl:upsert',           (_e, year: number, quarter: number, value: number) => irlDb.upsert(year, quarter, value))
 ipcMain.handle('irl:delete',           (_e, id: number) => irlDb.remove(id))
+
+// Backup / restore IPC
+const AUTH_FILE = join(app.getPath('userData'), 'auth.json')
+
+ipcMain.handle('backup:create', async () => {
+  const timestamp = new Date().toISOString().slice(0, 10)
+  const { filePath, canceled } = await dialog.showSaveDialog({
+    title: 'Sauvegarder la base de donnees',
+    defaultPath: `leasefrance_backup_${timestamp}.db`,
+    filters: [{ name: 'SQLite Database', extensions: ['db'] }],
+  })
+  if (canceled || !filePath) return { saved: false, path: null }
+
+  const dbPath = getDbPath()
+  copyFileSync(dbPath, filePath)
+
+  // Also copy auth.json alongside the DB backup
+  if (existsSync(AUTH_FILE)) {
+    const authDest = filePath.replace(/\.db$/, '_auth.json')
+    copyFileSync(AUTH_FILE, authDest)
+  }
+
+  return { saved: true, path: filePath }
+})
+
+ipcMain.handle('backup:restore', async () => {
+  const { filePaths, canceled } = await dialog.showOpenDialog({
+    title: 'Restaurer la base de donnees',
+    filters: [{ name: 'SQLite Database', extensions: ['db'] }],
+    properties: ['openFile'],
+  })
+  if (canceled || filePaths.length === 0) return { restored: false }
+
+  const srcPath = filePaths[0]
+
+  // Validate: check the SQLite magic header
+  const header = Buffer.alloc(16)
+  const fd = readFileSync(srcPath)
+  fd.copy(header, 0, 0, 16)
+  if (header.toString('utf8', 0, 15) !== 'SQLite format 3') {
+    return { restored: false, error: 'Le fichier selectionne n\'est pas une base de donnees SQLite valide.' }
+  }
+
+  // Close current DB connection before replacing
+  closeDb()
+
+  const dbPath = getDbPath()
+  copyFileSync(srcPath, dbPath)
+
+  // Check for companion auth file
+  const authSrc = srcPath.replace(/\.db$/, '_auth.json')
+  if (existsSync(authSrc)) {
+    copyFileSync(authSrc, AUTH_FILE)
+  }
+
+  // Relaunch the app
+  app.relaunch()
+  app.exit(0)
+  return { restored: true }
+})
+
+ipcMain.handle('backup:openDataFolder', () => {
+  shell.openPath(app.getPath('userData'))
+})
 
 // Window controls via IPC
 ipcMain.on('window:minimize', () => mainWindow?.minimize())

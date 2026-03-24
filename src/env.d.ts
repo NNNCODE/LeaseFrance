@@ -372,6 +372,11 @@ interface Window {
         filters?: Array<{ name: string; extensions: string[] }>
       ) => Promise<{ saved: boolean; path: string | null }>
     }
+    backup: {
+      create:         () => Promise<{ saved: boolean; path: string | null }>
+      restore:        () => Promise<{ restored: boolean; error?: string }>
+      openDataFolder: () => Promise<void>
+    }
     irl: {
       getAll:              () => Promise<IrlIndex[]>
       getByQuarter:        (year: number, quarter: number) => Promise<IrlIndex | null>

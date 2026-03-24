@@ -5,13 +5,16 @@ import {
   TrendingUp, Users, FileText, AlertTriangle,
   ArrowUpRight, Plus, CheckCircle2, Clock, XCircle,
   InboxIcon, Building2, UserPlus, ScrollText, CreditCard,
-  ChevronRight, Sparkles, CalendarClock,
+  ChevronRight, Sparkles, CalendarClock, Shield, FolderOpen,
+  CalendarDays, Bell, Wallet,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { isRevisionEligible, isAnniversaryWithinDays } from '@/lib/irl'
+import { getDepositStatus } from '@/pages/Leases/depositUtils'
+import { getCompletedDossierCount, DOSSIER_ITEMS } from '@/pages/Tenants/tenantFileHelpers'
 import {
   AreaChart, Area, XAxis, YAxis,
   CartesianGrid, Tooltip, ResponsiveContainer,
@@ -25,6 +28,8 @@ interface DashboardData {
   leasesCount: number
   payments: Payment[]
   leases: Lease[]
+  tenants: Tenant[]
+  reminders: ManualReminder[]
 }
 
 const MONTHS_SHORT = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc']
@@ -110,6 +115,14 @@ function EmptyState({ message }: { message: string }) {
   )
 }
 
+function daysUntil(dateStr: string): number {
+  const target = new Date(dateStr)
+  const now = new Date()
+  now.setHours(0, 0, 0, 0)
+  target.setHours(0, 0, 0, 0)
+  return Math.round((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+}
+
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.07 } } }
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' } } }
 
@@ -123,6 +136,8 @@ export default function Dashboard() {
     leasesCount: 0,
     payments: [],
     leases: [],
+    tenants: [],
+    reminders: [],
   })
   const [loading, setLoading] = useState(true)
 
@@ -133,13 +148,15 @@ export default function Dashboard() {
       window.api.leases.count(),
       window.api.payments.getAll(),
       window.api.leases.getAll(),
-    ]).then(([propertiesCount, tenantsCount, leasesCount, payments, leases]) => {
-      setData({ propertiesCount, tenantsCount, leasesCount, payments, leases })
+      window.api.tenants.getAll(),
+      window.api.manualReminders.getAll(),
+    ]).then(([propertiesCount, tenantsCount, leasesCount, payments, leases, tenants, reminders]) => {
+      setData({ propertiesCount, tenantsCount, leasesCount, payments, leases, tenants, reminders })
       setLoading(false)
     }).catch(() => setLoading(false))
   }, [])
 
-  // KPIs
+  // ── KPIs ──
   const now = new Date()
   const thisMonth = now.getMonth() + 1
   const thisYear  = now.getFullYear()
@@ -149,11 +166,11 @@ export default function Dashboard() {
   )
   const monthRevenue  = monthPayments.filter((p) => p.status === 'paid')
     .reduce((s, p) => s + p.rent_amount + p.charges_amount, 0)
-  const lateAmount    = data.payments.filter((p) => p.status === 'late')
-    .reduce((s, p) => s + p.rent_amount + p.charges_amount, 0)
-  const lateCount     = data.payments.filter((p) => p.status === 'late').length
+  const latePayments  = data.payments.filter((p) => p.status === 'late')
+  const lateAmount    = latePayments.reduce((s, p) => s + p.rent_amount + p.charges_amount, 0)
+  const lateCount     = latePayments.length
 
-  // Revenus sur 6 mois glissants
+  // ── Revenus 6 mois glissants ──
   const revenueData = useMemo(() => {
     const months: { month: string; revenus: number }[] = []
     for (let i = 5; i >= 0; i--) {
@@ -170,7 +187,7 @@ export default function Dashboard() {
 
   const hasChartData = revenueData.some((d) => d.revenus > 0)
 
-  // Paiements récents (5 derniers)
+  // ── Paiements récents (5 derniers) ──
   const recentPayments = useMemo(() =>
     [...data.payments]
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
@@ -178,51 +195,81 @@ export default function Dashboard() {
     [data.payments]
   )
 
-  // Baux éligibles à la révision IRL (anniversaire dans les 60 jours)
-  const irlRevisionCount = useMemo(() =>
+  // ── Baux éligibles révision IRL ──
+  const irlRevisionLeases = useMemo(() =>
     data.leases.filter((l) =>
       l.status === 'active' &&
       isRevisionEligible(l.type, l.start_date, l.irl_reference_index, l.irl_reference_quarter) &&
       isAnniversaryWithinDays(l.start_date, 60)
-    ).length,
+    ),
     [data.leases]
   )
 
-  // Alertes dynamiques
-  const alerts = useMemo(() => {
-    const list: { type: 'overdue' | 'pending' | 'irl'; message: string; icon: typeof AlertTriangle }[] = []
-    if (lateCount > 0) {
-      list.push({
-        type: 'overdue',
-        message: `${lateCount} loyer${lateCount > 1 ? 's' : ''} en retard — ${formatCurrency(lateAmount)} à encaisser`,
-        icon: AlertTriangle,
-      })
-    }
-    const pendingThisMonth = monthPayments.filter((p) => p.status === 'pending').length
-    if (pendingThisMonth > 0) {
-      list.push({
-        type: 'pending',
-        message: `${pendingThisMonth} paiement${pendingThisMonth > 1 ? 's' : ''} en attente ce mois-ci`,
-        icon: CalendarClock,
-      })
-    }
-    if (irlRevisionCount > 0) {
-      list.push({
-        type: 'irl',
-        message: `${irlRevisionCount} bail${irlRevisionCount > 1 ? 'x' : ''} éligible${irlRevisionCount > 1 ? 's' : ''} à la révision IRL`,
-        icon: TrendingUp,
-      })
-    }
-    return list
-  }, [lateCount, lateAmount, monthPayments, irlRevisionCount])
+  // ── Baux à échéance (fin dans 90 jours ou dépassée de 30 jours) ──
+  const expiringLeases = useMemo(() =>
+    data.leases
+      .filter((l) => l.status === 'active' && l.end_date)
+      .map((l) => ({ ...l, _days: daysUntil(l.end_date!) }))
+      .filter((l) => l._days >= -30 && l._days <= 90)
+      .sort((a, b) => a._days - b._days),
+    [data.leases]
+  )
 
-  // Compteurs pour l'onboarding
+  // ── Dépôts à restituer (bail terminé, dépôt toujours détenu) ──
+  const depositsToReturn = useMemo(() =>
+    data.leases.filter((l) => {
+      if (l.status === 'active') return false
+      const status = getDepositStatus(l)
+      return status === 'held'
+    }),
+    [data.leases]
+  )
+
+  // ── Dépôts en attente d'encaissement ──
+  const depositsAwaiting = useMemo(() =>
+    data.leases.filter((l) => {
+      if (l.status !== 'active') return false
+      return getDepositStatus(l) === 'awaiting'
+    }),
+    [data.leases]
+  )
+
+  // ── Dossiers locatifs incomplets (locataires avec bail actif) ──
+  const incompleteDossiers = useMemo(() => {
+    const activeLeasesTenantIds = new Set(
+      data.leases.filter((l) => l.status === 'active').map((l) => l.tenant_id)
+    )
+    return data.tenants
+      .filter((t) => activeLeasesTenantIds.has(t.id))
+      .map((t) => ({ ...t, _completed: getCompletedDossierCount(t) }))
+      .filter((t) => t._completed < DOSSIER_ITEMS.length)
+      .sort((a, b) => a._completed - b._completed)
+  }, [data.tenants, data.leases])
+
+  // ── Rappels en attente ──
+  const pendingReminders = useMemo(() =>
+    data.reminders
+      .filter((r) => r.status === 'pending')
+      .sort((a, b) => a.due_date.localeCompare(b.due_date)),
+    [data.reminders]
+  )
+
+  // ── Onboarding counts ──
   const counts = {
     properties: data.propertiesCount,
     tenants:    data.tenantsCount,
     leases:     data.leasesCount,
     payments:   data.payments.length,
   }
+
+  // Total action items for the command center badge
+  const totalActions = lateCount
+    + expiringLeases.length
+    + depositsToReturn.length
+    + depositsAwaiting.length
+    + incompleteDossiers.length
+    + pendingReminders.length
+    + irlRevisionLeases.length
 
   const today = new Date().toLocaleDateString('fr-FR', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
@@ -285,7 +332,7 @@ export default function Dashboard() {
         />
       </motion.div>
 
-      {/* Chart + Alerts */}
+      {/* Chart + Alertes */}
       <div className="grid grid-cols-3 gap-4">
         <motion.div variants={item} className="col-span-2">
           <Card className="h-full">
@@ -323,29 +370,291 @@ export default function Dashboard() {
         <motion.div variants={item}>
           <Card className="h-full">
             <CardHeader>
-              <CardTitle>Alertes</CardTitle>
-              <CardDescription>Actions requises</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Actions requises</CardTitle>
+                  <CardDescription>Vue d'ensemble</CardDescription>
+                </div>
+                {totalActions > 0 && (
+                  <Badge variant="danger" className="text-xs">{totalActions}</Badge>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="flex flex-col gap-2">
-              {alerts.length === 0 ? (
-                <EmptyState message="Aucune alerte" />
+              {totalActions === 0 ? (
+                <EmptyState message="Aucune action requise" />
               ) : (
-                alerts.map((a, i) => {
-                  const Icon = a.icon
-                  const bg   = a.type === 'overdue' ? 'bg-danger/10' : a.type === 'irl' ? 'bg-primary/10' : 'bg-warning/10'
-                  const text = a.type === 'overdue' ? 'text-danger'  : a.type === 'irl' ? 'text-primary'  : 'text-warning'
-                  return (
-                    <div key={i} className={`flex items-start gap-2 p-3 rounded-lg ${bg}`}>
-                      <Icon className={`w-4 h-4 mt-0.5 shrink-0 ${text}`} />
-                      <p className={`text-xs font-medium ${text}`}>{a.message}</p>
-                    </div>
-                  )
-                })
+                <>
+                  {lateCount > 0 && (
+                    <AlertRow icon={AlertTriangle} color="danger" onClick={() => navigate('/payments')}>
+                      {lateCount} impayé{lateCount > 1 ? 's' : ''} — {formatCurrency(lateAmount)}
+                    </AlertRow>
+                  )}
+                  {expiringLeases.length > 0 && (
+                    <AlertRow icon={CalendarDays} color="warning" onClick={() => navigate('/leases')}>
+                      {expiringLeases.length} bail{expiringLeases.length > 1 ? 'x' : ''} à échéance
+                    </AlertRow>
+                  )}
+                  {depositsToReturn.length > 0 && (
+                    <AlertRow icon={Wallet} color="warning" onClick={() => navigate('/leases')}>
+                      {depositsToReturn.length} dépôt{depositsToReturn.length > 1 ? 's' : ''} à restituer
+                    </AlertRow>
+                  )}
+                  {depositsAwaiting.length > 0 && (
+                    <AlertRow icon={Wallet} color="primary" onClick={() => navigate('/leases')}>
+                      {depositsAwaiting.length} dépôt{depositsAwaiting.length > 1 ? 's' : ''} à encaisser
+                    </AlertRow>
+                  )}
+                  {incompleteDossiers.length > 0 && (
+                    <AlertRow icon={FolderOpen} color="warning" onClick={() => navigate('/tenants')}>
+                      {incompleteDossiers.length} dossier{incompleteDossiers.length > 1 ? 's' : ''} incomplet{incompleteDossiers.length > 1 ? 's' : ''}
+                    </AlertRow>
+                  )}
+                  {pendingReminders.length > 0 && (
+                    <AlertRow icon={Bell} color="primary" onClick={() => navigate('/reminders')}>
+                      {pendingReminders.length} rappel{pendingReminders.length > 1 ? 's' : ''} en attente
+                    </AlertRow>
+                  )}
+                  {irlRevisionLeases.length > 0 && (
+                    <AlertRow icon={TrendingUp} color="primary" onClick={() => navigate('/leases')}>
+                      {irlRevisionLeases.length} révision{irlRevisionLeases.length > 1 ? 's' : ''} IRL éligible{irlRevisionLeases.length > 1 ? 's' : ''}
+                    </AlertRow>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>
         </motion.div>
       </div>
+
+      {/* ── Suivi opérationnel ── */}
+      {totalActions > 0 && (
+        <motion.div variants={item} className="grid grid-cols-2 gap-4">
+
+          {/* Impayés */}
+          {lateCount > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-danger/10">
+                      <AlertTriangle className="w-3.5 h-3.5 text-danger" />
+                    </div>
+                    <CardTitle className="text-sm">Loyers impayés</CardTitle>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => navigate('/payments')} className="text-xs text-primary gap-1">
+                    Voir <ArrowUpRight className="w-3 h-3" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-1.5">
+                {latePayments.slice(0, 4).map((p) => (
+                  <div key={p.id} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-danger/5 border border-danger/10">
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-textPrimary truncate">{p.tenant_first_name} {p.tenant_last_name}</p>
+                      <p className="text-[11px] text-textMuted">{p.property_name} · {MONTHS_SHORT[p.period_month - 1]} {p.period_year}</p>
+                    </div>
+                    <p className="text-xs font-semibold text-danger shrink-0">{formatCurrency(p.rent_amount + p.charges_amount)}</p>
+                  </div>
+                ))}
+                {lateCount > 4 && (
+                  <p className="text-[11px] text-textMuted text-center mt-1">+ {lateCount - 4} autre{lateCount - 4 > 1 ? 's' : ''}</p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Baux à échéance */}
+          {expiringLeases.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-warning/10">
+                      <CalendarDays className="w-3.5 h-3.5 text-warning" />
+                    </div>
+                    <CardTitle className="text-sm">Baux à échéance</CardTitle>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => navigate('/leases')} className="text-xs text-primary gap-1">
+                    Voir <ArrowUpRight className="w-3 h-3" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-1.5">
+                {expiringLeases.slice(0, 4).map((l) => {
+                  const overdue = l._days < 0
+                  return (
+                    <div key={l.id} className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg border ${overdue ? 'bg-danger/5 border-danger/10' : 'bg-warning/5 border-warning/10'}`}>
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium text-textPrimary truncate">{l.tenant_first_name} {l.tenant_last_name}</p>
+                        <p className="text-[11px] text-textMuted">{l.property_name}</p>
+                      </div>
+                      <Badge variant={overdue ? 'danger' : 'warning'} className="text-[10px] shrink-0">
+                        {overdue ? `Expiré ${Math.abs(l._days)}j` : `${l._days}j`}
+                      </Badge>
+                    </div>
+                  )
+                })}
+                {expiringLeases.length > 4 && (
+                  <p className="text-[11px] text-textMuted text-center mt-1">+ {expiringLeases.length - 4} autre{expiringLeases.length - 4 > 1 ? 's' : ''}</p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Dépôts à restituer / encaisser */}
+          {(depositsToReturn.length > 0 || depositsAwaiting.length > 0) && (
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-warning/10">
+                      <Shield className="w-3.5 h-3.5 text-warning" />
+                    </div>
+                    <CardTitle className="text-sm">Dépôts de garantie</CardTitle>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => navigate('/leases')} className="text-xs text-primary gap-1">
+                    Voir <ArrowUpRight className="w-3 h-3" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-1.5">
+                {depositsToReturn.slice(0, 3).map((l) => (
+                  <div key={l.id} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-warning/5 border border-warning/10">
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-textPrimary truncate">{l.tenant_first_name} {l.tenant_last_name}</p>
+                      <p className="text-[11px] text-textMuted">{l.property_name}</p>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <p className="text-xs font-semibold text-warning">{formatCurrency(l.deposit_amount)}</p>
+                      <Badge variant="warning" className="text-[10px]">A restituer</Badge>
+                    </div>
+                  </div>
+                ))}
+                {depositsAwaiting.slice(0, 3 - Math.min(depositsToReturn.length, 3)).map((l) => (
+                  <div key={l.id} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-primary/5 border border-primary/10">
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-textPrimary truncate">{l.tenant_first_name} {l.tenant_last_name}</p>
+                      <p className="text-[11px] text-textMuted">{l.property_name}</p>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <p className="text-xs font-semibold text-primary">{formatCurrency(l.deposit_amount)}</p>
+                      <Badge variant="default" className="text-[10px]">A encaisser</Badge>
+                    </div>
+                  </div>
+                ))}
+                {depositsToReturn.length + depositsAwaiting.length > 3 && (
+                  <p className="text-[11px] text-textMuted text-center mt-1">+ {depositsToReturn.length + depositsAwaiting.length - 3} autre{depositsToReturn.length + depositsAwaiting.length - 3 > 1 ? 's' : ''}</p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Dossiers incomplets */}
+          {incompleteDossiers.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-warning/10">
+                      <FolderOpen className="w-3.5 h-3.5 text-warning" />
+                    </div>
+                    <CardTitle className="text-sm">Dossiers locatifs incomplets</CardTitle>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => navigate('/tenants')} className="text-xs text-primary gap-1">
+                    Voir <ArrowUpRight className="w-3 h-3" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-1.5">
+                {incompleteDossiers.slice(0, 4).map((t) => (
+                  <div key={t.id} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-warning/5 border border-warning/10">
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-textPrimary truncate">{t.first_name} {t.last_name}</p>
+                      <p className="text-[11px] text-textMuted">{t.property_name ?? 'Aucun bien'}</p>
+                    </div>
+                    <Badge variant={t._completed === 0 ? 'danger' : 'warning'} className="text-[10px] shrink-0">
+                      {t._completed}/{DOSSIER_ITEMS.length}
+                    </Badge>
+                  </div>
+                ))}
+                {incompleteDossiers.length > 4 && (
+                  <p className="text-[11px] text-textMuted text-center mt-1">+ {incompleteDossiers.length - 4} autre{incompleteDossiers.length - 4 > 1 ? 's' : ''}</p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Rappels en attente */}
+          {pendingReminders.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-primary/10">
+                      <Bell className="w-3.5 h-3.5 text-primary" />
+                    </div>
+                    <CardTitle className="text-sm">Rappels en attente</CardTitle>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => navigate('/reminders')} className="text-xs text-primary gap-1">
+                    Voir <ArrowUpRight className="w-3 h-3" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-1.5">
+                {pendingReminders.slice(0, 4).map((r) => {
+                  const d = daysUntil(r.due_date)
+                  const overdue = d < 0
+                  return (
+                    <div key={r.id} className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg border ${overdue ? 'bg-danger/5 border-danger/10' : 'bg-primary/5 border-primary/10'}`}>
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium text-textPrimary truncate">{r.title}</p>
+                        <p className="text-[11px] text-textMuted">{formatDate(r.due_date)}{r.property_name ? ` · ${r.property_name}` : ''}</p>
+                      </div>
+                      <Badge variant={overdue ? 'danger' : 'default'} className="text-[10px] shrink-0">
+                        {overdue ? `En retard ${Math.abs(d)}j` : d === 0 ? "Aujourd'hui" : `${d}j`}
+                      </Badge>
+                    </div>
+                  )
+                })}
+                {pendingReminders.length > 4 && (
+                  <p className="text-[11px] text-textMuted text-center mt-1">+ {pendingReminders.length - 4} autre{pendingReminders.length - 4 > 1 ? 's' : ''}</p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Révisions IRL */}
+          {irlRevisionLeases.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-primary/10">
+                      <TrendingUp className="w-3.5 h-3.5 text-primary" />
+                    </div>
+                    <CardTitle className="text-sm">Révisions IRL éligibles</CardTitle>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => navigate('/leases')} className="text-xs text-primary gap-1">
+                    Voir <ArrowUpRight className="w-3 h-3" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-1.5">
+                {irlRevisionLeases.slice(0, 4).map((l) => (
+                  <div key={l.id} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-primary/5 border border-primary/10">
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-textPrimary truncate">{l.tenant_first_name} {l.tenant_last_name}</p>
+                      <p className="text-[11px] text-textMuted">{l.property_name} · {formatCurrency(l.rent_amount)}/mois</p>
+                    </div>
+                    <Badge variant="default" className="text-[10px] shrink-0">IRL</Badge>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+        </motion.div>
+      )}
 
       {/* Recent payments */}
       <motion.div variants={item}>
@@ -441,5 +750,31 @@ function KpiCard({ title, value, delta, positive, icon: Icon, color }: {
         </div>
       </CardContent>
     </Card>
+  )
+}
+
+// ── Alert Row ─────────────────────────────────────────────────────────────────
+
+function AlertRow({ icon: Icon, color, onClick, children }: {
+  icon: React.ElementType
+  color: 'danger' | 'warning' | 'primary'
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  const styles = {
+    danger:  { bg: 'bg-danger/10',  text: 'text-danger'  },
+    warning: { bg: 'bg-warning/10', text: 'text-warning' },
+    primary: { bg: 'bg-primary/10', text: 'text-primary' },
+  }
+  const s = styles[color]
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center gap-2 w-full p-2.5 rounded-lg text-left transition-all hover:brightness-110 ${s.bg}`}
+    >
+      <Icon className={`w-3.5 h-3.5 shrink-0 ${s.text}`} />
+      <p className={`text-xs font-medium flex-1 ${s.text}`}>{children}</p>
+      <ChevronRight className={`w-3 h-3 shrink-0 opacity-50 ${s.text}`} />
+    </button>
   )
 }

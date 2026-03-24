@@ -76,6 +76,11 @@ contextBridge.exposeInMainWorld('api', {
   exports: {
     saveFile: (fileName: string, buffer: number[], filters?: unknown) => ipcRenderer.invoke('exports:saveFile', fileName, buffer, filters),
   },
+  backup: {
+    create:         () => ipcRenderer.invoke('backup:create'),
+    restore:        () => ipcRenderer.invoke('backup:restore'),
+    openDataFolder: () => ipcRenderer.invoke('backup:openDataFolder'),
+  },
   irl: {
     getAll:             () => ipcRenderer.invoke('irl:getAll'),
     getByQuarter:       (year: number, quarter: number) => ipcRenderer.invoke('irl:getByQuarter', year, quarter),

@@ -19,6 +19,17 @@ export function getDb(): Database.Database {
   return db
 }
 
+export function closeDb(): void {
+  if (db) {
+    db.close()
+    db = null
+  }
+}
+
+export function getDbPath(): string {
+  return join(app.getPath('userData'), 'leasefrance.db')
+}
+
 function ensureColumnExists(db: Database.Database, table: string, column: string, definition: string): void {
   const columns = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>
   if (!columns.some((entry) => entry.name === column)) {

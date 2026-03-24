@@ -1,8 +1,8 @@
-import { Bell, Home } from 'lucide-react'
+import { Bell, Home, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import WindowControls from './WindowControls'
 
-export default function Topbar() {
+export default function Topbar({ onSearchClick }: { onSearchClick?: () => void }) {
   return (
     <header className="flex items-center justify-between h-14 px-6 border-b border-border bg-background/95 drag shrink-0">
       <div className="flex items-center gap-3">
@@ -16,6 +16,10 @@ export default function Topbar() {
       </div>
 
       <div className="flex items-center gap-2 no-drag">
+        <Button variant="ghost" size="icon" onClick={onSearchClick} title="Rechercher (Ctrl+K)">
+          <Search className="w-4 h-4" />
+        </Button>
+
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="w-4 h-4" />
           <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-accent" />
