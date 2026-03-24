@@ -19,18 +19,27 @@ Detailed feature design can live in `docs/features/<feature>.md`.
 ## Current Product Base
 
 Already in place:
-- local authentication
-- properties
-- tenants
-- leases
-- payments
+- local authentication with profile and signature
+- properties, tenants, leases, payments
 - IRL reference data
 - quittance and recu PDF generation
 - dashboard and document archive
 
+MVP delivered (in_progress — refinements tracked in BACKLOG):
+- deposit management (collection, refund, deductions on leases)
+- unpaid rent follow-up (reminder stages, PDF letters)
+- annual charges reconciliation (yearly actual vs provisions, PDF export)
+- reminders and deadlines center (derived lease/IRL dates, manual reminders)
+- etat des lieux (entry/exit inspections, room-level notes, PDF report)
+- expanded document templates (rent revision, deposit receipt, deposit settlement)
+- tenant and guarantor file (guarantor contacts, emergency contacts, dossier checklist)
+- bank CSV import (credit-line matching, payment creation)
+- annual fiscal summary (per-property totals, CSV/PDF export)
+- login page UI and custom window controls
+
 ## Now
 
-These are the highest-value additions for private landlords using the current app.
+Highest-value work: finishing in-progress items and closing gaps.
 
 ### 1. Tenant Account Ledger
 
@@ -40,76 +49,24 @@ Show a clear balance history per tenant and per lease: expected rent, received a
 Why it matters:
 Payments alone are not enough once there are partial payments, adjustments, or late settlements.
 
-### 2. Deposit Management
+### 2. Polish and Close In-Progress MVPs
 
 Goal:
-Track deposit collection, retained amounts, refund date, and deduction reasons.
+Move each in_progress backlog item to done by delivering remaining acceptance criteria (see BACKLOG.md for per-item details).
 
-Why it matters:
-This is a common end-of-lease workflow and directly connects to disputes and document generation.
-
-### 3. Unpaid Rent Follow-up
-
-Goal:
-Support reminder stages for unpaid rent: reminder, formal notice, payment plan, notes, and generated letters.
-
-Why it matters:
-Landlords need a consistent process, not only a late payment status.
-
-### 4. Annual Charges Reconciliation
-
-Goal:
-Track collected charges vs actual expenses and generate a yearly regularisation summary.
-
-Why it matters:
-This closes an important gap between monthly rent collection and real annual accounting.
-
-### 5. Reminders and Deadlines
-
-Goal:
-Surface upcoming dates such as lease renewals, IRL revision windows, insurance proof requests, diagnostics, and tax-related reminders.
-
-Why it matters:
-A desktop app should help users avoid missing dates, not just store records.
+Priority items:
+- deposit settlement PDF
+- dashboard surfacing for arrears, reminders, and incomplete dossiers
+- duplicate detection for bank CSV import
+- tenant certificate / attestation document template
 
 ## Next
 
-These features are strong follow-ups once the workflows above exist.
-
-### 6. Etat des Lieux
-
-Structured move-in and move-out inspections with room-by-room notes, meter readings, photos, and signatures.
-
-### 7. Expanded Document Center
-
-Add more landlord-facing templates:
-- rent revision notice
-- deposit receipt
-- deposit settlement
-- unpaid rent reminder letter
-- tenant certificate / attestation
-
-### 8. Tenant and Guarantor File
-
-Store guarantor details, emergency contacts, and application document completeness.
-
-### 9. Bank Import and Payment Matching
-
-Import CSV statements and suggest links to existing leases and unpaid periods.
-
-## Later
-
-These are valuable, but not on the immediate path.
-
-### 10. Annual Fiscal Summary
-
-Generate yearly summaries of rent received, recoverable charges, vacancies, and exportable totals.
-
-### 11. Maintenance and Incidents
+### 3. Maintenance and Incidents
 
 Track repairs, suppliers, interventions, and costs by property and lease.
 
-### 12. Multi-owner or Family Ownership Support
+### 4. Multi-owner or Family Ownership Support
 
 Useful for indivision or small shared ownership cases, but lower priority than core solo-landlord workflows.
 

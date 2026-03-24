@@ -266,7 +266,10 @@ export default function InspectionModal({
             </div>
           </div>
 
-          <textarea value={form.notes ?? ''} onChange={(event) => setField('notes', event.target.value)} rows={4} placeholder="Remarques complementaires..." className="w-full resize-none rounded-lg border border-border bg-surfaceHigh px-3 py-2 text-sm text-textPrimary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-textMuted">Remarques complementaires</label>
+            <textarea value={form.notes ?? ''} onChange={(event) => setField('notes', event.target.value)} rows={3} placeholder="Observations supplementaires..." className="w-full resize-none rounded-lg border border-border bg-surfaceHigh px-3 py-2 text-sm text-textPrimary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
+          </div>
 
           <div className="rounded-xl border border-warning/20 bg-warning/5 px-4 py-3 text-xs text-textMuted leading-5">
             Le PDF reprend la signature du proprietaire si elle existe dans `Proprietaire`. La signature du locataire reste un emplacement a signer sur la version imprimee.

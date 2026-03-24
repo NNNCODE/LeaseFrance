@@ -322,7 +322,7 @@ function DocumentShell({
           <View style={s.footerRight}>
             <Text style={s.sigLabel}>Signature du proprietaire</Text>
             {landlordSignature && landlordSignature.startsWith('data:image') ? (
-              <Image src={landlordSignature} style={{ width: 120, height: 58 }} cache={false} />
+              <Image src={{ uri: landlordSignature }} style={{ width: 120, height: 58 }} />
             ) : (
               <View style={s.sigPlaceholder} />
             )}

@@ -296,7 +296,7 @@ export function InspectionPDF({ data }: { data: InspectionPdfData }) {
           </View>
         </View>
 
-        <View style={[s.section, s.noteGrid]}>
+        <View style={[s.section, s.noteGrid]} wrap={false}>
           <View style={s.noteCol}>
             <Text style={s.sectionTitle}>Releves de compteurs</Text>
             <View style={s.paragraphBox}>
@@ -311,11 +311,11 @@ export function InspectionPDF({ data }: { data: InspectionPdfData }) {
           </View>
         </View>
 
-        <View style={s.signRow}>
+        <View style={s.signRow} wrap={false}>
           <View style={s.signBox}>
             <Text style={s.signTitle}>Proprietaire</Text>
             {data.landlordSignature && data.landlordSignature.startsWith('data:image') ? (
-              <Image src={data.landlordSignature} style={{ width: 120, height: 52 }} cache={false} />
+              <Image src={{ uri: data.landlordSignature }} style={{ width: 120, height: 52 }} />
             ) : (
               <View style={s.signPlaceholder} />
             )}

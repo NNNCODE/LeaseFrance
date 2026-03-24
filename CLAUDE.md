@@ -82,6 +82,22 @@ This breaks Electron APIs during local development.
   Partial-payment receipt PDF.
 - `src/pages/Documents/index.tsx`
   Document generation flow and payment-to-document logic.
+- `src/pages/Inspections/index.tsx`
+  Move-in / move-out inspection workflow.
+- `src/pages/Reminders/index.tsx`
+  Deadline center: derived and manual reminders.
+- `src/pages/Fiscal/index.tsx`
+  Annual fiscal summary and CSV/PDF export.
+- `src/lib/pdf/reminder.tsx`
+  Unpaid rent follow-up letter PDFs.
+- `src/lib/pdf/inspection.tsx`
+  Etat des lieux inspection report PDF.
+- `src/lib/pdf/chargeReconciliation.tsx`
+  Annual charges reconciliation PDF.
+- `src/lib/pdf/documentTemplates.tsx`
+  Rent revision, deposit receipt, deposit settlement PDFs.
+- `src/lib/pdf/fiscalSummary.tsx`
+  Fiscal summary PDF.
 - `src/env.d.ts`
   Renderer-side entity types and `window.api` typings.
 
@@ -127,6 +143,10 @@ Current core tables:
 - `payments`
 - `documents`
 - `irl_indices`
+- `payment_reminders`
+- `inspections`
+- `charge_reconciliations`
+- `manual_reminders`
 
 ## Document and French Domain Rules
 

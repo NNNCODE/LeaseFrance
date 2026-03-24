@@ -427,7 +427,7 @@ export function RecuPDF({ data }: { data: RecuData }) {
           <View style={s.footerR}>
             <Text style={s.sigLabel}>{'Signature du Propriétaire'}</Text>
             {data.landlordSignature && data.landlordSignature.startsWith('data:image') ? (
-              <Image src={data.landlordSignature} style={{ width: 120, height: 60 }} cache={false} />
+              <Image src={{ uri: data.landlordSignature }} style={{ width: 120, height: 60 }} />
             ) : (
               <View style={s.sigRow}>
                 <View style={s.sigLine} />

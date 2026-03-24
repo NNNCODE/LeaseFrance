@@ -322,6 +322,31 @@ Scope notes:
 Spec:
 - `docs/features/fiscal-summary.md`
 
+### Login Page UI and Window Controls
+
+Status: `done`
+Outcome:
+Refresh the login screen design and add custom frameless window controls.
+
+Scope delivered:
+- redesigned login page visual style
+- custom minimize / maximize / close title-bar buttons for frameless window
+- profile page: canvas-based signature drawing in addition to image upload
+
+### Landlord Signature on PDF Documents
+
+Status: `in_progress`
+Outcome:
+Display the landlord's drawn or uploaded signature on generated quittance and recu PDFs.
+
+Current scope delivered:
+- canvas signature pad on the Profile page
+- signature stored as base64 PNG in auth.json
+- signature data passed through IPC to PDF renderer
+
+Still needed before `done`:
+- fix @react-pdf/renderer Image rendering of base64 data URLs (currently not displaying)
+
 ## Working Pattern With Claude Code
 
 Use prompts like:

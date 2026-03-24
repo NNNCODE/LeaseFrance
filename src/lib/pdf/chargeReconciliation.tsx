@@ -299,7 +299,7 @@ export function ChargeReconciliationPDF({ data }: { data: ChargeReconciliationPd
           <View style={s.footerRight}>
             <Text style={s.sigLabel}>Signature du proprietaire</Text>
             {data.landlordSignature && data.landlordSignature.startsWith('data:image') ? (
-              <Image src={data.landlordSignature} style={{ width: 120, height: 58 }} cache={false} />
+              <Image src={{ uri: data.landlordSignature }} style={{ width: 120, height: 58 }} />
             ) : (
               <View style={s.sigPlaceholder} />
             )}

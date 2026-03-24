@@ -188,7 +188,7 @@ export function ReminderLetterPDF({ data }: { data: ReminderLetterData }) {
           <View style={s.footerRight}>
             <Text style={s.sigLabel}>Signature du proprietaire</Text>
             {data.landlordSignature && data.landlordSignature.startsWith('data:image') ? (
-              <Image src={data.landlordSignature} style={{ width: 120, height: 60 }} cache={false} />
+              <Image src={{ uri: data.landlordSignature }} style={{ width: 120, height: 60 }} />
             ) : (
               <View style={s.sigPlaceholder} />
             )}
