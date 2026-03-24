@@ -1,17 +1,20 @@
-import { Minus, Square, X, Bell } from 'lucide-react'
+import { Bell, Home } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import WindowControls from './WindowControls'
 
 export default function Topbar() {
-  const handleMinimize = () => window.api?.window.minimize()
-  const handleMaximize = () => window.api?.window.maximize()
-  const handleClose    = () => window.api?.window.close()
-
   return (
-    <header className="flex items-center justify-between h-14 px-6 border-b border-border bg-background drag shrink-0">
-      {/* Left: breadcrumb placeholder */}
-      <div className="no-drag" />
+    <header className="flex items-center justify-between h-14 px-6 border-b border-border bg-background/95 drag shrink-0">
+      <div className="flex items-center gap-3">
+        <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-primary/10 border border-primary/20">
+          <Home className="w-4 h-4 text-primary" />
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-textPrimary">LeaseFrance</p>
+          <p className="text-[11px] uppercase tracking-[0.22em] text-textMuted">Espace proprietaire</p>
+        </div>
+      </div>
 
-      {/* Right: actions + window controls */}
       <div className="flex items-center gap-2 no-drag">
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="w-4 h-4" />
@@ -19,26 +22,7 @@ export default function Topbar() {
         </Button>
 
         <div className="w-px h-5 bg-border mx-1" />
-
-        {/* Window controls */}
-        <button
-          onClick={handleMinimize}
-          className="w-7 h-7 flex items-center justify-center rounded-md text-textMuted hover:bg-surfaceHigh hover:text-textPrimary transition-colors"
-        >
-          <Minus className="w-3.5 h-3.5" />
-        </button>
-        <button
-          onClick={handleMaximize}
-          className="w-7 h-7 flex items-center justify-center rounded-md text-textMuted hover:bg-surfaceHigh hover:text-textPrimary transition-colors"
-        >
-          <Square className="w-3 h-3" />
-        </button>
-        <button
-          onClick={handleClose}
-          className="w-7 h-7 flex items-center justify-center rounded-md text-textMuted hover:bg-danger/20 hover:text-danger transition-colors"
-        >
-          <X className="w-3.5 h-3.5" />
-        </button>
+        <WindowControls />
       </div>
     </header>
   )
