@@ -30,6 +30,7 @@ interface DashboardData {
   leases: Lease[]
   tenants: Tenant[]
   reminders: ManualReminder[]
+  attachments: Attachment[]
 }
 
 const MONTHS_SHORT = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc']
@@ -138,6 +139,7 @@ export default function Dashboard() {
     leases: [],
     tenants: [],
     reminders: [],
+    attachments: [],
   })
   const [loading, setLoading] = useState(true)
 
@@ -150,8 +152,9 @@ export default function Dashboard() {
       window.api.leases.getAll(),
       window.api.tenants.getAll(),
       window.api.manualReminders.getAll(),
-    ]).then(([propertiesCount, tenantsCount, leasesCount, payments, leases, tenants, reminders]) => {
-      setData({ propertiesCount, tenantsCount, leasesCount, payments, leases, tenants, reminders })
+      window.api.attachments.getAll(),
+    ]).then(([propertiesCount, tenantsCount, leasesCount, payments, leases, tenants, reminders, attachments]) => {
+      setData({ propertiesCount, tenantsCount, leasesCount, payments, leases, tenants, reminders, attachments })
       setLoading(false)
     }).catch(() => setLoading(false))
   }, [])
@@ -239,12 +242,19 @@ export default function Dashboard() {
     const activeLeasesTenantIds = new Set(
       data.leases.filter((l) => l.status === 'active').map((l) => l.tenant_id)
     )
+    // Count attachment files per tenant
+    const tenantFileCount = new Map<number, number>()
+    for (const a of data.attachments) {
+      if (a.entity_type === 'tenant') {
+        tenantFileCount.set(a.entity_id, (tenantFileCount.get(a.entity_id) ?? 0) + 1)
+      }
+    }
     return data.tenants
       .filter((t) => activeLeasesTenantIds.has(t.id))
-      .map((t) => ({ ...t, _completed: getCompletedDossierCount(t) }))
+      .map((t) => ({ ...t, _completed: getCompletedDossierCount(t), _files: tenantFileCount.get(t.id) ?? 0 }))
       .filter((t) => t._completed < DOSSIER_ITEMS.length)
       .sort((a, b) => a._completed - b._completed)
-  }, [data.tenants, data.leases])
+  }, [data.tenants, data.leases, data.attachments])
 
   // ── Rappels en attente ──
   const pendingReminders = useMemo(() =>
@@ -571,7 +581,7 @@ export default function Dashboard() {
                   <div key={t.id} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-warning/5 border border-warning/10">
                     <div className="min-w-0">
                       <p className="text-xs font-medium text-textPrimary truncate">{t.first_name} {t.last_name}</p>
-                      <p className="text-[11px] text-textMuted">{t.property_name ?? 'Aucun bien'}</p>
+                      <p className="text-[11px] text-textMuted">{t.property_name ?? 'Aucun bien'}{t._files > 0 ? ` · ${t._files} fichier${t._files > 1 ? 's' : ''}` : ' · 0 fichier'}</p>
                     </div>
                     <Badge variant={t._completed === 0 ? 'danger' : 'warning'} className="text-[10px] shrink-0">
                       {t._completed}/{DOSSIER_ITEMS.length}

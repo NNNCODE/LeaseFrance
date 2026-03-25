@@ -315,6 +315,18 @@ interface FiscalExpenseInput {
   notes?: string | null
 }
 
+interface Attachment {
+  id: number
+  entity_type: 'tenant' | 'lease' | 'inspection'
+  entity_id: number
+  slot: string | null
+  file_name: string
+  mime_type: string
+  file_size: number
+  stored_name: string
+  created_at: string
+}
+
 interface BankImportEntry {
   fingerprint: string
   tx_date: string
@@ -416,6 +428,14 @@ interface Window {
       create:   (data: FiscalExpenseInput) => Promise<FiscalExpense>
       update:   (id: number, data: FiscalExpenseInput) => Promise<FiscalExpense>
       delete:   (id: number) => Promise<boolean>
+    }
+    attachments: {
+      getByEntity: (entityType: string, entityId: number) => Promise<Attachment[]>
+      getAll:      () => Promise<Attachment[]>
+      upload:      (entityType: string, entityId: number, slot: string | null) => Promise<Attachment[]>
+      read:        (id: number) => Promise<{ data: string | null; mimeType: string | null; error: string | null }>
+      open:        (id: number) => Promise<void>
+      delete:      (id: number) => Promise<boolean>
     }
     bankImports: {
       findDuplicates:  (fingerprints: string[]) => Promise<string[]>

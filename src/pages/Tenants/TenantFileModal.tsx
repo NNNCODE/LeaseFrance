@@ -10,6 +10,7 @@ import {
   UserRound,
   X,
 } from 'lucide-react'
+import AttachmentPanel from '@/components/AttachmentPanel'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -271,6 +272,14 @@ export default function TenantFileModal({ tenant, onSave, onClose }: TenantFileM
               })}
             </div>
           </section>
+
+          {/* ── Attachments ────────────────────────────────── */}
+          <AttachmentPanel
+            entityType="tenant"
+            entityId={tenant.id}
+            title="Fichiers joints au dossier"
+            slots={DOSSIER_ITEMS.map((item) => ({ key: item.key, label: item.label }))}
+          />
 
           <section className="rounded-2xl border border-border bg-surfaceHigh/40 p-4">
             <div className="flex items-center gap-2 mb-4">

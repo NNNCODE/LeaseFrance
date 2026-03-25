@@ -178,6 +178,18 @@ function initSchema(db: Database.Database): void {
       created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS attachments (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      entity_type TEXT    NOT NULL,
+      entity_id   INTEGER NOT NULL,
+      slot        TEXT,
+      file_name   TEXT    NOT NULL,
+      mime_type   TEXT    NOT NULL,
+      file_size   INTEGER NOT NULL DEFAULT 0,
+      stored_name TEXT    NOT NULL,
+      created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS bank_imports (
       id          INTEGER PRIMARY KEY AUTOINCREMENT,
       fingerprint TEXT    NOT NULL UNIQUE,

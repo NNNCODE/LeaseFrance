@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { CalendarDays, CheckCircle2, Euro, ShieldCheck, StickyNote, X } from 'lucide-react'
+import AttachmentPanel from '@/components/AttachmentPanel'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -237,6 +238,14 @@ export default function DepositManagementModal({
               className="w-full resize-none bg-surfaceHigh border border-border rounded-lg px-3 py-2 text-sm text-textPrimary focus:outline-none focus:border-primary transition-colors"
             />
           </div>
+
+          {/* ── Deposit attachments ──────────────────────── */}
+          <AttachmentPanel
+            entityType="lease"
+            entityId={lease.id}
+            title="Justificatifs du depot"
+            compact
+          />
 
           {error && (
             <p className="text-xs text-danger bg-danger/10 rounded-lg px-3 py-2">{error}</p>

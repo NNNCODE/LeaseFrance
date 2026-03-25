@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { CheckCircle2, Plus, ScrollText, Trash2, X } from 'lucide-react'
+import AttachmentPanel from '@/components/AttachmentPanel'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -270,6 +271,16 @@ export default function InspectionModal({
             <label className="text-xs font-medium text-textMuted">Remarques complementaires</label>
             <textarea value={form.notes ?? ''} onChange={(event) => setField('notes', event.target.value)} rows={3} placeholder="Observations supplementaires..." className="w-full resize-none rounded-lg border border-border bg-surfaceHigh px-3 py-2 text-sm text-textPrimary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
           </div>
+
+          {/* ── Attachments (only for existing inspections) ── */}
+          {inspection && (
+            <AttachmentPanel
+              entityType="inspection"
+              entityId={inspection.id}
+              title="Photos et pieces jointes"
+              compact
+            />
+          )}
 
           <div className="rounded-xl border border-warning/20 bg-warning/5 px-4 py-3 text-xs text-textMuted leading-5">
             Le PDF reprend la signature du proprietaire si elle existe dans `Proprietaire`. La signature du locataire reste un emplacement a signer sur la version imprimee.

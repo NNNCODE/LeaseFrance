@@ -89,6 +89,14 @@ contextBridge.exposeInMainWorld('api', {
     update:   (id: number, data: unknown) => ipcRenderer.invoke('fiscalExpenses:update', id, data),
     delete:   (id: number) => ipcRenderer.invoke('fiscalExpenses:delete', id),
   },
+  attachments: {
+    getByEntity: (entityType: string, entityId: number) => ipcRenderer.invoke('attachments:getByEntity', entityType, entityId),
+    getAll:      () => ipcRenderer.invoke('attachments:getAll'),
+    upload:      (entityType: string, entityId: number, slot: string | null) => ipcRenderer.invoke('attachments:upload', entityType, entityId, slot),
+    read:        (id: number) => ipcRenderer.invoke('attachments:read', id),
+    open:        (id: number) => ipcRenderer.invoke('attachments:open', id),
+    delete:      (id: number) => ipcRenderer.invoke('attachments:delete', id),
+  },
   bankImports: {
     findDuplicates:  (fingerprints: string[]) => ipcRenderer.invoke('bankImports:findDuplicates', fingerprints),
     recordImported:  (entries: Array<{ fingerprint: string; tx_date: string; description: string; amount: number; payment_id: number | null }>) => ipcRenderer.invoke('bankImports:recordImported', entries),

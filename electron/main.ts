@@ -1,6 +1,7 @@
 import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron'
-import { writeFileSync, copyFileSync, existsSync, readFileSync } from 'fs'
-import { join, dirname } from 'path'
+import { writeFileSync, copyFileSync, existsSync, readFileSync, mkdirSync, unlinkSync } from 'fs'
+import { join, dirname, extname } from 'path'
+import { randomBytes } from 'crypto'
 import { closeDb, getDbPath } from './db/database'
 import {
   hasPassword, setupPassword, verifyPassword,
@@ -19,6 +20,7 @@ import * as documentsDb from './db/queries/documents'
 import * as irlDb from './db/queries/irl'
 import * as bankImportsDb from './db/queries/bankImports'
 import * as fiscalExpensesDb from './db/queries/fiscalExpenses'
+import * as attachmentsDb from './db/queries/attachments'
 
 const isDev = process.env['ELECTRON_RENDERER_URL'] !== undefined
 
@@ -208,6 +210,89 @@ ipcMain.handle('fiscalExpenses:getByYear',(_e, year: number) => fiscalExpensesDb
 ipcMain.handle('fiscalExpenses:create',   (_e, data: unknown) => fiscalExpensesDb.create(data as fiscalExpensesDb.FiscalExpenseInput))
 ipcMain.handle('fiscalExpenses:update',   (_e, id: number, data: unknown) => fiscalExpensesDb.update(id, data as fiscalExpensesDb.FiscalExpenseInput))
 ipcMain.handle('fiscalExpenses:delete',   (_e, id: number) => fiscalExpensesDb.remove(id))
+
+// Attachments IPC
+function getAttachmentsDir(): string {
+  const dir = join(app.getPath('userData'), 'attachments')
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
+  return dir
+}
+
+ipcMain.handle('attachments:getByEntity', (_e, entityType: string, entityId: number) => attachmentsDb.getByEntity(entityType, entityId))
+ipcMain.handle('attachments:getAll', () => attachmentsDb.getAll())
+ipcMain.handle('attachments:upload', async (_e, entityType: string, entityId: number, slot: string | null) => {
+  const extensions = ['pdf', 'png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'tiff']
+  const { filePaths, canceled } = await dialog.showOpenDialog({
+    title: 'Ajouter un fichier',
+    filters: [
+      { name: 'Documents et images', extensions },
+    ],
+    properties: ['openFile', 'multiSelections'],
+  })
+  if (canceled || filePaths.length === 0) return []
+
+  const dir = getAttachmentsDir()
+  const results: attachmentsDb.Attachment[] = []
+
+  for (const srcPath of filePaths) {
+    const ext = extname(srcPath).toLowerCase()
+    const storedName = `${Date.now()}_${randomBytes(6).toString('hex')}${ext}`
+    const destPath = join(dir, storedName)
+    copyFileSync(srcPath, destPath)
+
+    const stat = readFileSync(srcPath)
+    const mimeMap: Record<string, string> = {
+      '.pdf': 'application/pdf',
+      '.png': 'image/png',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.webp': 'image/webp',
+      '.gif': 'image/gif',
+      '.bmp': 'image/bmp',
+      '.tiff': 'image/tiff',
+    }
+
+    const record = attachmentsDb.create({
+      entity_type: entityType,
+      entity_id: entityId,
+      slot: slot || null,
+      file_name: srcPath.split(/[/\\]/).pop() || storedName,
+      mime_type: mimeMap[ext] || 'application/octet-stream',
+      file_size: stat.length,
+      stored_name: storedName,
+    })
+    results.push(record)
+  }
+
+  return results
+})
+
+ipcMain.handle('attachments:read', (_e, id: number) => {
+  const attachment = attachmentsDb.getById(id)
+  if (!attachment) return { data: null, error: 'Piece jointe introuvable' }
+  const filePath = join(getAttachmentsDir(), attachment.stored_name)
+  try {
+    const buffer = readFileSync(filePath)
+    return { data: buffer.toString('base64'), mimeType: attachment.mime_type, error: null }
+  } catch {
+    return { data: null, mimeType: null, error: 'Fichier introuvable sur le disque' }
+  }
+})
+
+ipcMain.handle('attachments:open', (_e, id: number) => {
+  const attachment = attachmentsDb.getById(id)
+  if (!attachment) return
+  const filePath = join(getAttachmentsDir(), attachment.stored_name)
+  if (existsSync(filePath)) shell.openPath(filePath)
+})
+
+ipcMain.handle('attachments:delete', (_e, id: number) => {
+  const attachment = attachmentsDb.remove(id)
+  if (!attachment) return false
+  const filePath = join(getAttachmentsDir(), attachment.stored_name)
+  try { if (existsSync(filePath)) unlinkSync(filePath) } catch { /* ignore */ }
+  return true
+})
 
 // Bank imports IPC
 ipcMain.handle('bankImports:findDuplicates', (_e, fingerprints: string[]) => bankImportsDb.findDuplicates(fingerprints))
