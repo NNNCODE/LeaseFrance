@@ -171,6 +171,15 @@ ipcMain.handle('documents:savePdf', async (_e, leaseId: number, fileName: string
   documentsDb.create(leaseId, docType ?? 'quittance', filePath)
   return { saved: true, path: filePath }
 })
+ipcMain.handle('documents:updateStatus', (_e, id: number, status: string) => documentsDb.updateStatus(id, status))
+ipcMain.handle('documents:readFile', (_e, filePath: string) => {
+  try {
+    const buffer = readFileSync(filePath)
+    return { data: buffer.toString('base64'), error: null }
+  } catch {
+    return { data: null, error: 'Fichier introuvable' }
+  }
+})
 ipcMain.handle('documents:openFile', (_e, filePath: string) => {
   shell.openPath(filePath)
 })

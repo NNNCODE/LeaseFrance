@@ -36,6 +36,8 @@ interface GenerateDocumentModalProps {
   irlIndices: IrlIndex[]
   onGenerate: (request: GenerateDocumentRequest) => Promise<boolean>
   onClose: () => void
+  initialTemplate?: DocumentTemplateKind | null
+  getTemplateParams?: (kind: DocumentTemplateKind) => Record<string, unknown> | null
 }
 
 interface TemplateCard {
@@ -56,6 +58,8 @@ export default function GenerateDocumentModal({
   irlIndices,
   onGenerate,
   onClose,
+  initialTemplate,
+  getTemplateParams,
 }: GenerateDocumentModalProps) {
   const revisableLeases = leases
     .map((lease) => ({ lease, context: getRevisionTemplateContext(lease, irlIndices) }))
@@ -101,11 +105,17 @@ export default function GenerateDocumentModal({
   const [generating, setGenerating] = useState(false)
   const [done, setDone] = useState(false)
   const [error, setError] = useState('')
+  const [memoryApplied, setMemoryApplied] = useState(false)
 
+  // Pick initial template (from regenerate or first available)
   useEffect(() => {
     if (template && cards.some((card) => card.kind === template && card.count > 0)) return
-    setTemplate(cards.find((card) => card.count > 0)?.kind ?? null)
-  }, [cards, template])
+    if (initialTemplate && cards.some((card) => card.kind === initialTemplate && card.count > 0)) {
+      setTemplate(initialTemplate)
+    } else {
+      setTemplate(cards.find((card) => card.count > 0)?.kind ?? null)
+    }
+  }, [cards, template, initialTemplate])
 
   useEffect(() => {
     if (!template) return
@@ -127,6 +137,40 @@ export default function GenerateDocumentModal({
         setSelectedId(0)
     }
   }, [depositReceiptLeases, depositSettlementLeases, payments, revisableLeases, template])
+
+  // Apply remembered template params once
+  useEffect(() => {
+    if (memoryApplied || !template || !getTemplateParams) return
+    const params = getTemplateParams(template)
+    if (!params) return
+
+    setMemoryApplied(true)
+
+    switch (template) {
+      case 'payment_certificate': {
+        const pid = params.paymentId as number
+        if (pid && payments.some((p) => p.id === pid)) setSelectedId(pid)
+        break
+      }
+      case 'rent_revision_notice': {
+        const lid = params.leaseId as number
+        if (lid && revisableLeases.some((e) => e.lease.id === lid)) setSelectedId(lid)
+        if (params.noticeDate) setNoticeDate(params.noticeDate as string)
+        if (params.effectiveDate) setEffectiveDate(params.effectiveDate as string)
+        break
+      }
+      case 'deposit_receipt': {
+        const lid = params.leaseId as number
+        if (lid && depositReceiptLeases.some((l) => l.id === lid)) setSelectedId(lid)
+        break
+      }
+      case 'deposit_settlement': {
+        const lid = params.leaseId as number
+        if (lid && depositSettlementLeases.some((l) => l.id === lid)) setSelectedId(lid)
+        break
+      }
+    }
+  }, [template, memoryApplied, getTemplateParams, payments, revisableLeases, depositReceiptLeases, depositSettlementLeases])
 
   const selectedPayment = payments.find((payment) => payment.id === selectedId) ?? null
   const selectedRevisable = revisableLeases.find((entry) => entry.lease.id === selectedId) ?? null

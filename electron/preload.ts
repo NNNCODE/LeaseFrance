@@ -75,6 +75,8 @@ contextBridge.exposeInMainWorld('api', {
     getAll:    () => ipcRenderer.invoke('documents:getAll'),
     delete:    (id: number) => ipcRenderer.invoke('documents:delete', id),
     savePdf:   (leaseId: number, fileName: string, buffer: number[], docType?: string) => ipcRenderer.invoke('documents:savePdf', leaseId, fileName, buffer, docType),
+    updateStatus: (id: number, status: string) => ipcRenderer.invoke('documents:updateStatus', id, status),
+    readFile:  (filePath: string) => ipcRenderer.invoke('documents:readFile', filePath) as Promise<{ data: string | null; error: string | null }>,
     openFile:  (filePath: string) => ipcRenderer.invoke('documents:openFile', filePath),
   },
   exports: {

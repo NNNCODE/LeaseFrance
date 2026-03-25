@@ -278,7 +278,9 @@ interface DocumentRecord {
   type: string
   generated_at: string
   file_path: string | null
+  status: 'generated' | 'sent' | 'archived'
   property_name: string
+  property_city: string
   tenant_first_name: string
   tenant_last_name: string
 }
@@ -394,10 +396,12 @@ interface Window {
       delete:  (id: number) => Promise<boolean>
     }
     documents: {
-      getAll:   () => Promise<DocumentRecord[]>
-      delete:   (id: number) => Promise<boolean>
-      savePdf:  (leaseId: number, fileName: string, buffer: number[], docType?: string) => Promise<{ saved: boolean; path: string | null }>
-      openFile: (filePath: string) => Promise<void>
+      getAll:       () => Promise<DocumentRecord[]>
+      delete:       (id: number) => Promise<boolean>
+      updateStatus: (id: number, status: string) => Promise<boolean>
+      readFile:     (filePath: string) => Promise<{ data: string | null; error: string | null }>
+      savePdf:      (leaseId: number, fileName: string, buffer: number[], docType?: string) => Promise<{ saved: boolean; path: string | null }>
+      openFile:     (filePath: string) => Promise<void>
     }
     exports: {
       saveFile: (

@@ -111,7 +111,8 @@ function initSchema(db: Database.Database): void {
       lease_id     INTEGER NOT NULL REFERENCES leases(id),
       type         TEXT    NOT NULL,
       generated_at TEXT    NOT NULL DEFAULT (datetime('now')),
-      file_path    TEXT
+      file_path    TEXT,
+      status       TEXT    NOT NULL DEFAULT 'generated'
     );
 
     CREATE TABLE IF NOT EXISTS payment_reminders (
@@ -205,4 +206,5 @@ function initSchema(db: Database.Database): void {
   ensureColumnExists(db, 'tenants', 'dossier_tax_notice', 'INTEGER NOT NULL DEFAULT 0')
   ensureColumnExists(db, 'tenants', 'dossier_bank_details', 'INTEGER NOT NULL DEFAULT 0')
   ensureColumnExists(db, 'tenants', 'dossier_notes', 'TEXT')
+  ensureColumnExists(db, 'documents', 'status', "TEXT NOT NULL DEFAULT 'generated'")
 }
