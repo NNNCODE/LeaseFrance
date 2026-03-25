@@ -165,6 +165,16 @@ function initSchema(db: Database.Database): void {
       published_at TEXT,
       UNIQUE(year, quarter)
     );
+
+    CREATE TABLE IF NOT EXISTS bank_imports (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      fingerprint TEXT    NOT NULL UNIQUE,
+      tx_date     TEXT    NOT NULL,
+      description TEXT    NOT NULL,
+      amount      REAL    NOT NULL,
+      payment_id  INTEGER,
+      imported_at TEXT    NOT NULL DEFAULT (datetime('now'))
+    );
   `)
 
   ensureColumnExists(db, 'leases', 'deposit_received_date', 'TEXT')

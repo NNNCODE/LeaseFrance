@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   UserCircle2, Lock, Trash2, Eye, EyeOff, AlertTriangle, CheckCircle2,
-  ChevronRight, Download, Upload, FolderOpen, HardDrive, RefreshCw,
+  ChevronRight, Copy, Download, KeyRound, Upload, FolderOpen, HardDrive, RefreshCw,
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { Button } from '@/components/ui/button'
@@ -20,6 +20,7 @@ export default function Settings() {
       <ProfileLink />
       <BackupSection />
       <PasswordSection />
+      <RecoveryKeySection />
       <DangerZone />
     </div>
   )
@@ -290,6 +291,123 @@ function PasswordSection() {
             </AnimatePresence>
           </div>
         </form>
+      </CardContent>
+    </Card>
+  )
+}
+
+// ── Cle de recuperation ───────────────────────────────────────────────────────
+
+function RecoveryKeySection() {
+  const [pwd, setPwd] = useState('')
+  const [show, setShow] = useState(false)
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [recoveryKey, setRecoveryKey] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+  const [confirmed, setConfirmed] = useState(false)
+
+  async function handleRegenerate(e: React.FormEvent) {
+    e.preventDefault()
+    setError('')
+    if (!pwd) return setError('Entrez votre mot de passe pour confirmer.')
+    setLoading(true)
+    const key = await window.api.auth.regenerateRecoveryKey(pwd)
+    setLoading(false)
+    if (key) {
+      setRecoveryKey(key)
+      setPwd('')
+    } else {
+      setError('Mot de passe incorrect.')
+    }
+  }
+
+  function handleCopy() {
+    if (!recoveryKey) return
+    navigator.clipboard.writeText(recoveryKey)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  function handleDone() {
+    setRecoveryKey(null)
+    setConfirmed(false)
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <KeyRound className="w-4 h-4 text-primary" />
+          <CardTitle>Cle de recuperation</CardTitle>
+        </div>
+        <CardDescription>
+          Regenerez votre cle pour reinitialiser le mot de passe en cas d'oubli
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {recoveryKey ? (
+          <div className="flex flex-col gap-4">
+            <div className="rounded-xl border border-warning/20 bg-warning/5 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="font-mono text-lg font-bold text-textPrimary tracking-wider select-all">
+                  {recoveryKey}
+                </p>
+                <button
+                  onClick={handleCopy}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surfaceHigh border border-border text-xs font-medium text-textMuted hover:text-textPrimary transition-colors shrink-0"
+                >
+                  {copied ? <CheckCircle2 className="w-3.5 h-3.5 text-success" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied ? 'Copie !' : 'Copier'}
+                </button>
+              </div>
+            </div>
+
+            <div className="rounded-xl bg-surfaceHigh/40 border border-border p-3 text-xs text-textMuted leading-5">
+              <p>L'ancienne cle n'est plus valide. Notez cette nouvelle cle dans un endroit sur.</p>
+              <p className="mt-1">Elle ne sera plus affichee apres fermeture.</p>
+            </div>
+
+            <label className="flex items-start gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={confirmed}
+                onChange={(e) => setConfirmed(e.target.checked)}
+                className="mt-0.5 rounded border-border"
+              />
+              <span className="text-xs text-textMuted">J'ai note ma nouvelle cle de recuperation en lieu sur.</span>
+            </label>
+
+            <div className="flex justify-end">
+              <Button size="sm" disabled={!confirmed} onClick={handleDone}>
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                Fermer
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleRegenerate} className="flex flex-col gap-4">
+            <div className="rounded-xl bg-surfaceHigh/40 border border-border p-3 text-xs text-textMuted leading-5">
+              <p>La regeneration invalide l'ancienne cle. Seule la derniere cle generee permet de reinitialiser votre mot de passe.</p>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-textMuted">Mot de passe actuel</label>
+              <PasswordInput value={pwd} onChange={setPwd} show={show} onToggle={() => setShow(!show)} placeholder="Confirmez votre mot de passe" />
+            </div>
+
+            {error && (
+              <p className="text-xs text-danger bg-danger/10 rounded-lg px-3 py-2">{error}</p>
+            )}
+
+            <div className="flex items-center gap-3">
+              <Button type="submit" size="sm" disabled={loading}>
+                <KeyRound className="w-3.5 h-3.5" />
+                {loading ? 'Generation...' : 'Regenerer la cle'}
+              </Button>
+            </div>
+          </form>
+        )}
       </CardContent>
     </Card>
   )

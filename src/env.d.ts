@@ -291,6 +291,14 @@ interface IrlIndex {
   published_at: string | null
 }
 
+interface BankImportEntry {
+  fingerprint: string
+  tx_date: string
+  description: string
+  amount: number
+  payment_id: number | null
+}
+
 interface Window {
   api: {
     window: {
@@ -301,11 +309,15 @@ interface Window {
     auth: {
       hasPassword:   () => Promise<boolean>
       getProfile:    () => Promise<UserProfile | null>
-      setup:         (pwd: string, name: string, email: string) => Promise<boolean>
+      setup:         (pwd: string, name: string, email: string) => Promise<string | null>
       verify:        (pwd: string) => Promise<boolean>
       change:        (old: string, next: string) => Promise<boolean>
       updateProfile: (name: string, email: string, address?: string, city?: string, phone?: string, signatureImage?: string) => Promise<boolean>
       delete:        (pwd: string) => Promise<boolean>
+      hasRecoveryKey:       () => Promise<boolean>
+      verifyRecoveryKey:    (key: string) => Promise<boolean>
+      resetWithRecoveryKey: (key: string, newPwd: string) => Promise<string | null>
+      regenerateRecoveryKey:(pwd: string) => Promise<string | null>
     }
     properties: {
       getAll: () => Promise<Property[]>
@@ -371,6 +383,10 @@ interface Window {
         buffer: number[],
         filters?: Array<{ name: string; extensions: string[] }>
       ) => Promise<{ saved: boolean; path: string | null }>
+    }
+    bankImports: {
+      findDuplicates:  (fingerprints: string[]) => Promise<string[]>
+      recordImported:  (entries: BankImportEntry[]) => Promise<void>
     }
     backup: {
       create:         () => Promise<{ saved: boolean; path: string | null }>

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { AlertTriangle, Eye, EyeOff, KeyRound, LogIn, Mail, ShieldCheck, UserPlus, X } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Copy, Eye, EyeOff, KeyRound, Lock, LogIn, Mail, ShieldCheck, UserPlus, X } from 'lucide-react'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -192,76 +192,255 @@ export default function Login({ onRegister }: LoginProps) {
 
       <AnimatePresence>
         {showRecovery ? (
-          <RecoveryModal
-            hasKnownProfile={Boolean(profile)}
-            onClose={() => setShowRecovery(false)}
-          />
+          <RecoveryModal onClose={() => setShowRecovery(false)} />
         ) : null}
       </AnimatePresence>
     </>
   )
 }
 
-function RecoveryModal({
-  hasKnownProfile,
-  onClose,
-}: {
-  hasKnownProfile: boolean
-  onClose: () => void
-}) {
+type RecoveryStep = 'key' | 'password' | 'done'
+
+function RecoveryModal({ onClose }: { onClose: () => void }) {
+  const [step, setStep] = useState<RecoveryStep>('key')
+  const [recoveryKey, setRecoveryKey] = useState('')
+  const [newPwd, setNewPwd] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [showPwd, setShowPwd] = useState(false)
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [newRecoveryKey, setNewRecoveryKey] = useState('')
+  const [copied, setCopied] = useState(false)
+  const [confirmed, setConfirmed] = useState(false)
+
+  async function handleVerifyKey(e: React.FormEvent) {
+    e.preventDefault()
+    setError('')
+    const cleaned = recoveryKey.trim().toUpperCase()
+    if (!cleaned) return setError('Veuillez entrer votre cle de recuperation.')
+    setLoading(true)
+    const valid = await window.api.auth.verifyRecoveryKey(cleaned)
+    setLoading(false)
+    if (valid) {
+      setStep('password')
+    } else {
+      setError('Cle de recuperation invalide.')
+    }
+  }
+
+  async function handleReset(e: React.FormEvent) {
+    e.preventDefault()
+    setError('')
+    if (newPwd.length < 8) return setError('Minimum 8 caracteres.')
+    if (newPwd !== confirm) return setError('Les mots de passe ne correspondent pas.')
+    setLoading(true)
+    const cleaned = recoveryKey.trim().toUpperCase()
+    const key = await window.api.auth.resetWithRecoveryKey(cleaned, newPwd)
+    setLoading(false)
+    if (key) {
+      setNewRecoveryKey(key)
+      setStep('done')
+    } else {
+      setError('Echec de la reinitialisation. Verifiez votre cle.')
+    }
+  }
+
+  function handleCopy() {
+    navigator.clipboard.writeText(newRecoveryKey)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  function handleFinish() {
+    window.location.reload()
+  }
+
+  // Prevent closing during the "done" step to force user to save the new key
+  function handleBackdropClick(event: React.MouseEvent) {
+    if (step === 'done') return
+    if (event.target === event.currentTarget) onClose()
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={(event) => event.target === event.currentTarget && onClose()}
+      onClick={handleBackdropClick}
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.96, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 10 }}
         transition={{ duration: 0.2, ease: 'easeOut' }}
-        className="w-full max-w-lg rounded-[24px] border border-border bg-surface p-6 shadow-2xl no-drag"
+        className="w-full max-w-lg rounded-2xl border border-border bg-surface p-6 shadow-2xl no-drag"
       >
+        {/* Header */}
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-warning/10">
-              <AlertTriangle className="h-5 w-5 text-warning" />
+            <div className={`flex h-11 w-11 items-center justify-center rounded-2xl shrink-0 ${step === 'done' ? 'bg-success/10' : 'bg-warning/10'}`}>
+              {step === 'done'
+                ? <CheckCircle2 className="h-5 w-5 text-success" />
+                : <KeyRound className="h-5 w-5 text-warning" />}
             </div>
             <div>
-              <p className="text-base font-semibold text-textPrimary">Mot de passe oublie</p>
-              <p className="mt-1 text-sm leading-6 text-textMuted">
-                Cette application fonctionne en local. Il n existe donc pas de recuperation par e-mail ou serveur externe.
+              <p className="text-base font-semibold text-textPrimary">
+                {step === 'key' && 'Reinitialiser le mot de passe'}
+                {step === 'password' && 'Nouveau mot de passe'}
+                {step === 'done' && 'Mot de passe reinitialise'}
+              </p>
+              <p className="mt-1 text-sm text-textMuted leading-relaxed">
+                {step === 'key' && 'Entrez la cle de recuperation fournie lors de la creation de votre compte.'}
+                {step === 'password' && 'Choisissez un nouveau mot de passe pour votre compte.'}
+                {step === 'done' && 'Votre mot de passe a ete reinitialise. Notez votre nouvelle cle de recuperation.'}
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-xl p-2 text-textMuted transition-colors hover:bg-surfaceHigh hover:text-textPrimary"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          {step !== 'done' && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-xl p-2 text-textMuted transition-colors hover:bg-surfaceHigh hover:text-textPrimary"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
 
-        <div className="mt-5 rounded-2xl border border-border bg-surfaceHigh/40 p-4 text-sm text-textMuted leading-6">
-          <p>Si vous connaissez encore le mot de passe sur une session ouverte, changez-le depuis `Parametres` apres connexion.</p>
-          <p className="mt-3">
-            Si le mot de passe est definitivement perdu, la version actuelle ne propose pas encore de reinitialisation locale securisee.
-          </p>
-          {hasKnownProfile ? (
-            <p className="mt-3">
-              Le compte detecte reste present sur cette machine, mais l acces ne peut pas etre reouvert sans le mot de passe actuel.
-            </p>
-          ) : null}
-        </div>
+        {/* Step 1: Recovery key input */}
+        {step === 'key' && (
+          <form onSubmit={handleVerifyKey} className="mt-5 flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-textMuted">Cle de recuperation</label>
+              <Input
+                value={recoveryKey}
+                onChange={(e) => setRecoveryKey(e.target.value)}
+                placeholder="XXXX-XXXX-XXXX-XXXX-XXXX"
+                className="font-mono tracking-wider"
+                autoFocus
+              />
+            </div>
 
-        <div className="mt-5 flex justify-end">
-          <Button type="button" variant="secondary" onClick={onClose}>
-            Fermer
-          </Button>
-        </div>
+            {error && (
+              <motion.p
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="rounded-xl border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger"
+              >
+                {error}
+              </motion.p>
+            )}
+
+            <div className="flex gap-2 justify-end">
+              <Button type="button" variant="secondary" onClick={onClose}>
+                Annuler
+              </Button>
+              <Button type="submit" disabled={loading}>
+                <KeyRound className="w-4 h-4" />
+                {loading ? 'Verification...' : 'Verifier'}
+              </Button>
+            </div>
+          </form>
+        )}
+
+        {/* Step 2: New password */}
+        {step === 'password' && (
+          <form onSubmit={handleReset} className="mt-5 flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-textMuted">Nouveau mot de passe</label>
+              <div className="relative">
+                <Input
+                  type={showPwd ? 'text' : 'password'}
+                  value={newPwd}
+                  onChange={(e) => setNewPwd(e.target.value)}
+                  placeholder="Minimum 8 caracteres"
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPwd((v) => !v)}
+                  tabIndex={-1}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-textMuted transition-colors hover:text-textPrimary"
+                >
+                  {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-textMuted">Confirmer le mot de passe</label>
+              <Input
+                type={showPwd ? 'text' : 'password'}
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+                placeholder="Repetez le mot de passe"
+              />
+            </div>
+
+            {error && (
+              <motion.p
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="rounded-xl border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger"
+              >
+                {error}
+              </motion.p>
+            )}
+
+            <div className="flex gap-2 justify-end">
+              <Button type="button" variant="secondary" onClick={() => { setStep('key'); setError('') }}>
+                Retour
+              </Button>
+              <Button type="submit" disabled={loading}>
+                <Lock className="w-4 h-4" />
+                {loading ? 'Reinitialisation...' : 'Reinitialiser'}
+              </Button>
+            </div>
+          </form>
+        )}
+
+        {/* Step 3: New recovery key */}
+        {step === 'done' && (
+          <div className="mt-5 flex flex-col gap-4">
+            <div className="rounded-xl border border-warning/20 bg-warning/5 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="font-mono text-lg font-bold text-textPrimary tracking-wider select-all">
+                  {newRecoveryKey}
+                </p>
+                <button
+                  onClick={handleCopy}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surfaceHigh border border-border text-xs font-medium text-textMuted hover:text-textPrimary transition-colors shrink-0"
+                >
+                  {copied ? <CheckCircle2 className="w-3.5 h-3.5 text-success" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied ? 'Copie !' : 'Copier'}
+                </button>
+              </div>
+            </div>
+
+            <div className="rounded-xl bg-surfaceHigh/40 border border-border p-3 text-xs text-textMuted leading-5">
+              <p>Cette cle ne sera plus affichee apres fermeture de cette fenetre.</p>
+              <p className="mt-1">Conservez-la dans un endroit sur pour pouvoir reinitialiser votre mot de passe a l'avenir.</p>
+            </div>
+
+            <label className="flex items-start gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={confirmed}
+                onChange={(e) => setConfirmed(e.target.checked)}
+                className="mt-0.5 rounded border-border"
+              />
+              <span className="text-xs text-textMuted">J'ai note ma nouvelle cle de recuperation en lieu sur.</span>
+            </label>
+
+            <div className="flex justify-end">
+              <Button disabled={!confirmed} onClick={handleFinish}>
+                <CheckCircle2 className="w-4 h-4" />
+                Se connecter
+              </Button>
+            </div>
+          </div>
+        )}
       </motion.div>
     </motion.div>
   )

@@ -5,6 +5,7 @@ import { closeDb, getDbPath } from './db/database'
 import {
   hasPassword, setupPassword, verifyPassword,
   changePassword, updateProfile, deleteAccount, getProfile,
+  hasRecoveryKey, verifyRecoveryKey, resetWithRecoveryKey, regenerateRecoveryKey,
 } from './auth'
 import * as propertiesDb from './db/queries/properties'
 import * as tenantsDb from './db/queries/tenants'
@@ -16,6 +17,7 @@ import * as chargeReconciliationsDb from './db/queries/chargeReconciliations'
 import * as manualRemindersDb from './db/queries/manualReminders'
 import * as documentsDb from './db/queries/documents'
 import * as irlDb from './db/queries/irl'
+import * as bankImportsDb from './db/queries/bankImports'
 
 const isDev = process.env['ELECTRON_RENDERER_URL'] !== undefined
 
@@ -84,6 +86,10 @@ ipcMain.handle('auth:verify',   (_e, pwd: string)                              =
 ipcMain.handle('auth:change',   (_e, oldPwd: string, newPwd: string)           => changePassword(oldPwd, newPwd))
 ipcMain.handle('auth:updateProfile', (_e, name: string, email: string, address?: string, city?: string, phone?: string, signatureImage?: string) => updateProfile(name, email, address, city, phone, signatureImage))
 ipcMain.handle('auth:delete',   (_e, pwd: string)                              => deleteAccount(pwd))
+ipcMain.handle('auth:hasRecoveryKey',      () => hasRecoveryKey())
+ipcMain.handle('auth:verifyRecoveryKey',   (_e, key: string) => verifyRecoveryKey(key))
+ipcMain.handle('auth:resetWithRecoveryKey',(_e, key: string, newPwd: string) => resetWithRecoveryKey(key, newPwd))
+ipcMain.handle('auth:regenerateRecoveryKey', (_e, pwd: string) => regenerateRecoveryKey(pwd))
 
 // Properties IPC
 ipcMain.handle('properties:getAll',  () => propertiesDb.getAll())
@@ -185,6 +191,10 @@ ipcMain.handle('irl:getByQuarter',      (_e, year: number, quarter: number) => i
 ipcMain.handle('irl:getLatestForQuarter',(_e, quarter: number) => irlDb.getLatestForQuarter(quarter))
 ipcMain.handle('irl:upsert',           (_e, year: number, quarter: number, value: number) => irlDb.upsert(year, quarter, value))
 ipcMain.handle('irl:delete',           (_e, id: number) => irlDb.remove(id))
+
+// Bank imports IPC
+ipcMain.handle('bankImports:findDuplicates', (_e, fingerprints: string[]) => bankImportsDb.findDuplicates(fingerprints))
+ipcMain.handle('bankImports:recordImported', (_e, entries: Array<{ fingerprint: string; tx_date: string; description: string; amount: number; payment_id: number | null }>) => bankImportsDb.recordImported(entries))
 
 // Backup / restore IPC
 const AUTH_FILE = join(app.getPath('userData'), 'auth.json')

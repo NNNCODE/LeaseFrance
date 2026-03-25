@@ -9,7 +9,7 @@ interface AuthState {
 
   init:          () => Promise<void>
   login:         (password: string) => Promise<boolean>
-  setup:         (password: string, name: string, email: string) => Promise<boolean>
+  setup:         (password: string, name: string, email: string) => Promise<string | null>
   lock:          () => void
   updateProfile: (name: string, email: string, address?: string, city?: string, phone?: string, signatureImage?: string) => Promise<boolean>
   changePassword:(oldPwd: string, newPwd: string) => Promise<boolean>
@@ -43,12 +43,12 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   setup: async (password, name, email) => {
-    const ok = await window.api.auth.setup(password, name, email)
-    if (ok) {
+    const recoveryKey = await window.api.auth.setup(password, name, email)
+    if (recoveryKey) {
       const profile = await window.api.auth.getProfile()
       set({ status: 'unlocked', profile, error: null })
     }
-    return ok
+    return recoveryKey
   },
 
   lock: () => set({ status: 'locked', error: null }),

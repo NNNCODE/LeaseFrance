@@ -14,6 +14,10 @@ contextBridge.exposeInMainWorld('api', {
     change:        (old: string, next: string) => ipcRenderer.invoke('auth:change', old, next),
     updateProfile: (name: string, email: string, address?: string, city?: string, phone?: string, signatureImage?: string) => ipcRenderer.invoke('auth:updateProfile', name, email, address, city, phone, signatureImage),
     delete:        (pwd: string) => ipcRenderer.invoke('auth:delete', pwd),
+    hasRecoveryKey:       () => ipcRenderer.invoke('auth:hasRecoveryKey'),
+    verifyRecoveryKey:    (key: string) => ipcRenderer.invoke('auth:verifyRecoveryKey', key),
+    resetWithRecoveryKey: (key: string, newPwd: string) => ipcRenderer.invoke('auth:resetWithRecoveryKey', key, newPwd),
+    regenerateRecoveryKey:(pwd: string) => ipcRenderer.invoke('auth:regenerateRecoveryKey', pwd),
   },
   properties: {
     getAll: () => ipcRenderer.invoke('properties:getAll'),
@@ -75,6 +79,10 @@ contextBridge.exposeInMainWorld('api', {
   },
   exports: {
     saveFile: (fileName: string, buffer: number[], filters?: unknown) => ipcRenderer.invoke('exports:saveFile', fileName, buffer, filters),
+  },
+  bankImports: {
+    findDuplicates:  (fingerprints: string[]) => ipcRenderer.invoke('bankImports:findDuplicates', fingerprints),
+    recordImported:  (entries: Array<{ fingerprint: string; tx_date: string; description: string; amount: number; payment_id: number | null }>) => ipcRenderer.invoke('bankImports:recordImported', entries),
   },
   backup: {
     create:         () => ipcRenderer.invoke('backup:create'),
