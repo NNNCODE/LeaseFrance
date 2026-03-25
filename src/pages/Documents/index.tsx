@@ -41,25 +41,25 @@ import {
 function getDocumentMeta(type: string) {
   switch (type) {
     case 'recu':
-      return { label: 'Re\u00e7u', variant: 'warning' as const, icon: Receipt, iconClass: 'text-accent', iconBg: 'bg-accent/10' }
+      return { label: 'Reçu', variant: 'warning' as const, icon: Receipt, iconClass: 'text-accent', iconBg: 'bg-accent/10' }
     case 'etat_des_lieux_entree':
-      return { label: "\u00c9tat des lieux d'entr\u00e9e", variant: 'default' as const, icon: ScrollText, iconClass: 'text-primary', iconBg: 'bg-primary/10' }
+      return { label: "État des lieux d'entrée", variant: 'default' as const, icon: ScrollText, iconClass: 'text-primary', iconBg: 'bg-primary/10' }
     case 'etat_des_lieux_sortie':
-      return { label: '\u00c9tat des lieux de sortie', variant: 'warning' as const, icon: ScrollText, iconClass: 'text-warning', iconBg: 'bg-warning/10' }
+      return { label: 'État des lieux de sortie', variant: 'warning' as const, icon: ScrollText, iconClass: 'text-warning', iconBg: 'bg-warning/10' }
     case 'regularisation_charges':
-      return { label: 'R\u00e9gularisation des charges', variant: 'default' as const, icon: ScrollText, iconClass: 'text-warning', iconBg: 'bg-warning/10' }
+      return { label: 'Régularisation des charges', variant: 'default' as const, icon: ScrollText, iconClass: 'text-warning', iconBg: 'bg-warning/10' }
     case 'relance_amiable':
       return { label: 'Relance amiable', variant: 'default' as const, icon: Info, iconClass: 'text-warning', iconBg: 'bg-warning/10' }
     case 'mise_en_demeure':
       return { label: 'Mise en demeure', variant: 'danger' as const, icon: Info, iconClass: 'text-danger', iconBg: 'bg-danger/10' }
     case 'proposition_echeancier':
-      return { label: '\u00c9ch\u00e9ancier', variant: 'success' as const, icon: Info, iconClass: 'text-success', iconBg: 'bg-success/10' }
+      return { label: 'Échéancier', variant: 'success' as const, icon: Info, iconClass: 'text-success', iconBg: 'bg-success/10' }
     case 'avis_revision_loyer':
-      return { label: 'Avis de r\u00e9vision', variant: 'default' as const, icon: TrendingUp, iconClass: 'text-primary', iconBg: 'bg-primary/10' }
+      return { label: 'Avis de révision', variant: 'default' as const, icon: TrendingUp, iconClass: 'text-primary', iconBg: 'bg-primary/10' }
     case 'recu_depot_garantie':
-      return { label: 'Re\u00e7u de d\u00e9p\u00f4t', variant: 'default' as const, icon: ShieldCheck, iconClass: 'text-primary', iconBg: 'bg-primary/10' }
+      return { label: 'Reçu de dépôt', variant: 'default' as const, icon: ShieldCheck, iconClass: 'text-primary', iconBg: 'bg-primary/10' }
     case 'solde_depot_garantie':
-      return { label: 'Solde de d\u00e9p\u00f4t', variant: 'warning' as const, icon: ShieldCheck, iconClass: 'text-warning', iconBg: 'bg-warning/10' }
+      return { label: 'Solde de dépôt', variant: 'warning' as const, icon: ShieldCheck, iconClass: 'text-warning', iconBg: 'bg-warning/10' }
     default:
       return { label: 'Quittance', variant: 'muted' as const, icon: FileText, iconClass: 'text-primary', iconBg: 'bg-primary/10' }
   }
@@ -105,7 +105,7 @@ export default function Documents() {
 
   async function handleGenerate(request: GenerateDocumentRequest): Promise<boolean> {
     const landlord = {
-      landlordName: profile?.name ?? 'Propri\u00e9taire',
+      landlordName: profile?.name ?? 'Propriétaire',
       landlordAddress: profile?.address,
       landlordCity: profile?.city,
       landlordPhone: profile?.phone,
@@ -278,7 +278,7 @@ export default function Documents() {
         <div>
           <h1 className="text-2xl font-semibold text-textPrimary">Documents</h1>
           <p className="text-textMuted text-sm mt-1">
-            {docs.length} document{docs.length !== 1 ? 's' : ''} g\u00e9n\u00e9r\u00e9{docs.length !== 1 ? 's' : ''}
+            {docs.length} document{docs.length !== 1 ? 's' : ''} généré{docs.length !== 1 ? 's' : ''}
           </p>
         </div>
         <Button onClick={() => setShowForm(true)} disabled={!canGenerateAnyDocument}>
@@ -301,9 +301,9 @@ export default function Documents() {
             <FileText className="w-7 h-7 text-primary" />
           </div>
           <div>
-            <p className="text-base font-semibold text-textPrimary">Aucun document g\u00e9n\u00e9r\u00e9</p>
+            <p className="text-base font-semibold text-textPrimary">Aucun document généré</p>
             <p className="text-sm text-textMuted mt-1">
-              Ouvrez le centre de mod\u00e8les pour g\u00e9n\u00e9rer une quittance, un avis de r\u00e9vision ou un document de d\u00e9p\u00f4t.
+              Ouvrez le centre de modèles pour générer une quittance, un avis de révision ou un document de dépôt.
             </p>
           </div>
         </div>
@@ -359,8 +359,8 @@ function EmptyState() {
       <div>
         <p className="text-lg font-semibold text-textPrimary">Aucune source de document</p>
         <p className="text-sm text-textMuted mt-1">
-          Les mod\u00e8les deviennent disponibles d\u00e8s qu un paiement est marqu\u00e9 pay\u00e9, qu un bail peut \u00eatre r\u00e9vis\u00e9
-          ou qu un d\u00e9p\u00f4t de garantie est encaiss\u00e9 ou restitu\u00e9.
+          Les modèles deviennent disponibles dès qu un paiement est marqué payé, qu un bail peut être révisé
+          ou qu un dépôt de garantie est encaissé ou restitué.
         </p>
       </div>
     </div>
@@ -402,7 +402,7 @@ function DocRow({
               <Badge variant={meta.variant}>{meta.label}</Badge>
             </div>
             <div className="text-xs text-textMuted">
-              G\u00e9n\u00e9r\u00e9 le {formatDate(doc.generated_at)}
+              Généré le {formatDate(doc.generated_at)}
             </div>
           </div>
           <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -459,7 +459,7 @@ function DeleteModal({
           <div>
             <p className="text-sm font-semibold text-textPrimary">Supprimer ce document ?</p>
             <p className="text-xs text-textMuted mt-0.5">
-              {doc.tenant_first_name} {doc.tenant_last_name} {'\u00b7'} {doc.property_name}
+              {doc.tenant_first_name} {doc.tenant_last_name} {'·'} {doc.property_name}
             </p>
           </div>
         </div>

@@ -32,8 +32,8 @@ const navItems = [
 ]
 
 const bottomItems = [
-  { to: '/profile',  icon: UserCircle2, label: 'Propri\u00e9taire' },
-  { to: '/settings', icon: Settings,    label: 'Param\u00e8tres' },
+  { to: '/profile',  icon: UserCircle2, label: 'Propriétaire' },
+  { to: '/settings', icon: Settings,    label: 'Paramètres' },
 ]
 
 export default function Sidebar({ onSearchClick }: { onSearchClick?: () => void }) {

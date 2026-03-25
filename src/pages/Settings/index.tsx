@@ -14,8 +14,8 @@ export default function Settings() {
   return (
     <div className="flex flex-col gap-6 max-w-2xl">
       <div>
-        <h1 className="text-2xl font-semibold text-textPrimary">Param\u00e8tres</h1>
-        <p className="text-textMuted text-sm mt-1">G\u00e9rez votre compte et vos pr\u00e9f\u00e9rences</p>
+        <h1 className="text-2xl font-semibold text-textPrimary">Paramètres</h1>
+        <p className="text-textMuted text-sm mt-1">Gérez votre compte et vos préférences</p>
       </div>
       <ProfileLink />
       <BackupSection />
@@ -44,7 +44,7 @@ function ProfileLink() {
             </div>
             <div>
               <p className="text-sm font-medium text-textPrimary">
-                {profile?.name || 'Propri\u00e9taire'}
+                {profile?.name || 'Propriétaire'}
               </p>
               <p className="text-xs text-textMuted">{profile?.email || 'Voir le profil'}</p>
             </div>

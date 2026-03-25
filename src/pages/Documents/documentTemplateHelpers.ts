@@ -2,17 +2,17 @@ import { calculateRevision, formatQuarter, parseQuarter, type RevisionResult } f
 
 export const MONTHS = [
   'Janvier',
-  'F\u00e9vrier',
+  'Février',
   'Mars',
   'Avril',
   'Mai',
   'Juin',
   'Juillet',
-  'Ao\u00fbt',
+  'Août',
   'Septembre',
   'Octobre',
   'Novembre',
-  'D\u00e9cembre',
+  'Décembre',
 ]
 
 export type DocumentTemplateKind =

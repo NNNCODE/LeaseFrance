@@ -271,7 +271,7 @@ export default function GenerateDocumentModal({
                     onSelect={(value) => setSelectedId(Number(value))}
                     options={payments.map((payment) => ({
                       id: payment.id,
-                      label: `${payment.tenant_first_name} ${payment.tenant_last_name} \u00b7 ${MONTHS[payment.period_month - 1]} ${payment.period_year} \u00b7 ${payment.property_name}`,
+                      label: `${payment.tenant_first_name} ${payment.tenant_last_name} · ${MONTHS[payment.period_month - 1]} ${payment.period_year} · ${payment.property_name}`,
                     }))}
                   >
                     {selectedPayment && <PaymentPreview payment={selectedPayment} />}
@@ -285,7 +285,7 @@ export default function GenerateDocumentModal({
                     onSelect={(value) => setSelectedId(Number(value))}
                     options={revisableLeases.map((entry) => ({
                       id: entry.lease.id,
-                      label: `${entry.lease.tenant_first_name} ${entry.lease.tenant_last_name} \u00b7 ${entry.lease.property_name}`,
+                      label: `${entry.lease.tenant_first_name} ${entry.lease.tenant_last_name} · ${entry.lease.property_name}`,
                     }))}
                   >
                     {selectedRevisable && (
@@ -308,7 +308,7 @@ export default function GenerateDocumentModal({
                     onSelect={(value) => setSelectedId(Number(value))}
                     options={depositReceiptLeases.map((lease) => ({
                       id: lease.id,
-                      label: `${lease.tenant_first_name} ${lease.tenant_last_name} \u00b7 ${lease.property_name}`,
+                      label: `${lease.tenant_first_name} ${lease.tenant_last_name} · ${lease.property_name}`,
                     }))}
                   >
                     {selectedDepositReceiptLease && <DepositReceiptPreview lease={selectedDepositReceiptLease} />}
@@ -322,7 +322,7 @@ export default function GenerateDocumentModal({
                     onSelect={(value) => setSelectedId(Number(value))}
                     options={depositSettlementLeases.map((lease) => ({
                       id: lease.id,
-                      label: `${lease.tenant_first_name} ${lease.tenant_last_name} \u00b7 ${lease.property_name}`,
+                      label: `${lease.tenant_first_name} ${lease.tenant_last_name} · ${lease.property_name}`,
                     }))}
                   >
                     {selectedDepositSettlementLease && <DepositSettlementPreview lease={selectedDepositSettlementLease} />}
