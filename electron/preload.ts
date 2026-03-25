@@ -80,6 +80,13 @@ contextBridge.exposeInMainWorld('api', {
   exports: {
     saveFile: (fileName: string, buffer: number[], filters?: unknown) => ipcRenderer.invoke('exports:saveFile', fileName, buffer, filters),
   },
+  fiscalExpenses: {
+    getAll:   () => ipcRenderer.invoke('fiscalExpenses:getAll'),
+    getByYear:(year: number) => ipcRenderer.invoke('fiscalExpenses:getByYear', year),
+    create:   (data: unknown) => ipcRenderer.invoke('fiscalExpenses:create', data),
+    update:   (id: number, data: unknown) => ipcRenderer.invoke('fiscalExpenses:update', id, data),
+    delete:   (id: number) => ipcRenderer.invoke('fiscalExpenses:delete', id),
+  },
   bankImports: {
     findDuplicates:  (fingerprints: string[]) => ipcRenderer.invoke('bankImports:findDuplicates', fingerprints),
     recordImported:  (entries: Array<{ fingerprint: string; tx_date: string; description: string; amount: number; payment_id: number | null }>) => ipcRenderer.invoke('bankImports:recordImported', entries),

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { pdf } from '@react-pdf/renderer'
 import {
   AlertTriangle,
@@ -8,11 +8,18 @@ import {
   Euro,
   FileSpreadsheet,
   FileText,
+  Minus,
+  Pencil,
+  Plus,
   ReceiptText,
+  Trash2,
+  TrendingDown,
+  X,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { FiscalSummaryPDF } from '@/lib/pdf/fiscalSummary'
 import { formatCurrency } from '@/lib/utils'
 import { useAuthStore } from '@/stores/useAuthStore'
@@ -20,6 +27,8 @@ import {
   availableFiscalYears,
   buildFiscalCsv,
   buildFiscalYearSummary,
+  categoryLabel,
+  EXPENSE_CATEGORIES,
 } from './summary'
 
 type ExportKind = 'csv' | 'pdf' | null
@@ -39,38 +48,41 @@ export default function Fiscal() {
   const [properties, setProperties] = useState<Property[]>([])
   const [leases, setLeases] = useState<Lease[]>([])
   const [payments, setPayments] = useState<Payment[]>([])
+  const [expenses, setExpenses] = useState<FiscalExpense[]>([])
   const [selectedYear, setSelectedYear] = useState(currentYear())
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [exporting, setExporting] = useState<ExportKind>(null)
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true)
     setError('')
 
     try {
-      const [propertyRows, leaseRows, paymentRows] = await Promise.all([
+      const [propertyRows, leaseRows, paymentRows, expenseRows] = await Promise.all([
         window.api.properties.getAll(),
         window.api.leases.getAll(),
         window.api.payments.getAll(),
+        window.api.fiscalExpenses.getAll(),
       ])
 
       setProperties(propertyRows)
       setLeases(leaseRows)
       setPayments(paymentRows)
+      setExpenses(expenseRows)
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [load])
 
   const years = useMemo(
-    () => availableFiscalYears(properties, leases, payments),
-    [properties, leases, payments]
+    () => availableFiscalYears(properties, leases, payments, expenses),
+    [properties, leases, payments, expenses]
   )
 
   useEffect(() => {
@@ -81,8 +93,8 @@ export default function Fiscal() {
   }, [selectedYear, years])
 
   const summary = useMemo(
-    () => buildFiscalYearSummary(selectedYear, properties, leases, payments),
-    [leases, payments, properties, selectedYear]
+    () => buildFiscalYearSummary(selectedYear, properties, leases, payments, expenses),
+    [leases, payments, properties, selectedYear, expenses]
   )
 
   const activeProperties = useMemo(
@@ -91,6 +103,7 @@ export default function Fiscal() {
       || item.receivedRent > 0
       || item.receivedCharges > 0
       || item.outstandingAmount > 0
+      || item.expenses.total > 0
     )),
     [summary.properties]
   )
@@ -161,7 +174,7 @@ export default function Fiscal() {
         <div>
           <h1 className="text-2xl font-semibold text-textPrimary">Fiscal annuel</h1>
           <p className="text-sm text-textMuted mt-1">
-            Synthese par annee des loyers encaisses, charges recuperees, vacance estimee et impayes encore saisis.
+            Synthese par annee : revenus, charges deductibles et resultat net foncier.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -200,7 +213,8 @@ export default function Fiscal() {
         </div>
       ) : null}
 
-      <div className="grid grid-cols-4 gap-4">
+      {/* ── Stat cards ─────────────────────────────────────────────── */}
+      <div className="grid grid-cols-5 gap-4">
         <StatCard
           label="Biens suivis"
           value={summary.propertyCount}
@@ -223,21 +237,29 @@ export default function Fiscal() {
           tone="warning"
         />
         <StatCard
-          label="Impayes suivis"
-          value={formatCurrency(summary.outstandingAmount)}
-          detail={`${payments.filter((payment) => payment.status !== 'paid' && payment.period_year === selectedYear).length} lignes ouvertes`}
-          icon={AlertTriangle}
+          label="Charges deductibles"
+          value={formatCurrency(summary.expenses.total)}
+          detail={`${expenses.filter((e) => e.year === selectedYear).length} ligne${expenses.filter((e) => e.year === selectedYear).length !== 1 ? 's' : ''} saisie${expenses.filter((e) => e.year === selectedYear).length !== 1 ? 's' : ''}`}
+          icon={TrendingDown}
           tone="danger"
+        />
+        <StatCard
+          label="Resultat net foncier"
+          value={formatCurrency(summary.netResult)}
+          detail={summary.netResult >= 0 ? 'Benefice' : 'Deficit foncier'}
+          icon={Euro}
+          tone={summary.netResult >= 0 ? 'success' : 'danger'}
         />
       </div>
 
+      {/* ── Property income table ──────────────────────────────────── */}
       <Card>
         <CardContent className="pt-5">
           <div className="flex items-start justify-between gap-4 mb-4">
             <div>
-              <h2 className="text-base font-semibold text-textPrimary">Synthese par bien</h2>
+              <h2 className="text-base font-semibold text-textPrimary">Revenus par bien</h2>
               <p className="text-sm text-textMuted mt-1">
-                Vue annuelle utile pour la preparation declarative. Les exportations se font hors du centre Documents.
+                Loyers et charges encaisses, impayes et charges deductibles par bien.
               </p>
             </div>
             <Badge variant="muted">{selectedYear}</Badge>
@@ -261,40 +283,51 @@ export default function Fiscal() {
             />
           ) : (
             <div className="rounded-2xl border border-border overflow-hidden">
-              <div className="grid grid-cols-[1.7fr_110px_110px_140px_140px_140px] gap-3 px-4 py-3 bg-surfaceHigh/60 border-b border-border text-[11px] font-medium uppercase tracking-wide text-textMuted">
+              <div className="grid grid-cols-[1.5fr_80px_80px_120px_120px_120px_120px_120px] gap-2 px-4 py-3 bg-surfaceHigh/60 border-b border-border text-[11px] font-medium uppercase tracking-wide text-textMuted">
                 <span>Bien</span>
-                <span className="text-right">Occupes</span>
+                <span className="text-right">Occup.</span>
                 <span className="text-right">Vacants</span>
                 <span className="text-right">Loyers</span>
                 <span className="text-right">Charges</span>
                 <span className="text-right">Impayes</span>
+                <span className="text-right">Deductible</span>
+                <span className="text-right">Net</span>
               </div>
 
               <div className="flex flex-col divide-y divide-border">
-                {activeProperties.map((item) => (
-                  <div key={item.propertyId} className="grid grid-cols-[1.7fr_110px_110px_140px_140px_140px] gap-3 px-4 py-4 bg-surfaceHigh/10 items-center">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold text-textPrimary truncate">{item.propertyName}</p>
-                        <PropertyStatusBadge item={item} />
+                {activeProperties.map((item) => {
+                  const netProperty = item.totalReceived - item.expenses.total
+                  return (
+                    <div key={item.propertyId} className="grid grid-cols-[1.5fr_80px_80px_120px_120px_120px_120px_120px] gap-2 px-4 py-4 bg-surfaceHigh/10 items-center">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-semibold text-textPrimary truncate">{item.propertyName}</p>
+                          <PropertyStatusBadge item={item} />
+                        </div>
+                        <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-textMuted">
+                          <span>{item.propertyCity || 'Ville non renseignee'}</span>
+                          <span>{item.leaseCount} bail{item.leaseCount !== 1 ? 's' : ''}</span>
+                          <span>{item.paidPaymentCount} paiement{item.paidPaymentCount !== 1 ? 's' : ''}</span>
+                        </div>
                       </div>
-                      <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-textMuted">
-                        <span>{item.propertyCity || 'Ville non renseignee'}</span>
-                        <span>{item.leaseCount} bail{item.leaseCount !== 1 ? 's' : ''} sur l annee</span>
-                        <span>{item.paidPaymentCount} paiement{item.paidPaymentCount !== 1 ? 's' : ''} encaisses</span>
+                      <div className="text-right text-sm text-textPrimary">{item.occupiedMonths}</div>
+                      <div className="text-right text-sm text-textPrimary">{item.vacantMonths}</div>
+                      <div className="text-right text-sm font-medium text-textPrimary">{formatCurrency(item.receivedRent)}</div>
+                      <div className="text-right text-sm font-medium text-textPrimary">{formatCurrency(item.receivedCharges)}</div>
+                      <div className={`text-right text-sm font-medium ${item.outstandingAmount > 0 ? 'text-danger' : 'text-textPrimary'}`}>
+                        {formatCurrency(item.outstandingAmount)}
+                      </div>
+                      <div className="text-right text-sm font-medium text-danger">
+                        {item.expenses.total > 0 ? `- ${formatCurrency(item.expenses.total)}` : formatCurrency(0)}
+                      </div>
+                      <div className={`text-right text-sm font-semibold ${netProperty >= 0 ? 'text-success' : 'text-danger'}`}>
+                        {formatCurrency(netProperty)}
                       </div>
                     </div>
-                    <div className="text-right text-sm text-textPrimary">{item.occupiedMonths}</div>
-                    <div className="text-right text-sm text-textPrimary">{item.vacantMonths}</div>
-                    <div className="text-right text-sm font-medium text-textPrimary">{formatCurrency(item.receivedRent)}</div>
-                    <div className="text-right text-sm font-medium text-textPrimary">{formatCurrency(item.receivedCharges)}</div>
-                    <div className={`text-right text-sm font-medium ${item.outstandingAmount > 0 ? 'text-danger' : 'text-textPrimary'}`}>
-                      {formatCurrency(item.outstandingAmount)}
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
 
-                <div className="grid grid-cols-[1.7fr_110px_110px_140px_140px_140px] gap-3 px-4 py-4 bg-surface border-t border-border items-center">
+                <div className="grid grid-cols-[1.5fr_80px_80px_120px_120px_120px_120px_120px] gap-2 px-4 py-4 bg-surface border-t border-border items-center">
                   <div>
                     <p className="text-sm font-semibold text-textPrimary">Total exercice {selectedYear}</p>
                     <p className="text-xs text-textMuted mt-1">Total encaisse : {formatCurrency(summary.totalReceived)}</p>
@@ -306,6 +339,12 @@ export default function Fiscal() {
                   <div className={`text-right text-sm font-semibold ${summary.outstandingAmount > 0 ? 'text-danger' : 'text-textPrimary'}`}>
                     {formatCurrency(summary.outstandingAmount)}
                   </div>
+                  <div className="text-right text-sm font-semibold text-danger">
+                    {summary.expenses.total > 0 ? `- ${formatCurrency(summary.expenses.total)}` : formatCurrency(0)}
+                  </div>
+                  <div className={`text-right text-sm font-semibold ${summary.netResult >= 0 ? 'text-success' : 'text-danger'}`}>
+                    {formatCurrency(summary.netResult)}
+                  </div>
                 </div>
               </div>
             </div>
@@ -313,6 +352,15 @@ export default function Fiscal() {
         </CardContent>
       </Card>
 
+      {/* ── Expense section ────────────────────────────────────────── */}
+      <ExpenseSection
+        year={selectedYear}
+        properties={properties}
+        expenses={expenses}
+        onChanged={load}
+      />
+
+      {/* ── Info cards ─────────────────────────────────────────────── */}
       <div className="grid grid-cols-[1.1fr_1fr] gap-4">
         <Card>
           <CardContent className="pt-5">
@@ -323,7 +371,8 @@ export default function Fiscal() {
             <div className="space-y-2 text-sm text-textMuted leading-6">
               <p>Les loyers et charges encaisses proviennent uniquement des paiements avec statut `paid`.</p>
               <p>Les impayes reprennent les lignes `pending` et `late` sur l exercice choisi.</p>
-              <p>La vacance est estimee a partir des dates de debut et de fin de bail connues pour chaque bien.</p>
+              <p>Les charges deductibles sont saisies manuellement par bien et par annee.</p>
+              <p>Le resultat net foncier = total encaisse - total charges deductibles.</p>
             </div>
           </CardContent>
         </Card>
@@ -332,12 +381,12 @@ export default function Fiscal() {
           <CardContent className="pt-5">
             <div className="flex items-center gap-2 mb-3">
               <FileText className="w-4 h-4 text-primary" />
-              <h2 className="text-base font-semibold text-textPrimary">Limites de ce MVP</h2>
+              <h2 className="text-base font-semibold text-textPrimary">A savoir</h2>
             </div>
             <div className="space-y-2 text-sm text-textMuted leading-6">
-              <p>Cette synthese ne suit pas encore les depenses, travaux, interets d emprunt ou taxe fonciere.</p>
               <p>Le PDF et le CSV servent de base de travail pour un bailleur particulier, pas de declaration fiscale automatique.</p>
               <p>Si votre historique de paiements est incomplet, les totaux encaissements ou impayes resteront partiels.</p>
+              <p>N oubliez pas de saisir vos charges pour chaque bien avant d exporter.</p>
             </div>
           </CardContent>
         </Card>
@@ -345,6 +394,324 @@ export default function Fiscal() {
     </div>
   )
 }
+
+// ── Expense Management Section ────────────────────────────────────────────────
+
+function ExpenseSection({
+  year,
+  properties,
+  expenses,
+  onChanged,
+}: {
+  year: number
+  properties: Property[]
+  expenses: FiscalExpense[]
+  onChanged: () => void
+}) {
+  const yearExpenses = useMemo(
+    () => expenses.filter((e) => e.year === year),
+    [expenses, year]
+  )
+
+  const [showForm, setShowForm] = useState(false)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [formData, setFormData] = useState<FiscalExpenseInput>({
+    property_id: 0,
+    year,
+    category: 'taxe_fonciere',
+    label: '',
+    amount: 0,
+    notes: '',
+  })
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    setFormData((prev) => ({ ...prev, year }))
+  }, [year])
+
+  function openNew() {
+    setEditingId(null)
+    setFormData({
+      property_id: properties[0]?.id ?? 0,
+      year,
+      category: 'taxe_fonciere',
+      label: '',
+      amount: 0,
+      notes: '',
+    })
+    setError('')
+    setShowForm(true)
+  }
+
+  function openEdit(expense: FiscalExpense) {
+    setEditingId(expense.id)
+    setFormData({
+      property_id: expense.property_id,
+      year: expense.year,
+      category: expense.category,
+      label: expense.label,
+      amount: expense.amount,
+      notes: expense.notes ?? '',
+    })
+    setError('')
+    setShowForm(true)
+  }
+
+  function closeForm() {
+    setShowForm(false)
+    setEditingId(null)
+    setError('')
+  }
+
+  async function handleSave() {
+    if (!formData.property_id) return setError('Selectionnez un bien.')
+    if (!formData.label.trim()) return setError('Saisissez un libelle.')
+    if (formData.amount <= 0) return setError('Le montant doit etre positif.')
+
+    setSaving(true)
+    setError('')
+    try {
+      const data = { ...formData, label: formData.label.trim(), notes: formData.notes || null }
+      if (editingId) {
+        await window.api.fiscalExpenses.update(editingId, data)
+      } else {
+        await window.api.fiscalExpenses.create(data)
+      }
+      closeForm()
+      onChanged()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleDelete(id: number) {
+    await window.api.fiscalExpenses.delete(id)
+    onChanged()
+  }
+
+  // Group by category
+  const byCategory = useMemo(() => {
+    const map = new Map<string, FiscalExpense[]>()
+    for (const e of yearExpenses) {
+      const list = map.get(e.category) || []
+      list.push(e)
+      map.set(e.category, list)
+    }
+    return map
+  }, [yearExpenses])
+
+  const totalAmount = useMemo(
+    () => yearExpenses.reduce((sum, e) => sum + e.amount, 0),
+    [yearExpenses]
+  )
+
+  return (
+    <Card>
+      <CardContent className="pt-5">
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <div>
+            <h2 className="text-base font-semibold text-textPrimary">Charges deductibles {year}</h2>
+            <p className="text-sm text-textMuted mt-1">
+              Taxe fonciere, travaux, assurance PNO, frais de gestion, interets d'emprunt...
+            </p>
+          </div>
+          <Button size="sm" onClick={openNew} disabled={properties.length === 0}>
+            <Plus className="w-3.5 h-3.5" />
+            Ajouter une charge
+          </Button>
+        </div>
+
+        {/* ── Inline form ───────────────────────────────────────── */}
+        {showForm && (
+          <div className="mb-4 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-semibold text-textPrimary">
+                {editingId ? 'Modifier la charge' : 'Nouvelle charge deductible'}
+              </p>
+              <button onClick={closeForm} className="text-textMuted hover:text-textPrimary transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-[1fr_1fr_1fr_120px] gap-3">
+              <div className="flex flex-col gap-1">
+                <label className="text-[11px] font-medium text-textMuted">Bien</label>
+                <select
+                  value={formData.property_id}
+                  onChange={(e) => setFormData({ ...formData, property_id: Number(e.target.value) })}
+                  className="h-9 rounded-lg border border-border bg-surface px-3 text-sm text-textPrimary focus:outline-none focus:ring-1 focus:ring-primary"
+                >
+                  {properties.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name} — {p.city}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-[11px] font-medium text-textMuted">Categorie</label>
+                <select
+                  value={formData.category}
+                  onChange={(e) => {
+                    const cat = e.target.value
+                    setFormData({
+                      ...formData,
+                      category: cat,
+                      label: formData.label || categoryLabel(cat),
+                    })
+                  }}
+                  className="h-9 rounded-lg border border-border bg-surface px-3 text-sm text-textPrimary focus:outline-none focus:ring-1 focus:ring-primary"
+                >
+                  {EXPENSE_CATEGORIES.map((c) => (
+                    <option key={c.value} value={c.value}>{c.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-[11px] font-medium text-textMuted">Libelle</label>
+                <Input
+                  value={formData.label}
+                  onChange={(e) => setFormData({ ...formData, label: e.target.value })}
+                  placeholder="ex: Taxe fonciere 2026"
+                  className="h-9"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-[11px] font-medium text-textMuted">Montant</label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.amount || ''}
+                  onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
+                  placeholder="0,00"
+                  className="h-9"
+                />
+              </div>
+            </div>
+
+            <div className="mt-3 flex flex-col gap-1">
+              <label className="text-[11px] font-medium text-textMuted">Notes (optionnel)</label>
+              <Input
+                value={formData.notes ?? ''}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                placeholder="Reference, description..."
+                className="h-9"
+              />
+            </div>
+
+            {error && (
+              <p className="mt-2 text-xs text-danger bg-danger/10 rounded-lg px-3 py-2">{error}</p>
+            )}
+
+            <div className="mt-3 flex gap-2 justify-end">
+              <Button variant="secondary" size="sm" onClick={closeForm}>
+                Annuler
+              </Button>
+              <Button size="sm" onClick={handleSave} disabled={saving}>
+                {saving ? 'Enregistrement...' : editingId ? 'Modifier' : 'Ajouter'}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Expense list by category ──────────────────────────── */}
+        {yearExpenses.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-border bg-surfaceHigh/10 py-10 text-center">
+            <Minus className="w-6 h-6 text-textMuted mx-auto" />
+            <p className="text-sm font-semibold text-textPrimary mt-3">Aucune charge saisie pour {year}</p>
+            <p className="text-xs text-textMuted mt-1">
+              Ajoutez vos charges deductibles (taxe fonciere, travaux, assurance...) pour calculer le resultat net.
+            </p>
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-border overflow-hidden">
+            <div className="grid grid-cols-[1.2fr_1fr_1.3fr_110px_60px] gap-2 px-4 py-2.5 bg-surfaceHigh/60 border-b border-border text-[11px] font-medium uppercase tracking-wide text-textMuted">
+              <span>Bien</span>
+              <span>Categorie</span>
+              <span>Libelle</span>
+              <span className="text-right">Montant</span>
+              <span />
+            </div>
+
+            <div className="flex flex-col divide-y divide-border">
+              {EXPENSE_CATEGORIES.map((cat) => {
+                const items = byCategory.get(cat.value)
+                if (!items || items.length === 0) return null
+                const catTotal = items.reduce((sum, e) => sum + e.amount, 0)
+
+                return items.map((expense, idx) => (
+                  <div
+                    key={expense.id}
+                    className="grid grid-cols-[1.2fr_1fr_1.3fr_110px_60px] gap-2 px-4 py-3 bg-surfaceHigh/10 items-center group"
+                  >
+                    <div className="text-sm text-textPrimary truncate">{expense.property_name}</div>
+                    <div className="flex items-center gap-2">
+                      {idx === 0 && (
+                        <Badge variant="muted" className="text-[10px]">{cat.label}</Badge>
+                      )}
+                      {idx === 0 && items.length > 1 && (
+                        <span className="text-[10px] text-textMuted">
+                          ({formatCurrency(catTotal)})
+                        </span>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm text-textPrimary truncate">{expense.label}</p>
+                      {expense.notes ? (
+                        <p className="text-xs text-textMuted truncate mt-0.5">{expense.notes}</p>
+                      ) : null}
+                    </div>
+                    <div className="text-right text-sm font-medium text-danger">
+                      {formatCurrency(expense.amount)}
+                    </div>
+                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => openEdit(expense)}
+                        className="p-1 rounded-lg text-textMuted hover:text-primary hover:bg-primary/10 transition-colors"
+                        title="Modifier"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(expense.id)}
+                        className="p-1 rounded-lg text-textMuted hover:text-danger hover:bg-danger/10 transition-colors"
+                        title="Supprimer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              })}
+
+              {/* Total row */}
+              <div className="grid grid-cols-[1.2fr_1fr_1.3fr_110px_60px] gap-2 px-4 py-3 bg-surface border-t border-border items-center">
+                <div className="text-sm font-semibold text-textPrimary">
+                  Total charges deductibles
+                </div>
+                <div />
+                <div className="text-xs text-textMuted">
+                  {yearExpenses.length} ligne{yearExpenses.length !== 1 ? 's' : ''}
+                </div>
+                <div className="text-right text-sm font-semibold text-danger">
+                  {formatCurrency(totalAmount)}
+                </div>
+                <div />
+              </div>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+// ── Shared Components ─────────────────────────────────────────────────────────
 
 function PropertyStatusBadge({
   item,
@@ -389,10 +756,10 @@ function StatCard({
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-xs text-textMuted">{label}</p>
-            <p className="text-2xl font-semibold text-textPrimary mt-1">{value}</p>
+            <p className="text-xl font-semibold text-textPrimary mt-1">{value}</p>
             <p className="text-xs text-textMuted mt-2">{detail}</p>
           </div>
-          <div className={`flex items-center justify-center w-10 h-10 rounded-xl ${style.bg}`}>
+          <div className={`flex items-center justify-center w-9 h-9 rounded-xl ${style.bg}`}>
             <Icon className={`w-4 h-4 ${style.text}`} />
           </div>
         </div>

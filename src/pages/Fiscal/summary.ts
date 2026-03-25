@@ -1,3 +1,20 @@
+// ── Expense Categories ───────────────────────────────────────────────────────
+
+export const EXPENSE_CATEGORIES: Array<{ value: string; label: string }> = [
+  { value: 'taxe_fonciere', label: 'Taxe fonciere' },
+  { value: 'travaux', label: 'Travaux' },
+  { value: 'assurance_pno', label: 'Assurance PNO' },
+  { value: 'frais_gestion', label: 'Frais de gestion / syndic' },
+  { value: 'interets_emprunt', label: "Interets d'emprunt" },
+  { value: 'autre', label: 'Autre charge deductible' },
+]
+
+export function categoryLabel(value: string) {
+  return EXPENSE_CATEGORIES.find((c) => c.value === value)?.label ?? value
+}
+
+// ── Types ────────────────────────────────────────────────────────────────────
+
 export interface FiscalPropertySummary {
   propertyId: number
   propertyName: string
@@ -10,6 +27,17 @@ export interface FiscalPropertySummary {
   totalReceived: number
   outstandingAmount: number
   paidPaymentCount: number
+  expenses: FiscalExpenseSummary
+}
+
+export interface FiscalExpenseSummary {
+  taxe_fonciere: number
+  travaux: number
+  assurance_pno: number
+  frais_gestion: number
+  interets_emprunt: number
+  autre: number
+  total: number
 }
 
 export interface FiscalYearSummary {
@@ -21,29 +49,50 @@ export interface FiscalYearSummary {
   outstandingAmount: number
   occupiedMonths: number
   vacantMonths: number
+  expenses: FiscalExpenseSummary
+  netResult: number
   properties: FiscalPropertySummary[]
 }
 
-export function buildFiscalYearSummary(year: number, properties: Property[], leases: Lease[], payments: Payment[]): FiscalYearSummary {
+// ── Builders ─────────────────────────────────────────────────────────────────
+
+export function buildFiscalYearSummary(
+  year: number,
+  properties: Property[],
+  leases: Lease[],
+  payments: Payment[],
+  expenses: FiscalExpense[],
+): FiscalYearSummary {
   const leaseById = new Map(leases.map((lease) => [lease.id, lease]))
+  const yearExpenses = expenses.filter((e) => e.year === year)
   const summaries = properties
-    .map((property) => buildPropertySummary(property, year, leases, payments, leaseById))
+    .map((property) => buildPropertySummary(property, year, leases, payments, leaseById, yearExpenses))
     .sort((left, right) => left.propertyName.localeCompare(right.propertyName))
+
+  const totalExpenses = aggregateExpenses(summaries.map((s) => s.expenses))
+  const totalReceived = round2(sumBy(summaries, 'totalReceived'))
 
   return {
     year,
     propertyCount: summaries.length,
     receivedRent: round2(sumBy(summaries, 'receivedRent')),
     receivedCharges: round2(sumBy(summaries, 'receivedCharges')),
-    totalReceived: round2(sumBy(summaries, 'totalReceived')),
+    totalReceived,
     outstandingAmount: round2(sumBy(summaries, 'outstandingAmount')),
     occupiedMonths: summaries.reduce((sum, item) => sum + item.occupiedMonths, 0),
     vacantMonths: summaries.reduce((sum, item) => sum + item.vacantMonths, 0),
+    expenses: totalExpenses,
+    netResult: round2(totalReceived - totalExpenses.total),
     properties: summaries,
   }
 }
 
-export function availableFiscalYears(properties: Property[], leases: Lease[], payments: Payment[]) {
+export function availableFiscalYears(
+  properties: Property[],
+  leases: Lease[],
+  payments: Payment[],
+  expenses: FiscalExpense[],
+) {
   const years = new Set<number>()
   years.add(new Date().getFullYear())
 
@@ -61,21 +110,22 @@ export function availableFiscalYears(properties: Property[], leases: Lease[], pa
     years.add(new Date(property.created_at).getFullYear())
   }
 
+  for (const expense of expenses) {
+    years.add(expense.year)
+  }
+
   return Array.from(years).sort((left, right) => right - left)
 }
+
+// ── CSV ──────────────────────────────────────────────────────────────────────
 
 export function buildFiscalCsv(summary: FiscalYearSummary) {
   const lines = [
     [
-      'Bien',
-      'Ville',
-      'Mois occupes',
-      'Mois vacants',
-      'Baux actifs dans l annee',
-      'Loyers encaisses',
-      'Charges recuperees',
-      'Total encaisse',
-      'Impayes / restant du',
+      'Bien', 'Ville', 'Mois occupes', 'Mois vacants', 'Baux actifs dans l annee',
+      'Loyers encaisses', 'Charges recuperees', 'Total encaisse', 'Impayes / restant du',
+      'Taxe fonciere', 'Travaux', 'Assurance PNO', 'Frais gestion/syndic', 'Interets emprunt', 'Autres charges',
+      'Total charges deductibles', 'Resultat net',
       'Paiements encaisses',
     ],
     ...summary.properties.map((item) => [
@@ -88,18 +138,30 @@ export function buildFiscalCsv(summary: FiscalYearSummary) {
       formatNumberCsv(item.receivedCharges),
       formatNumberCsv(item.totalReceived),
       formatNumberCsv(item.outstandingAmount),
+      formatNumberCsv(item.expenses.taxe_fonciere),
+      formatNumberCsv(item.expenses.travaux),
+      formatNumberCsv(item.expenses.assurance_pno),
+      formatNumberCsv(item.expenses.frais_gestion),
+      formatNumberCsv(item.expenses.interets_emprunt),
+      formatNumberCsv(item.expenses.autre),
+      formatNumberCsv(item.expenses.total),
+      formatNumberCsv(item.totalReceived - item.expenses.total),
       String(item.paidPaymentCount),
     ]),
     [
-      'TOTAL',
-      '',
-      String(summary.occupiedMonths),
-      String(summary.vacantMonths),
-      '',
+      'TOTAL', '', String(summary.occupiedMonths), String(summary.vacantMonths), '',
       formatNumberCsv(summary.receivedRent),
       formatNumberCsv(summary.receivedCharges),
       formatNumberCsv(summary.totalReceived),
       formatNumberCsv(summary.outstandingAmount),
+      formatNumberCsv(summary.expenses.taxe_fonciere),
+      formatNumberCsv(summary.expenses.travaux),
+      formatNumberCsv(summary.expenses.assurance_pno),
+      formatNumberCsv(summary.expenses.frais_gestion),
+      formatNumberCsv(summary.expenses.interets_emprunt),
+      formatNumberCsv(summary.expenses.autre),
+      formatNumberCsv(summary.expenses.total),
+      formatNumberCsv(summary.netResult),
       '',
     ],
   ]
@@ -107,12 +169,15 @@ export function buildFiscalCsv(summary: FiscalYearSummary) {
   return lines.map((row) => row.map(escapeCsvCell).join(';')).join('\n')
 }
 
+// ── Internal ─────────────────────────────────────────────────────────────────
+
 function buildPropertySummary(
   property: Property,
   year: number,
   leases: Lease[],
   payments: Payment[],
-  leaseById: Map<number, Lease>
+  leaseById: Map<number, Lease>,
+  yearExpenses: FiscalExpense[],
 ): FiscalPropertySummary {
   const propertyLeases = leases.filter((lease) => lease.property_id === property.id)
   const coveredMonths = monthsCoveredForYear(propertyLeases, year)
@@ -130,6 +195,9 @@ function buildPropertySummary(
   const receivedRent = round2(paidPayments.reduce((sum, payment) => sum + payment.rent_amount, 0))
   const receivedCharges = round2(paidPayments.reduce((sum, payment) => sum + payment.charges_amount, 0))
 
+  const propertyExpenses = yearExpenses.filter((e) => e.property_id === property.id)
+  const expenseSummary = buildExpenseSummary(propertyExpenses)
+
   return {
     propertyId: property.id,
     propertyName: property.name,
@@ -142,7 +210,59 @@ function buildPropertySummary(
     totalReceived: round2(receivedRent + receivedCharges),
     outstandingAmount: round2(outstandingPayments.reduce((sum, payment) => sum + payment.rent_amount + payment.charges_amount, 0)),
     paidPaymentCount: paidPayments.length,
+    expenses: expenseSummary,
   }
+}
+
+function buildExpenseSummary(expenses: FiscalExpense[]): FiscalExpenseSummary {
+  const result: FiscalExpenseSummary = {
+    taxe_fonciere: 0,
+    travaux: 0,
+    assurance_pno: 0,
+    frais_gestion: 0,
+    interets_emprunt: 0,
+    autre: 0,
+    total: 0,
+  }
+
+  for (const expense of expenses) {
+    const cat = expense.category as keyof Omit<FiscalExpenseSummary, 'total'>
+    if (cat in result && cat !== 'total') {
+      result[cat] = round2(result[cat] + expense.amount)
+    } else {
+      result.autre = round2(result.autre + expense.amount)
+    }
+  }
+
+  result.total = round2(
+    result.taxe_fonciere + result.travaux + result.assurance_pno
+    + result.frais_gestion + result.interets_emprunt + result.autre
+  )
+
+  return result
+}
+
+function aggregateExpenses(items: FiscalExpenseSummary[]): FiscalExpenseSummary {
+  const result: FiscalExpenseSummary = {
+    taxe_fonciere: 0, travaux: 0, assurance_pno: 0,
+    frais_gestion: 0, interets_emprunt: 0, autre: 0, total: 0,
+  }
+
+  for (const item of items) {
+    result.taxe_fonciere = round2(result.taxe_fonciere + item.taxe_fonciere)
+    result.travaux = round2(result.travaux + item.travaux)
+    result.assurance_pno = round2(result.assurance_pno + item.assurance_pno)
+    result.frais_gestion = round2(result.frais_gestion + item.frais_gestion)
+    result.interets_emprunt = round2(result.interets_emprunt + item.interets_emprunt)
+    result.autre = round2(result.autre + item.autre)
+  }
+
+  result.total = round2(
+    result.taxe_fonciere + result.travaux + result.assurance_pno
+    + result.frais_gestion + result.interets_emprunt + result.autre
+  )
+
+  return result
 }
 
 function monthsCoveredForYear(leases: Lease[], year: number) {

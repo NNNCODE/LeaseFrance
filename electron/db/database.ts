@@ -166,6 +166,17 @@ function initSchema(db: Database.Database): void {
       UNIQUE(year, quarter)
     );
 
+    CREATE TABLE IF NOT EXISTS fiscal_expenses (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      property_id INTEGER NOT NULL REFERENCES properties(id) ON DELETE CASCADE,
+      year        INTEGER NOT NULL,
+      category    TEXT    NOT NULL,
+      label       TEXT    NOT NULL,
+      amount      REAL    NOT NULL DEFAULT 0,
+      notes       TEXT,
+      created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS bank_imports (
       id          INTEGER PRIMARY KEY AUTOINCREMENT,
       fingerprint TEXT    NOT NULL UNIQUE,

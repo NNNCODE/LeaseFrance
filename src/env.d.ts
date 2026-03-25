@@ -291,6 +291,28 @@ interface IrlIndex {
   published_at: string | null
 }
 
+interface FiscalExpense {
+  id: number
+  property_id: number
+  year: number
+  category: 'taxe_fonciere' | 'travaux' | 'assurance_pno' | 'frais_gestion' | 'interets_emprunt' | 'autre'
+  label: string
+  amount: number
+  notes: string | null
+  created_at: string
+  property_name: string
+  property_city: string
+}
+
+interface FiscalExpenseInput {
+  property_id: number
+  year: number
+  category: string
+  label: string
+  amount: number
+  notes?: string | null
+}
+
 interface BankImportEntry {
   fingerprint: string
   tx_date: string
@@ -383,6 +405,13 @@ interface Window {
         buffer: number[],
         filters?: Array<{ name: string; extensions: string[] }>
       ) => Promise<{ saved: boolean; path: string | null }>
+    }
+    fiscalExpenses: {
+      getAll:   () => Promise<FiscalExpense[]>
+      getByYear:(year: number) => Promise<FiscalExpense[]>
+      create:   (data: FiscalExpenseInput) => Promise<FiscalExpense>
+      update:   (id: number, data: FiscalExpenseInput) => Promise<FiscalExpense>
+      delete:   (id: number) => Promise<boolean>
     }
     bankImports: {
       findDuplicates:  (fingerprints: string[]) => Promise<string[]>

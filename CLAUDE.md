@@ -147,6 +147,7 @@ Current core tables:
 - `inspections`
 - `charge_reconciliations`
 - `manual_reminders`
+- `fiscal_expenses`
 
 ## Document and French Domain Rules
 
