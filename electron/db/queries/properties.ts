@@ -47,8 +47,15 @@ export function update(id: number, data: PropertyInput): Property | undefined {
 }
 
 export function remove(id: number): boolean {
-  const result = getDb().prepare('DELETE FROM properties WHERE id = ?').run(id)
-  return result.changes > 0
+  try {
+    const result = getDb().prepare('DELETE FROM properties WHERE id = ?').run(id)
+    return result.changes > 0
+  } catch (err) {
+    if (err instanceof Error && err.message.includes('FOREIGN KEY constraint failed')) {
+      throw new Error('Impossible de supprimer ce bien car un bail ou des donnees locatives y sont encore rattaches.')
+    }
+    throw err
+  }
 }
 
 export function count(): number {

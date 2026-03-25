@@ -345,11 +345,13 @@ interface Window {
     auth: {
       hasPassword:   () => Promise<boolean>
       getProfile:    () => Promise<UserProfile | null>
+      restoreRememberedSession: () => Promise<UserProfile | null>
       setup:         (pwd: string, name: string, email: string) => Promise<string | null>
-      verify:        (pwd: string) => Promise<boolean>
+      verify:        (email: string, pwd: string, remember: boolean) => Promise<boolean>
       change:        (old: string, next: string) => Promise<boolean>
       updateProfile: (name: string, email: string, address?: string, city?: string, phone?: string, signatureImage?: string) => Promise<boolean>
       delete:        (pwd: string) => Promise<boolean>
+      lockSession:   () => Promise<void>
       hasRecoveryKey:       () => Promise<boolean>
       verifyRecoveryKey:    (key: string) => Promise<boolean>
       resetWithRecoveryKey: (key: string, newPwd: string) => Promise<string | null>

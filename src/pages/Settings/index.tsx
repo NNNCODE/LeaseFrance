@@ -120,7 +120,7 @@ function BackupSection() {
           <div>
             <p className="text-sm font-medium text-textPrimary">Sauvegarder</p>
             <p className="text-xs text-textMuted mt-1">
-              Exporte la base de données et le profil dans un fichier unique.
+              Exporte la base de données et le profil d'authentification dans une archive unique.
             </p>
           </div>
           <Button
@@ -139,7 +139,7 @@ function BackupSection() {
           <div>
             <p className="text-sm font-medium text-textPrimary">Restaurer</p>
             <p className="text-xs text-textMuted mt-1">
-              Remplace les données actuelles par une sauvegarde. L'application redémarrera.
+              Remplace les données actuelles par une sauvegarde complète. L'application redémarrera.
             </p>
           </div>
           <Button

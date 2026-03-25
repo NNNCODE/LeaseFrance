@@ -233,8 +233,15 @@ export function update(id: number, data: TenantInput): Tenant | undefined {
 }
 
 export function remove(id: number): boolean {
-  const result = getDb().prepare('DELETE FROM tenants WHERE id = ?').run(id)
-  return result.changes > 0
+  try {
+    const result = getDb().prepare('DELETE FROM tenants WHERE id = ?').run(id)
+    return result.changes > 0
+  } catch (err) {
+    if (err instanceof Error && err.message.includes('FOREIGN KEY constraint failed')) {
+      throw new Error('Impossible de supprimer ce locataire car un bail ou des donnees locatives lui sont encore rattaches.')
+    }
+    throw err
+  }
 }
 
 export function count(): number {

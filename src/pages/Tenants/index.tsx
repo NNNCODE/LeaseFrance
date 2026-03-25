@@ -71,6 +71,8 @@ export default function Tenants() {
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<Tenant | null>(null)
   const [deleting, setDeleting] = useState<Tenant | null>(null)
+  const [deleteError, setDeleteError] = useState('')
+  const [deleteLoading, setDeleteLoading] = useState(false)
   const [ledgerTenant, setLedgerTenant] = useState<Tenant | null>(null)
   const [dossierTenant, setDossierTenant] = useState<Tenant | null>(null)
 
@@ -113,6 +115,12 @@ export default function Tenants() {
     setEditing(null)
   }
 
+  function closeDelete() {
+    setDeleting(null)
+    setDeleteError('')
+    setDeleteLoading(false)
+  }
+
   async function handleSave(data: TenantInput) {
     if (editing) {
       await window.api.tenants.update(editing.id, {
@@ -141,9 +149,16 @@ export default function Tenants() {
 
   async function handleDelete() {
     if (!deleting) return
-    await window.api.tenants.delete(deleting.id)
-    setDeleting(null)
-    load()
+    setDeleteLoading(true)
+    setDeleteError('')
+    try {
+      await window.api.tenants.delete(deleting.id)
+      closeDelete()
+      load()
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : String(err))
+      setDeleteLoading(false)
+    }
   }
 
   return (
@@ -218,7 +233,13 @@ export default function Tenants() {
 
       <AnimatePresence>
         {deleting && (
-          <DeleteModal tenant={deleting} onConfirm={handleDelete} onClose={() => setDeleting(null)} />
+          <DeleteModal
+            tenant={deleting}
+            onConfirm={handleDelete}
+            onClose={closeDelete}
+            error={deleteError}
+            loading={deleteLoading}
+          />
         )}
       </AnimatePresence>
 
@@ -576,10 +597,14 @@ function DeleteModal({
   tenant,
   onConfirm,
   onClose,
+  error,
+  loading,
 }: {
   tenant: Tenant
   onConfirm: () => void
   onClose: () => void
+  error: string
+  loading: boolean
 }) {
   return (
     <motion.div
@@ -607,11 +632,14 @@ function DeleteModal({
             </p>
           </div>
         </div>
+        {error ? (
+          <p className="text-xs text-danger bg-danger/10 rounded-lg px-3 py-2">{error}</p>
+        ) : null}
         <div className="flex gap-2">
-          <Button variant="secondary" onClick={onClose} className="flex-1">Annuler</Button>
-          <Button variant="danger" onClick={onConfirm} className="flex-1">
+          <Button variant="secondary" onClick={onClose} className="flex-1" disabled={loading}>Annuler</Button>
+          <Button variant="danger" onClick={onConfirm} className="flex-1" disabled={loading}>
             <Trash2 className="w-3.5 h-3.5" />
-            Supprimer
+            {loading ? 'Suppression...' : 'Supprimer'}
           </Button>
         </div>
       </motion.div>

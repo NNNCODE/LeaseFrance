@@ -1,21 +1,24 @@
 import Database = require('better-sqlite3')
-import { app } from 'electron'
-import { join } from 'path'
 import { mkdirSync } from 'fs'
+import { dirname } from 'path'
+import { getCurrentAccountDbPath } from '../auth'
+import { seedIrlIndicesIfEmpty } from './irlSeed'
 
 let db: Database.Database | null = null
 
 export function getDb(): Database.Database {
   if (db) return db
 
-  const userDataPath = app.getPath('userData')
-  mkdirSync(userDataPath, { recursive: true })
+  const dbPath = getCurrentAccountDbPath()
+  mkdirSync(dirname(dbPath), { recursive: true })
 
-  db = new Database(join(userDataPath, 'leasefrance.db'))
+  db = new Database(dbPath)
   db.pragma('journal_mode = WAL')
+  db.pragma('busy_timeout = 5000')
   db.pragma('foreign_keys = ON')
 
   initSchema(db)
+  seedIrlIndicesIfEmpty(db)
   return db
 }
 
@@ -27,7 +30,7 @@ export function closeDb(): void {
 }
 
 export function getDbPath(): string {
-  return join(app.getPath('userData'), 'leasefrance.db')
+  return getCurrentAccountDbPath()
 }
 
 function ensureColumnExists(db: Database.Database, table: string, column: string, definition: string): void {

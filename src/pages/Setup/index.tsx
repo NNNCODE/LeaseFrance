@@ -8,10 +8,11 @@ import AuthShell from '@/components/layout/AuthShell'
 
 interface SetupProps {
   onBack?: () => void
+  onComplete?: (email: string) => void
 }
 
-export default function Setup({ onBack }: SetupProps) {
-  const { setup } = useAuthStore()
+export default function Setup({ onBack, onComplete }: SetupProps) {
+  const { setup, completeSetup } = useAuthStore()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -33,11 +34,14 @@ export default function Setup({ onBack }: SetupProps) {
     if (password !== confirm) return setError('Les mots de passe ne correspondent pas.')
 
     setLoading(true)
-    const key = await setup(password, name, email)
+    const normalizedEmail = normalizeEmail(email)
+    const key = await setup(password, name, normalizedEmail)
     setLoading(false)
 
     if (key) {
       setRecoveryKey(key)
+    } else {
+      setError("Cette adresse e-mail est deja utilisee par un autre compte. La casse n'a pas d'importance.")
     }
   }
 
@@ -142,7 +146,16 @@ export default function Setup({ onBack }: SetupProps) {
       </AuthShell>
 
       <AnimatePresence>
-        {recoveryKey && <RecoveryKeyModal recoveryKey={recoveryKey} />}
+        {recoveryKey && (
+          <RecoveryKeyModal
+            recoveryKey={recoveryKey}
+            onDone={() => {
+              setRecoveryKey(null)
+              completeSetup()
+              onComplete?.(normalizeEmail(email))
+            }}
+          />
+        )}
       </AnimatePresence>
     </>
   )
@@ -150,7 +163,13 @@ export default function Setup({ onBack }: SetupProps) {
 
 // ── Recovery Key Modal (shown once after setup) ──────────────────────────────
 
-function RecoveryKeyModal({ recoveryKey }: { recoveryKey: string }) {
+function RecoveryKeyModal({
+  recoveryKey,
+  onDone,
+}: {
+  recoveryKey: string
+  onDone: () => void
+}) {
   const [copied, setCopied] = useState(false)
   const [confirmed, setConfirmed] = useState(false)
 
@@ -217,7 +236,7 @@ function RecoveryKeyModal({ recoveryKey }: { recoveryKey: string }) {
         </label>
 
         <div className="mt-5 flex justify-end">
-          <Button disabled={!confirmed}>
+          <Button disabled={!confirmed} onClick={onDone}>
             <CheckCircle2 className="w-4 h-4" />
             Continuer
           </Button>
@@ -267,5 +286,9 @@ function getStrength(password: string) {
 }
 
 function isValidEmail(email: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizeEmail(email))
+}
+
+function normalizeEmail(email: string) {
+  return email.trim().toLowerCase()
 }

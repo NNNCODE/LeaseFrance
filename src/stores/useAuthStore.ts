@@ -8,9 +8,10 @@ interface AuthState {
   error:   string | null
 
   init:          () => Promise<void>
-  login:         (password: string) => Promise<boolean>
+  login:         (email: string, password: string, remember: boolean) => Promise<boolean>
   setup:         (password: string, name: string, email: string) => Promise<string | null>
-  lock:          () => void
+  completeSetup: () => void
+  lock:          () => Promise<void>
   updateProfile: (name: string, email: string, address?: string, city?: string, phone?: string, signatureImage?: string) => Promise<boolean>
   changePassword:(oldPwd: string, newPwd: string) => Promise<boolean>
   deleteAccount: (password: string) => Promise<boolean>
@@ -24,6 +25,12 @@ export const useAuthStore = create<AuthState>((set) => ({
   init: async () => {
     const has = await window.api.auth.hasPassword()
     if (has) {
+      const rememberedProfile = await window.api.auth.restoreRememberedSession()
+      if (rememberedProfile) {
+        set({ status: 'unlocked', profile: rememberedProfile, error: null })
+        return
+      }
+
       const profile = await window.api.auth.getProfile()
       set({ status: 'locked', profile, error: null })
     } else {
@@ -31,13 +38,13 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  login: async (password) => {
-    const ok = await window.api.auth.verify(password)
+  login: async (email, password, remember) => {
+    const ok = await window.api.auth.verify(email, password, remember)
     if (ok) {
       const profile = await window.api.auth.getProfile()
       set({ status: 'unlocked', profile, error: null })
     } else {
-      set({ error: 'Mot de passe incorrect.' })
+      set({ error: "Adresse e-mail ou mot de passe incorrect." })
     }
     return ok
   },
@@ -46,19 +53,27 @@ export const useAuthStore = create<AuthState>((set) => ({
     const recoveryKey = await window.api.auth.setup(password, name, email)
     if (recoveryKey) {
       const profile = await window.api.auth.getProfile()
-      set({ status: 'unlocked', profile, error: null })
+      set({ profile, error: null })
     }
     return recoveryKey
   },
 
-  lock: () => set({ status: 'locked', error: null }),
+  completeSetup: () => set((state) => ({
+    status: state.profile ? 'locked' : 'setup',
+    error: null,
+  })),
+
+  lock: async () => {
+    await window.api.auth.lockSession()
+    set({ status: 'locked', error: null })
+  },
 
   updateProfile: async (name, email, address?, city?, phone?, signatureImage?) => {
     const ok = await window.api.auth.updateProfile(name, email, address, city, phone, signatureImage)
     if (ok) set((s) => ({
       profile: s.profile
         ? {
-            ...s.profile, name, email,
+            ...s.profile, name, email: email.trim().toLowerCase(),
             ...(address !== undefined && { address }),
             ...(city !== undefined && { city }),
             ...(phone !== undefined && { phone }),
@@ -76,7 +91,15 @@ export const useAuthStore = create<AuthState>((set) => ({
   /** Supprime le compte → retour à l'écran d'inscription */
   deleteAccount: async (password) => {
     const ok = await window.api.auth.delete(password)
-    if (ok) set({ status: 'setup', profile: null, error: null })
+    if (ok) {
+      const hasAccounts = await window.api.auth.hasPassword()
+      if (hasAccounts) {
+        const profile = await window.api.auth.getProfile()
+        set({ status: 'locked', profile, error: null })
+      } else {
+        set({ status: 'setup', profile: null, error: null })
+      }
+    }
     return ok
   },
 }))

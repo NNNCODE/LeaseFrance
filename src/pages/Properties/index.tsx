@@ -35,6 +35,8 @@ export default function Properties() {
   const [showForm, setShowForm]     = useState(false)
   const [editing, setEditing]       = useState<Property | null>(null)
   const [deleting, setDeleting]     = useState<Property | null>(null)
+  const [deleteError, setDeleteError] = useState('')
+  const [deleteLoading, setDeleteLoading] = useState(false)
 
   async function load() {
     setLoading(true)
@@ -48,6 +50,11 @@ export default function Properties() {
   function openAdd() { setEditing(null); setShowForm(true) }
   function openEdit(p: Property) { setEditing(p); setShowForm(true) }
   function closeForm() { setShowForm(false); setEditing(null) }
+  function closeDelete() {
+    setDeleting(null)
+    setDeleteError('')
+    setDeleteLoading(false)
+  }
 
   async function handleSave(data: PropertyInput) {
     if (editing) {
@@ -61,9 +68,16 @@ export default function Properties() {
 
   async function handleDelete() {
     if (!deleting) return
-    await window.api.properties.delete(deleting.id)
-    setDeleting(null)
-    load()
+    setDeleteLoading(true)
+    setDeleteError('')
+    try {
+      await window.api.properties.delete(deleting.id)
+      closeDelete()
+      load()
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : String(err))
+      setDeleteLoading(false)
+    }
   }
 
   return (
@@ -126,7 +140,9 @@ export default function Properties() {
           <DeleteModal
             property={deleting}
             onConfirm={handleDelete}
-            onClose={() => setDeleting(null)}
+            onClose={closeDelete}
+            error={deleteError}
+            loading={deleteLoading}
           />
         )}
       </AnimatePresence>
@@ -369,11 +385,13 @@ function PropertyFormModal({
 // ── Delete modal ───────────────────────────────────────────────────────────────
 
 function DeleteModal({
-  property, onConfirm, onClose,
+  property, onConfirm, onClose, error, loading,
 }: {
   property: Property
   onConfirm: () => void
   onClose: () => void
+  error: string
+  loading: boolean
 }) {
   return (
     <motion.div
@@ -399,11 +417,14 @@ function DeleteModal({
             <p className="text-xs text-textMuted mt-0.5">« {property.name} » sera supprimé définitivement.</p>
           </div>
         </div>
+        {error ? (
+          <p className="text-xs text-danger bg-danger/10 rounded-lg px-3 py-2">{error}</p>
+        ) : null}
         <div className="flex gap-2">
-          <Button variant="secondary" onClick={onClose} className="flex-1">Annuler</Button>
-          <Button variant="danger" onClick={onConfirm} className="flex-1">
+          <Button variant="secondary" onClick={onClose} className="flex-1" disabled={loading}>Annuler</Button>
+          <Button variant="danger" onClick={onConfirm} className="flex-1" disabled={loading}>
             <Trash2 className="w-3.5 h-3.5" />
-            Supprimer
+            {loading ? 'Suppression...' : 'Supprimer'}
           </Button>
         </div>
       </motion.div>

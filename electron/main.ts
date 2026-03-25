@@ -2,11 +2,14 @@ import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron'
 import { writeFileSync, copyFileSync, existsSync, readFileSync, mkdirSync, unlinkSync } from 'fs'
 import { join, dirname, extname } from 'path'
 import { randomBytes } from 'crypto'
-import { closeDb, getDbPath } from './db/database'
+import { closeDb, getDb, getDbPath } from './db/database'
 import {
-  hasPassword, setupPassword, verifyPassword,
-  changePassword, updateProfile, deleteAccount, getProfile,
+  deleteAccount, exportCurrentAccountAuth,
+  getAccountDbPathById, getCurrentAccountStorageDir, getProfile,
+  lockCurrentSession, restoreRememberedSession,
   hasRecoveryKey, verifyRecoveryKey, resetWithRecoveryKey, regenerateRecoveryKey,
+  hasPassword, importAccountFromBackup, setupPassword, verifyPassword,
+  changePassword, updateProfile,
 } from './auth'
 import * as propertiesDb from './db/queries/properties'
 import * as tenantsDb from './db/queries/tenants'
@@ -25,6 +28,14 @@ import * as attachmentsDb from './db/queries/attachments'
 const isDev = process.env['ELECTRON_RENDERER_URL'] !== undefined
 
 let mainWindow: BrowserWindow | null = null
+const sessionDataPath = join(app.getPath('temp'), 'leasefrance', 'session-data', String(process.pid))
+
+function configureSessionDataPath(): void {
+  mkdirSync(sessionDataPath, { recursive: true })
+  app.setPath('sessionData', sessionDataPath)
+}
+
+configureSessionDataPath()
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -84,11 +95,13 @@ function createWindow(): void {
 // Auth IPC
 ipcMain.handle('auth:hasPassword', () => hasPassword())
 ipcMain.handle('auth:getProfile',  () => getProfile())
+ipcMain.handle('auth:restoreRememberedSession', () => restoreRememberedSession())
 ipcMain.handle('auth:setup',    (_e, pwd: string, name: string, email: string) => setupPassword(pwd, name, email))
-ipcMain.handle('auth:verify',   (_e, pwd: string)                              => verifyPassword(pwd))
+ipcMain.handle('auth:verify',   (_e, email: string, pwd: string, remember: boolean) => verifyPassword(email, pwd, remember))
 ipcMain.handle('auth:change',   (_e, oldPwd: string, newPwd: string)           => changePassword(oldPwd, newPwd))
 ipcMain.handle('auth:updateProfile', (_e, name: string, email: string, address?: string, city?: string, phone?: string, signatureImage?: string) => updateProfile(name, email, address, city, phone, signatureImage))
-ipcMain.handle('auth:delete',   (_e, pwd: string)                              => deleteAccount(pwd))
+ipcMain.handle('auth:delete',   (_e, pwd: string)                              => { closeDb(); return deleteAccount(pwd) })
+ipcMain.handle('auth:lockSession', () => { closeDb(); lockCurrentSession() })
 ipcMain.handle('auth:hasRecoveryKey',      () => hasRecoveryKey())
 ipcMain.handle('auth:verifyRecoveryKey',   (_e, key: string) => verifyRecoveryKey(key))
 ipcMain.handle('auth:resetWithRecoveryKey',(_e, key: string, newPwd: string) => resetWithRecoveryKey(key, newPwd))
@@ -213,7 +226,7 @@ ipcMain.handle('fiscalExpenses:delete',   (_e, id: number) => fiscalExpensesDb.r
 
 // Attachments IPC
 function getAttachmentsDir(): string {
-  const dir = join(app.getPath('userData'), 'attachments')
+  const dir = join(getCurrentAccountStorageDir(), 'attachments')
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
   return dir
 }
@@ -299,58 +312,167 @@ ipcMain.handle('bankImports:findDuplicates', (_e, fingerprints: string[]) => ban
 ipcMain.handle('bankImports:recordImported', (_e, entries: Array<{ fingerprint: string; tx_date: string; description: string; amount: number; payment_id: number | null }>) => bankImportsDb.recordImported(entries))
 
 // Backup / restore IPC
-const AUTH_FILE = join(app.getPath('userData'), 'auth.json')
+const BACKUP_EXTENSION = '.lfbackup'
+
+interface BackupArchiveV1 {
+  version: 1
+  createdAt: string
+  dbBase64: string
+  authBase64: string
+}
+
+function hasValidSqliteHeader(buffer: Buffer): boolean {
+  return buffer.toString('utf8', 0, 15) === 'SQLite format 3'
+}
+
+function ensureBackupPath(filePath: string): string {
+  return extname(filePath).toLowerCase() === BACKUP_EXTENSION
+    ? filePath
+    : `${filePath}${BACKUP_EXTENSION}`
+}
+
+function removeSqliteSidecars(dbPath: string): void {
+  for (const suffix of ['-wal', '-shm']) {
+    const sidecarPath = `${dbPath}${suffix}`
+    if (existsSync(sidecarPath)) {
+      unlinkSync(sidecarPath)
+    }
+  }
+}
+
+async function buildBackupArchive(): Promise<BackupArchiveV1> {
+  const tempDbPath = join(
+    app.getPath('temp'),
+    `leasefrance_backup_${Date.now()}_${randomBytes(6).toString('hex')}.db`,
+  )
+
+  try {
+    await getDb().backup(tempDbPath)
+
+    const dbBuffer = readFileSync(tempDbPath)
+    if (!hasValidSqliteHeader(dbBuffer)) {
+      throw new Error('La sauvegarde SQLite generee est invalide.')
+    }
+
+    return {
+      version: 1,
+      createdAt: new Date().toISOString(),
+      dbBase64: dbBuffer.toString('base64'),
+      authBase64: Buffer.from(exportCurrentAccountAuth(), 'utf8').toString('base64'),
+    }
+  } finally {
+    if (existsSync(tempDbPath)) {
+      unlinkSync(tempDbPath)
+    }
+  }
+}
+
+function parseBackupArchive(raw: string): { dbBuffer: Buffer; authBuffer: Buffer } {
+  let archive: unknown
+  try {
+    archive = JSON.parse(raw)
+  } catch {
+    throw new Error("Le fichier de sauvegarde est illisible ou n'est pas au format attendu.")
+  }
+
+  if (
+    !archive ||
+    typeof archive !== 'object' ||
+    (archive as { version?: unknown }).version !== 1 ||
+    typeof (archive as { dbBase64?: unknown }).dbBase64 !== 'string' ||
+    typeof (archive as { authBase64?: unknown }).authBase64 !== 'string'
+  ) {
+    throw new Error('Le fichier de sauvegarde est incomplet.')
+  }
+
+  const dbBuffer = Buffer.from((archive as BackupArchiveV1).dbBase64, 'base64')
+  const authBuffer = Buffer.from((archive as BackupArchiveV1).authBase64, 'base64')
+
+  if (!hasValidSqliteHeader(dbBuffer)) {
+    throw new Error("La base de donnees incluse dans la sauvegarde est invalide.")
+  }
+
+  try {
+    JSON.parse(authBuffer.toString('utf8'))
+  } catch {
+    throw new Error("Le profil d'authentification inclus dans la sauvegarde est invalide.")
+  }
+
+  return { dbBuffer, authBuffer }
+}
+
+function readRestorePayload(srcPath: string): { dbBuffer: Buffer; authBuffer: Buffer } {
+  if (extname(srcPath).toLowerCase() === BACKUP_EXTENSION) {
+    return parseBackupArchive(readFileSync(srcPath, 'utf8'))
+  }
+
+  const dbBuffer = readFileSync(srcPath)
+  if (!hasValidSqliteHeader(dbBuffer)) {
+    throw new Error("Le fichier selectionne n'est pas une base de donnees SQLite valide.")
+  }
+
+  const authSrc = srcPath.replace(/\.db$/i, '_auth.json')
+  if (!existsSync(authSrc)) {
+    throw new Error("Cette sauvegarde legacy est incomplete : le fichier companion _auth.json est introuvable.")
+  }
+
+  const authBuffer = readFileSync(authSrc)
+  try {
+    JSON.parse(authBuffer.toString('utf8'))
+  } catch {
+    throw new Error("Le fichier companion _auth.json est invalide.")
+  }
+
+  return { dbBuffer, authBuffer }
+}
 
 ipcMain.handle('backup:create', async () => {
   const timestamp = new Date().toISOString().slice(0, 10)
   const { filePath, canceled } = await dialog.showSaveDialog({
-    title: 'Sauvegarder la base de donnees',
-    defaultPath: `leasefrance_backup_${timestamp}.db`,
-    filters: [{ name: 'SQLite Database', extensions: ['db'] }],
+    title: 'Sauvegarder les donnees',
+    defaultPath: `leasefrance_backup_${timestamp}${BACKUP_EXTENSION}`,
+    filters: [{ name: 'LeaseFrance Backup', extensions: [BACKUP_EXTENSION.slice(1)] }],
   })
   if (canceled || !filePath) return { saved: false, path: null }
 
-  const dbPath = getDbPath()
-  copyFileSync(dbPath, filePath)
+  const targetPath = ensureBackupPath(filePath)
+  const archive = await buildBackupArchive()
+  writeFileSync(targetPath, JSON.stringify(archive), 'utf8')
 
-  // Also copy auth.json alongside the DB backup
-  if (existsSync(AUTH_FILE)) {
-    const authDest = filePath.replace(/\.db$/, '_auth.json')
-    copyFileSync(AUTH_FILE, authDest)
-  }
-
-  return { saved: true, path: filePath }
+  return { saved: true, path: targetPath }
 })
 
 ipcMain.handle('backup:restore', async () => {
   const { filePaths, canceled } = await dialog.showOpenDialog({
-    title: 'Restaurer la base de donnees',
-    filters: [{ name: 'SQLite Database', extensions: ['db'] }],
+    title: 'Restaurer les donnees',
+    filters: [
+      { name: 'LeaseFrance Backup', extensions: [BACKUP_EXTENSION.slice(1)] },
+      { name: 'SQLite Database (legacy)', extensions: ['db'] },
+    ],
     properties: ['openFile'],
   })
   if (canceled || filePaths.length === 0) return { restored: false }
 
   const srcPath = filePaths[0]
-
-  // Validate: check the SQLite magic header
-  const header = Buffer.alloc(16)
-  const fd = readFileSync(srcPath)
-  fd.copy(header, 0, 0, 16)
-  if (header.toString('utf8', 0, 15) !== 'SQLite format 3') {
-    return { restored: false, error: 'Le fichier selectionne n\'est pas une base de donnees SQLite valide.' }
+  let payload: { dbBuffer: Buffer; authBuffer: Buffer }
+  try {
+    payload = readRestorePayload(srcPath)
+  } catch (err) {
+    return { restored: false, error: err instanceof Error ? err.message : String(err) }
   }
 
   // Close current DB connection before replacing
   closeDb()
-
-  const dbPath = getDbPath()
-  copyFileSync(srcPath, dbPath)
-
-  // Check for companion auth file
-  const authSrc = srcPath.replace(/\.db$/, '_auth.json')
-  if (existsSync(authSrc)) {
-    copyFileSync(authSrc, AUTH_FILE)
+  let targetAccountId: string
+  try {
+    targetAccountId = importAccountFromBackup(payload.authBuffer.toString('utf8')).accountId
+  } catch (err) {
+    return { restored: false, error: err instanceof Error ? err.message : String(err) }
   }
+
+  const dbPath = getAccountDbPathById(targetAccountId)
+  removeSqliteSidecars(dbPath)
+  writeFileSync(dbPath, payload.dbBuffer)
 
   // Relaunch the app
   app.relaunch()
@@ -359,7 +481,11 @@ ipcMain.handle('backup:restore', async () => {
 })
 
 ipcMain.handle('backup:openDataFolder', () => {
-  shell.openPath(app.getPath('userData'))
+  try {
+    shell.openPath(getCurrentAccountStorageDir())
+  } catch {
+    shell.openPath(app.getPath('userData'))
+  }
 })
 
 // Window controls via IPC
@@ -373,21 +499,23 @@ ipcMain.on('window:maximize', () => {
 })
 ipcMain.on('window:close', () => mainWindow?.close())
 
-app.whenReady().then(() => {
-  // Désactiver le menu applicatif en production
-  if (!isDev) {
-    app.applicationMenu = null
-  }
+app.whenReady()
+  .then(() => {
+    // Désactiver le menu applicatif en production
+    if (!isDev) {
+      app.applicationMenu = null
+    }
 
-  createWindow()
+    createWindow()
 
-  // Seed IRL indices with real INSEE data
-  irlDb.seedIfEmpty()
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    })
   })
-})
+  .catch((error: unknown) => {
+    console.error('Failed to initialize the Electron main process.', error)
+    app.quit()
+  })
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()

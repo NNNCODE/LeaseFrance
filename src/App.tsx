@@ -19,17 +19,45 @@ import Profile from '@/pages/Profile'
 export default function App() {
   const { status, init } = useAuthStore()
   const [showRegister, setShowRegister] = useState(false)
+  const [authNotice, setAuthNotice] = useState<string | null>(null)
+  const [prefilledEmail, setPrefilledEmail] = useState('')
 
   useEffect(() => { init() }, [init])
+  useEffect(() => {
+    if (status === 'unlocked') {
+      setAuthNotice(null)
+    }
+  }, [status])
 
   if (status === 'loading') return <Splash />
 
-  // Toujours afficher Login en premier (setup ou locked)
-  if (status === 'setup' || status === 'locked') {
+  if (status === 'setup') {
+    return (
+      <Setup
+        onComplete={(email) => {
+          setPrefilledEmail(email)
+          setAuthNotice('Compte cree avec succes. Connectez-vous pour ouvrir votre espace proprietaire.')
+          setShowRegister(false)
+        }}
+      />
+    )
+  }
+
+  if (status === 'locked') {
     if (showRegister) {
-      return <Setup onBack={() => setShowRegister(false)} />
+      return (
+        <Setup
+          onBack={() => setShowRegister(false)}
+          onComplete={(email) => {
+            setPrefilledEmail(email)
+            setAuthNotice('Compte cree avec succes. Connectez-vous pour ouvrir votre espace proprietaire.')
+            setShowRegister(false)
+          }}
+        />
+      )
     }
-    return <Login onRegister={() => setShowRegister(true)} />
+
+    return <Login onRegister={() => setShowRegister(true)} initialEmail={prefilledEmail} notice={authNotice} />
   }
 
   return (

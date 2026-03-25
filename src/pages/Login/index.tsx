@@ -10,13 +10,16 @@ const MAX_ATTEMPTS = 5
 const LOCK_SECONDS = 30
 
 interface LoginProps {
-  onRegister: () => void
+  onRegister?: () => void
+  initialEmail?: string
+  notice?: string | null
 }
 
-export default function Login({ onRegister }: LoginProps) {
+export default function Login({ onRegister, initialEmail = '', notice = null }: LoginProps) {
   const { login, profile, error } = useAuthStore()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [rememberSession, setRememberSession] = useState(false)
   const [showPwd, setShowPwd] = useState(false)
   const [loading, setLoading] = useState(false)
   const [localError, setLocalError] = useState('')
@@ -28,9 +31,13 @@ export default function Login({ onRegister }: LoginProps) {
   useEffect(() => { inputRef.current?.focus() }, [])
 
   useEffect(() => {
+    if (initialEmail) {
+      setEmail(initialEmail)
+      return
+    }
     if (!profile?.email) return
     setEmail((current) => current || profile.email)
-  }, [profile?.email])
+  }, [initialEmail, profile?.email])
 
   useEffect(() => {
     if (lockout <= 0) return
@@ -52,13 +59,8 @@ export default function Login({ onRegister }: LoginProps) {
       return
     }
 
-    if (profile?.email && email.toLowerCase() !== profile.email.toLowerCase()) {
-      setLocalError('Adresse e-mail incorrecte.')
-      return
-    }
-
     setLoading(true)
-    const ok = await login(password)
+    const ok = await login(normalizeEmail(email), password, rememberSession)
     setLoading(false)
 
     if (!ok) {
@@ -97,20 +99,32 @@ export default function Login({ onRegister }: LoginProps) {
                 Donnees locales et chiffrees sur ce poste.
               </div>
             </div>
-            <button
-              type="button"
-              onClick={onRegister}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-textMuted transition-colors hover:text-primary"
-            >
-              <UserPlus className="w-3.5 h-3.5" />
-              Creer un compte
-            </button>
+            {onRegister ? (
+              <button
+                type="button"
+                onClick={onRegister}
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-textMuted transition-colors hover:text-primary"
+              >
+                <UserPlus className="w-3.5 h-3.5" />
+                Creer un compte
+              </button>
+            ) : <div />}
           </div>
         )}
       >
+        {notice ? (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-2xl border border-success/30 bg-success/10 px-4 py-3 text-sm text-success"
+          >
+            {notice}
+          </motion.div>
+        ) : null}
+
         {profile ? (
           <div className="rounded-2xl border border-border/70 bg-surfaceHigh/50 px-4 py-3">
-            <p className="text-xs uppercase tracking-[0.18em] text-textMuted">Compte detecte</p>
+            <p className="text-xs uppercase tracking-[0.18em] text-textMuted">Dernier compte utilise</p>
             <p className="mt-2 text-sm font-semibold text-textPrimary">{profile.name}</p>
             <p className="mt-1 text-xs text-textMuted">{profile.email}</p>
           </div>
@@ -154,6 +168,19 @@ export default function Login({ onRegister }: LoginProps) {
             </div>
           </div>
 
+          <label className="flex items-start gap-2 rounded-xl border border-border/70 bg-surfaceHigh/35 px-3 py-2.5 text-xs text-textMuted">
+            <input
+              type="checkbox"
+              checked={rememberSession}
+              onChange={(event) => setRememberSession(event.target.checked)}
+              disabled={isLocked || loading}
+              className="mt-0.5 h-4 w-4 rounded border-border bg-surface text-primary"
+            />
+            <span>
+              Se souvenir de moi sur cet appareil
+            </span>
+          </label>
+
           <AnimatePresence mode="wait">
             {isLocked ? (
               <motion.div
@@ -183,7 +210,7 @@ export default function Login({ onRegister }: LoginProps) {
             ) : null}
           </AnimatePresence>
 
-          <Button type="submit" disabled={isLocked || loading || !password}>
+          <Button type="submit" disabled={isLocked || loading || !email.trim() || !password}>
             <LogIn className="w-4 h-4" />
             {loading ? 'Verification...' : 'Se connecter'}
           </Button>
@@ -197,6 +224,10 @@ export default function Login({ onRegister }: LoginProps) {
       </AnimatePresence>
     </>
   )
+}
+
+function normalizeEmail(value: string) {
+  return value.trim().toLowerCase()
 }
 
 type RecoveryStep = 'key' | 'password' | 'done'

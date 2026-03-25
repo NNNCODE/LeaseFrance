@@ -124,8 +124,15 @@ export function update(id: number, data: LeaseInput): Lease | undefined {
 }
 
 export function remove(id: number): boolean {
-  const result = getDb().prepare('DELETE FROM leases WHERE id = ?').run(id)
-  return result.changes > 0
+  try {
+    const result = getDb().prepare('DELETE FROM leases WHERE id = ?').run(id)
+    return result.changes > 0
+  } catch (err) {
+    if (err instanceof Error && err.message.includes('FOREIGN KEY constraint failed')) {
+      throw new Error('Impossible de supprimer ce bail car des paiements, documents ou rappels y sont encore rattaches.')
+    }
+    throw err
+  }
 }
 
 export function count(): number {

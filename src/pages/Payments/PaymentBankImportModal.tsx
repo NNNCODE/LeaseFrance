@@ -79,7 +79,26 @@ export default function PaymentBankImportModal({
 
   const activeLeases = leases.filter((lease) => lease.status === 'active')
   const editablePayments = payments.filter((payment) => payment.status !== 'paid')
-  const actionableRows = rows.filter((row) => row.mode !== 'ignore')
+  const selectedRows = rows.filter((row) => row.mode !== 'ignore')
+  const isReadyForImport = (row: ImportDraft) => {
+    if (row.mode === 'mark_existing') {
+      return row.paymentId > 0 && editablePayments.some((payment) => payment.id === row.paymentId)
+    }
+
+    if (row.mode === 'create_new') {
+      return (
+        row.leaseId > 0
+        && activeLeases.some((lease) => lease.id === row.leaseId)
+        && row.periodMonth >= 1
+        && row.periodMonth <= 12
+        && Number.isInteger(row.periodYear)
+      )
+    }
+
+    return false
+  }
+  const actionableRows = selectedRows.filter(isReadyForImport)
+  const invalidSelectedRows = selectedRows.filter((row) => !isReadyForImport(row))
   const currentYear = new Date().getFullYear()
   const years = [currentYear - 1, currentYear, currentYear + 1]
 
@@ -206,6 +225,13 @@ export default function PaymentBankImportModal({
   // ── Apply ────────────────────────────────────────────────────────────────
 
   function handleConfirmStep() {
+    setError('')
+
+    if (invalidSelectedRows.length > 0) {
+      setError(`Completez ${invalidSelectedRows.length} ligne${invalidSelectedRows.length > 1 ? 's' : ''} avant de confirmer l'import.`)
+      return
+    }
+
     if (actionableRows.length === 0) {
       setError('Aucune ligne importable selectionnee.')
       return
@@ -288,6 +314,8 @@ export default function PaymentBankImportModal({
         } catch {
           // Non-blocking: dedup is best-effort
         }
+      } else {
+        throw new Error("Aucune ligne valide n'a pu etre importee.")
       }
 
       await onApplied()
@@ -410,6 +438,15 @@ export default function PaymentBankImportModal({
             </div>
           )}
 
+          {invalidSelectedRows.length > 0 && !showConfirm && (
+            <div className="flex items-center gap-2 px-4 py-3 rounded-xl border border-danger/30 bg-danger/10 text-xs text-danger">
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+              <p>
+                {invalidSelectedRows.length} ligne{invalidSelectedRows.length > 1 ? 's' : ''} selectionnee{invalidSelectedRows.length > 1 ? 's' : ''} {invalidSelectedRows.length > 1 ? 'doivent' : 'doit'} encore etre completee{invalidSelectedRows.length > 1 ? 's' : ''} avant import.
+              </p>
+            </div>
+          )}
+
           {/* Batch action bar */}
           {rows.length > 0 && !showConfirm && (
             <div className="flex items-center gap-2 flex-wrap">
@@ -484,7 +521,7 @@ export default function PaymentBankImportModal({
               <Button
                 type="button"
                 onClick={handleConfirmStep}
-                disabled={rows.length === 0 || actionableRows.length === 0}
+                disabled={rows.length === 0}
                 className="flex-1"
               >
                 <Link2 className="w-3.5 h-3.5" />
@@ -591,6 +628,11 @@ function ImportRowEditor({
   const [showReasons, setShowReasons] = useState(false)
   const selectedPayment = payments.find((payment) => payment.id === row.paymentId)
   const selectedLease = leases.find((lease) => lease.id === row.leaseId)
+  const rowError = row.mode === 'mark_existing' && !selectedPayment
+    ? 'Choisissez un paiement existant a associer.'
+    : row.mode === 'create_new' && !selectedLease
+      ? 'Choisissez un bail actif pour creer ce paiement.'
+      : ''
 
   return (
     <div className={`rounded-2xl border p-4 ${
@@ -741,6 +783,9 @@ function ImportRowEditor({
           {' '}· {formatCurrency(selectedLease.rent_amount + selectedLease.charges_amount)} attendu sur ce bail.
         </p>
       )}
+      {rowError ? (
+        <p className="text-[11px] text-danger mt-2">{rowError}</p>
+      ) : null}
     </div>
   )
 }

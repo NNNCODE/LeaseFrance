@@ -63,6 +63,8 @@ export default function Leases() {
   const [showForm, setShowForm]   = useState(false)
   const [editing, setEditing]     = useState<Lease | null>(null)
   const [deleting, setDeleting]   = useState<Lease | null>(null)
+  const [deleteError, setDeleteError] = useState('')
+  const [deleteLoading, setDeleteLoading] = useState(false)
   const [revising, setRevising]   = useState<Lease | null>(null)
   const [managingDeposit, setManagingDeposit] = useState<Lease | null>(null)
   const [managingCharges, setManagingCharges] = useState<Lease | null>(null)
@@ -83,6 +85,11 @@ export default function Leases() {
   function openAdd()           { setEditing(null); setShowForm(true) }
   function openEdit(l: Lease)  { setEditing(l); setShowForm(true) }
   function closeForm()         { setShowForm(false); setEditing(null) }
+  function closeDelete() {
+    setDeleting(null)
+    setDeleteError('')
+    setDeleteLoading(false)
+  }
 
   async function handleSave(data: LeaseInput) {
     if (editing) {
@@ -96,9 +103,16 @@ export default function Leases() {
 
   async function handleDelete() {
     if (!deleting) return
-    await window.api.leases.delete(deleting.id)
-    setDeleting(null)
-    load()
+    setDeleteLoading(true)
+    setDeleteError('')
+    try {
+      await window.api.leases.delete(deleting.id)
+      closeDelete()
+      load()
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : String(err))
+      setDeleteLoading(false)
+    }
   }
 
   async function handleApplyRevision(leaseId: number, newRent: number, newIrlValue: number, newIrlQuarter: string) {
@@ -235,7 +249,13 @@ export default function Leases() {
 
       <AnimatePresence>
         {deleting && (
-          <DeleteModal lease={deleting} onConfirm={handleDelete} onClose={() => setDeleting(null)} />
+          <DeleteModal
+            lease={deleting}
+            onConfirm={handleDelete}
+            onClose={closeDelete}
+            error={deleteError}
+            loading={deleteLoading}
+          />
         )}
       </AnimatePresence>
 
@@ -960,7 +980,19 @@ function RevisionModal({ lease, irlIndices, onApply, onClose }: {
 
 // ── Delete modal ───────────────────────────────────────────────────────────────
 
-function DeleteModal({ lease, onConfirm, onClose }: { lease: Lease; onConfirm: () => void; onClose: () => void }) {
+function DeleteModal({
+  lease,
+  onConfirm,
+  onClose,
+  error,
+  loading,
+}: {
+  lease: Lease
+  onConfirm: () => void
+  onClose: () => void
+  error: string
+  loading: boolean
+}) {
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -987,11 +1019,14 @@ function DeleteModal({ lease, onConfirm, onClose }: { lease: Lease; onConfirm: (
             </p>
           </div>
         </div>
+        {error ? (
+          <p className="text-xs text-danger bg-danger/10 rounded-lg px-3 py-2">{error}</p>
+        ) : null}
         <div className="flex gap-2">
-          <Button variant="secondary" onClick={onClose} className="flex-1">Annuler</Button>
-          <Button variant="danger" onClick={onConfirm} className="flex-1">
+          <Button variant="secondary" onClick={onClose} className="flex-1" disabled={loading}>Annuler</Button>
+          <Button variant="danger" onClick={onConfirm} className="flex-1" disabled={loading}>
             <Trash2 className="w-3.5 h-3.5" />
-            Supprimer
+            {loading ? 'Suppression...' : 'Supprimer'}
           </Button>
         </div>
       </motion.div>
