@@ -12,6 +12,7 @@ export interface Payment {
   status: 'pending' | 'paid' | 'late'
   notes: string | null
   created_at: string
+  updated_at: string
   // Joined
   property_name: string
   property_address: string
@@ -96,7 +97,9 @@ export function create(data: PaymentInput): Payment {
   }
 }
 
-export function update(id: number, data: Partial<PaymentInput>): Payment | undefined {
+const CONFLICT_MSG = 'Les donnees ont ete modifiees depuis votre dernier chargement. Fermez le formulaire et reessayez.'
+
+export function update(id: number, data: Partial<PaymentInput>, expectedUpdatedAt: string): Payment | undefined {
   const current = getById(id)
   if (!current) return undefined
   const merged = {
@@ -110,21 +113,30 @@ export function update(id: number, data: Partial<PaymentInput>): Payment | undef
     status:         data.status         ?? current.status,
     notes:          data.notes          !== undefined ? data.notes           : current.notes,
   }
-  getDb().prepare(`
+  const result = getDb().prepare(`
     UPDATE payments SET
       lease_id=@lease_id, period_month=@period_month, period_year=@period_year,
       rent_amount=@rent_amount, charges_amount=@charges_amount,
       payment_date=@payment_date, payment_method=@payment_method,
-      status=@status, notes=@notes
-    WHERE id=@id
-  `).run({ ...merged, id })
+      status=@status, notes=@notes, updated_at=datetime('now')
+    WHERE id=@id AND updated_at=@expected_updated_at
+  `).run({ ...merged, id, expected_updated_at: expectedUpdatedAt })
+  if (result.changes === 0) {
+    throw new Error(CONFLICT_MSG)
+  }
   return getById(id)
 }
 
-export function markPaid(id: number, paymentDate: string): Payment | undefined {
-  getDb().prepare(
-    `UPDATE payments SET status='paid', payment_date=? WHERE id=?`
-  ).run(paymentDate, id)
+export function markPaid(id: number, paymentDate: string, expectedUpdatedAt: string): Payment | undefined {
+  const result = getDb().prepare(
+    `UPDATE payments SET status='paid', payment_date=?, updated_at=datetime('now') WHERE id=? AND updated_at=?`
+  ).run(paymentDate, id, expectedUpdatedAt)
+  if (result.changes === 0) {
+    if (getDb().prepare('SELECT 1 FROM payments WHERE id = ?').get(id)) {
+      throw new Error(CONFLICT_MSG)
+    }
+    return undefined
+  }
   return getById(id)
 }
 

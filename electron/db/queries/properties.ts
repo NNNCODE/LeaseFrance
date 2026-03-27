@@ -9,7 +9,10 @@ export interface Property {
   type: string
   area_m2: number | null
   created_at: string
+  updated_at: string
 }
+
+const CONFLICT_MSG = 'Les donnees ont ete modifiees depuis votre dernier chargement. Fermez le formulaire et reessayez.'
 
 export interface PropertyInput {
   name: string
@@ -38,11 +41,18 @@ export function create(data: PropertyInput): Property {
   return getById(result.lastInsertRowid as number)!
 }
 
-export function update(id: number, data: PropertyInput): Property | undefined {
-  getDb().prepare(`
+export function update(id: number, data: PropertyInput, expectedUpdatedAt: string): Property | undefined {
+  const result = getDb().prepare(`
     UPDATE properties SET name=@name, address=@address, city=@city,
-    zip=@zip, type=@type, area_m2=@area_m2 WHERE id=@id
-  `).run({ ...data, id })
+    zip=@zip, type=@type, area_m2=@area_m2, updated_at=datetime('now')
+    WHERE id=@id AND updated_at=@expected_updated_at
+  `).run({ ...data, id, expected_updated_at: expectedUpdatedAt })
+  if (result.changes === 0) {
+    if (getDb().prepare('SELECT 1 FROM properties WHERE id = ?').get(id)) {
+      throw new Error(CONFLICT_MSG)
+    }
+    return undefined
+  }
   return getById(id)
 }
 

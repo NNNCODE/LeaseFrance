@@ -264,7 +264,7 @@ export default function PaymentBankImportModal({
             payment_method: 'virement',
             status: 'paid',
             notes: appendImportedNote(payment.notes, row.transaction.description, row.transaction.rowNumber),
-          })
+          }, payment.updated_at)
 
           importedEntries.push({
             fingerprint: row.transaction.fingerprint,

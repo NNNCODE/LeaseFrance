@@ -18,6 +18,7 @@ export interface Lease {
   irl_reference_quarter: string | null
   status: 'active' | 'ended' | 'terminated'
   created_at: string
+  updated_at: string
   // Joined fields
   property_name: string
   property_address: string
@@ -93,8 +94,10 @@ export function create(data: LeaseInput): Lease {
   return getById(result.lastInsertRowid as number)!
 }
 
-export function update(id: number, data: LeaseInput): Lease | undefined {
-  getDb().prepare(`
+const CONFLICT_MSG = 'Les donnees ont ete modifiees depuis votre dernier chargement. Fermez le formulaire et reessayez.'
+
+export function update(id: number, data: LeaseInput, expectedUpdatedAt: string): Lease | undefined {
+  const result = getDb().prepare(`
     UPDATE leases SET
       property_id=@property_id, tenant_id=@tenant_id, type=@type,
       start_date=@start_date, end_date=@end_date,
@@ -106,8 +109,9 @@ export function update(id: number, data: LeaseInput): Lease | undefined {
       deposit_notes=@deposit_notes,
       irl_reference_index=@irl_reference_index,
       irl_reference_quarter=@irl_reference_quarter,
-      status=@status
-    WHERE id=@id
+      status=@status,
+      updated_at=datetime('now')
+    WHERE id=@id AND updated_at=@expected_updated_at
   `).run({
     ...data,
     end_date: data.end_date ?? null,
@@ -119,7 +123,14 @@ export function update(id: number, data: LeaseInput): Lease | undefined {
     irl_reference_quarter: data.irl_reference_quarter ?? null,
     status: data.status ?? 'active',
     id,
+    expected_updated_at: expectedUpdatedAt,
   })
+  if (result.changes === 0) {
+    if (getDb().prepare('SELECT 1 FROM leases WHERE id = ?').get(id)) {
+      throw new Error(CONFLICT_MSG)
+    }
+    return undefined
+  }
   return getById(id)
 }
 

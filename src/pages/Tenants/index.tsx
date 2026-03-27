@@ -126,7 +126,7 @@ export default function Tenants() {
       await window.api.tenants.update(editing.id, {
         ...buildTenantInputFromTenant(editing),
         ...data,
-      })
+      }, editing.updated_at)
     } else {
       await window.api.tenants.create(data)
     }
@@ -141,7 +141,7 @@ export default function Tenants() {
     await window.api.tenants.update(dossierTenant.id, {
       ...buildTenantInputFromTenant(dossierTenant),
       ...data,
-    })
+    }, dossierTenant.updated_at)
 
     setDossierTenant(null)
     load()

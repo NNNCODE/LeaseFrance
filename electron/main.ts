@@ -112,21 +112,21 @@ ipcMain.handle('auth:regenerateRecoveryKey', (_e, pwd: string) => regenerateReco
 ipcMain.handle('properties:getAll',  () => propertiesDb.getAll())
 ipcMain.handle('properties:count',   () => propertiesDb.count())
 ipcMain.handle('properties:create',  (_e, data) => propertiesDb.create(data))
-ipcMain.handle('properties:update',  (_e, id, data) => propertiesDb.update(id, data))
+ipcMain.handle('properties:update',  (_e, id, data, expectedUpdatedAt) => propertiesDb.update(id, data, expectedUpdatedAt))
 ipcMain.handle('properties:delete',  (_e, id) => propertiesDb.remove(id))
 
 // Tenants IPC
 ipcMain.handle('tenants:getAll',  () => tenantsDb.getAll())
 ipcMain.handle('tenants:count',   () => tenantsDb.count())
 ipcMain.handle('tenants:create',  (_e, data) => tenantsDb.create(data))
-ipcMain.handle('tenants:update',  (_e, id, data) => tenantsDb.update(id, data))
+ipcMain.handle('tenants:update',  (_e, id, data, expectedUpdatedAt) => tenantsDb.update(id, data, expectedUpdatedAt))
 ipcMain.handle('tenants:delete',  (_e, id) => tenantsDb.remove(id))
 
 // Leases IPC
 ipcMain.handle('leases:getAll',  () => leasesDb.getAll())
 ipcMain.handle('leases:count',   () => leasesDb.count())
 ipcMain.handle('leases:create',  (_e, data) => leasesDb.create(data))
-ipcMain.handle('leases:update',  (_e, id, data) => leasesDb.update(id, data))
+ipcMain.handle('leases:update',  (_e, id, data, expectedUpdatedAt) => leasesDb.update(id, data, expectedUpdatedAt))
 ipcMain.handle('leases:delete',  (_e, id) => leasesDb.remove(id))
 
 // Payments IPC
@@ -134,8 +134,8 @@ ipcMain.handle('payments:getAll',    () => paymentsDb.getAll())
 ipcMain.handle('payments:getByLease',(_e, leaseId) => paymentsDb.getByLease(leaseId))
 ipcMain.handle('payments:getSummary',() => paymentsDb.getSummary())
 ipcMain.handle('payments:create',    (_e, data) => paymentsDb.create(data))
-ipcMain.handle('payments:update',    (_e, id, data) => paymentsDb.update(id, data))
-ipcMain.handle('payments:markPaid',  (_e, id, date) => paymentsDb.markPaid(id, date))
+ipcMain.handle('payments:update',    (_e, id, data, expectedUpdatedAt) => paymentsDb.update(id, data, expectedUpdatedAt))
+ipcMain.handle('payments:markPaid',  (_e, id, date, expectedUpdatedAt) => paymentsDb.markPaid(id, date, expectedUpdatedAt))
 ipcMain.handle('payments:delete',    (_e, id) => paymentsDb.remove(id))
 
 // Auto-rent IPC

@@ -54,7 +54,8 @@ function initSchemaOnDb(db: BetterSqlite3.Database): void {
       zip        TEXT    NOT NULL,
       type       TEXT    NOT NULL DEFAULT 'appartement',
       area_m2    REAL,
-      created_at TEXT    NOT NULL DEFAULT (datetime('now'))
+      created_at TEXT    NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT    NOT NULL DEFAULT (datetime('now'))
     );
 
     CREATE TABLE IF NOT EXISTS tenants (
@@ -76,7 +77,8 @@ function initSchemaOnDb(db: BetterSqlite3.Database): void {
       dossier_tax_notice         INTEGER NOT NULL DEFAULT 0,
       dossier_bank_details       INTEGER NOT NULL DEFAULT 0,
       dossier_notes              TEXT,
-      created_at                 TEXT    NOT NULL DEFAULT (datetime('now'))
+      created_at                 TEXT    NOT NULL DEFAULT (datetime('now')),
+      updated_at                 TEXT    NOT NULL DEFAULT (datetime('now'))
     );
 
     CREATE TABLE IF NOT EXISTS leases (
@@ -96,7 +98,8 @@ function initSchemaOnDb(db: BetterSqlite3.Database): void {
       irl_reference_index   REAL,
       irl_reference_quarter TEXT,
       status                TEXT    NOT NULL DEFAULT 'active',
-      created_at            TEXT    NOT NULL DEFAULT (datetime('now'))
+      created_at            TEXT    NOT NULL DEFAULT (datetime('now')),
+      updated_at            TEXT    NOT NULL DEFAULT (datetime('now'))
     );
 
     CREATE TABLE IF NOT EXISTS payments (
@@ -110,7 +113,8 @@ function initSchemaOnDb(db: BetterSqlite3.Database): void {
       payment_method  TEXT    DEFAULT 'virement',
       status          TEXT    NOT NULL DEFAULT 'pending',
       notes           TEXT,
-      created_at      TEXT    NOT NULL DEFAULT (datetime('now'))
+      created_at      TEXT    NOT NULL DEFAULT (datetime('now')),
+      updated_at      TEXT    NOT NULL DEFAULT (datetime('now'))
     );
 
     CREATE TABLE IF NOT EXISTS documents (

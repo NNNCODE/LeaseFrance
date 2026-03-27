@@ -147,7 +147,7 @@ export default function PaymentReminderModal({
       })
 
       if (payment.status === 'pending') {
-        await window.api.payments.update(payment.id, { status: 'late' })
+        await window.api.payments.update(payment.id, { status: 'late' }, payment.updated_at)
       }
 
       await onSaved()

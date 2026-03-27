@@ -19,6 +19,7 @@ interface Property {
   type: string
   area_m2: number | null
   created_at: string
+  updated_at: string
 }
 
 interface PropertyInput {
@@ -48,6 +49,7 @@ interface Lease {
   irl_reference_quarter: string | null
   status: 'active' | 'ended' | 'terminated'
   created_at: string
+  updated_at: string
   property_name: string
   property_address: string
   property_city: string
@@ -94,6 +96,7 @@ interface Tenant {
   dossier_bank_details: boolean
   dossier_notes: string | null
   created_at: string
+  updated_at: string
   lease_id: number | null
   lease_type: string | null
   property_name: string | null
@@ -136,6 +139,7 @@ interface Payment {
   status: 'pending' | 'paid' | 'late'
   notes: string | null
   created_at: string
+  updated_at: string
   property_name: string
   property_address: string
   property_city: string
@@ -366,21 +370,21 @@ interface Window {
       getAll: () => Promise<Property[]>
       count:  () => Promise<number>
       create: (data: PropertyInput) => Promise<Property>
-      update: (id: number, data: PropertyInput) => Promise<Property>
+      update: (id: number, data: PropertyInput, expectedUpdatedAt: string) => Promise<Property>
       delete: (id: number) => Promise<boolean>
     }
     tenants: {
       getAll: () => Promise<Tenant[]>
       count:  () => Promise<number>
       create: (data: TenantInput) => Promise<Tenant>
-      update: (id: number, data: TenantInput) => Promise<Tenant>
+      update: (id: number, data: TenantInput, expectedUpdatedAt: string) => Promise<Tenant>
       delete: (id: number) => Promise<boolean>
     }
     leases: {
       getAll: () => Promise<Lease[]>
       count:  () => Promise<number>
       create: (data: LeaseInput) => Promise<Lease>
-      update: (id: number, data: LeaseInput) => Promise<Lease>
+      update: (id: number, data: LeaseInput, expectedUpdatedAt: string) => Promise<Lease>
       delete: (id: number) => Promise<boolean>
     }
     payments: {
@@ -388,8 +392,8 @@ interface Window {
       getByLease: (leaseId: number) => Promise<Payment[]>
       getSummary: () => Promise<PaymentSummary>
       create:     (data: PaymentInput) => Promise<Payment>
-      update:     (id: number, data: Partial<PaymentInput>) => Promise<Payment>
-      markPaid:   (id: number, date: string) => Promise<Payment>
+      update:     (id: number, data: Partial<PaymentInput>, expectedUpdatedAt: string) => Promise<Payment>
+      markPaid:   (id: number, date: string, expectedUpdatedAt: string) => Promise<Payment>
       delete:     (id: number) => Promise<boolean>
       generateMissing: () => Promise<AutoRentResult>
       markOverdue:     () => Promise<number>

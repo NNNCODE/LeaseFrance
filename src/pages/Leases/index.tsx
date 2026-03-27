@@ -93,7 +93,7 @@ export default function Leases() {
 
   async function handleSave(data: LeaseInput) {
     if (editing) {
-      await window.api.leases.update(editing.id, data)
+      await window.api.leases.update(editing.id, data, editing.updated_at)
     } else {
       await window.api.leases.create(data)
     }
@@ -118,48 +118,56 @@ export default function Leases() {
   async function handleApplyRevision(leaseId: number, newRent: number, newIrlValue: number, newIrlQuarter: string) {
     const lease = leases.find((l) => l.id === leaseId)
     if (!lease) return
-    await window.api.leases.update(leaseId, {
-      property_id: lease.property_id,
-      tenant_id: lease.tenant_id,
-      type: lease.type,
-      start_date: lease.start_date,
-      end_date: lease.end_date,
-      rent_amount: newRent,
-      charges_amount: lease.charges_amount,
-      deposit_amount: lease.deposit_amount,
-      deposit_received_date: lease.deposit_received_date,
-      deposit_refund_date: lease.deposit_refund_date,
-      deposit_retained_amount: lease.deposit_retained_amount,
-      deposit_notes: lease.deposit_notes,
-      irl_reference_index: newIrlValue,
-      irl_reference_quarter: newIrlQuarter,
-      status: lease.status,
-    })
-    setRevising(null)
+    try {
+      await window.api.leases.update(leaseId, {
+        property_id: lease.property_id,
+        tenant_id: lease.tenant_id,
+        type: lease.type,
+        start_date: lease.start_date,
+        end_date: lease.end_date,
+        rent_amount: newRent,
+        charges_amount: lease.charges_amount,
+        deposit_amount: lease.deposit_amount,
+        deposit_received_date: lease.deposit_received_date,
+        deposit_refund_date: lease.deposit_refund_date,
+        deposit_retained_amount: lease.deposit_retained_amount,
+        deposit_notes: lease.deposit_notes,
+        irl_reference_index: newIrlValue,
+        irl_reference_quarter: newIrlQuarter,
+        status: lease.status,
+      }, lease.updated_at)
+      setRevising(null)
+    } catch (err) {
+      alert(err instanceof Error ? err.message : String(err))
+    }
     load()
   }
 
   async function handleSaveDeposit(leaseId: number, data: DepositManagementInput) {
     const lease = leases.find((entry) => entry.id === leaseId)
     if (!lease) return
-    await window.api.leases.update(leaseId, {
-      property_id: lease.property_id,
-      tenant_id: lease.tenant_id,
-      type: lease.type,
-      start_date: lease.start_date,
-      end_date: lease.end_date,
-      rent_amount: lease.rent_amount,
-      charges_amount: lease.charges_amount,
-      deposit_amount: lease.deposit_amount,
-      deposit_received_date: data.deposit_received_date,
-      deposit_refund_date: data.deposit_refund_date,
-      deposit_retained_amount: data.deposit_retained_amount,
-      deposit_notes: data.deposit_notes,
-      irl_reference_index: lease.irl_reference_index,
-      irl_reference_quarter: lease.irl_reference_quarter,
-      status: lease.status,
-    })
-    setManagingDeposit(null)
+    try {
+      await window.api.leases.update(leaseId, {
+        property_id: lease.property_id,
+        tenant_id: lease.tenant_id,
+        type: lease.type,
+        start_date: lease.start_date,
+        end_date: lease.end_date,
+        rent_amount: lease.rent_amount,
+        charges_amount: lease.charges_amount,
+        deposit_amount: lease.deposit_amount,
+        deposit_received_date: data.deposit_received_date,
+        deposit_refund_date: data.deposit_refund_date,
+        deposit_retained_amount: data.deposit_retained_amount,
+        deposit_notes: data.deposit_notes,
+        irl_reference_index: lease.irl_reference_index,
+        irl_reference_quarter: lease.irl_reference_quarter,
+        status: lease.status,
+      }, lease.updated_at)
+      setManagingDeposit(null)
+    } catch (err) {
+      alert(err instanceof Error ? err.message : String(err))
+    }
     load()
   }
 

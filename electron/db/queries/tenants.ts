@@ -20,6 +20,7 @@ export interface Tenant {
   dossier_bank_details: boolean
   dossier_notes: string | null
   created_at: string
+  updated_at: string
   lease_id: number | null
   lease_type: string | null
   property_name: string | null
@@ -79,6 +80,7 @@ const SELECT = `
     COALESCE(t.dossier_bank_details, 0)     AS dossier_bank_details,
     t.dossier_notes,
     t.created_at,
+    t.updated_at,
     l.id         AS lease_id,
     l.type       AS lease_type,
     l.rent_amount,
@@ -201,13 +203,15 @@ export function create(data: TenantInput): Tenant {
   return getById(result.lastInsertRowid as number)!
 }
 
-export function update(id: number, data: TenantInput): Tenant | undefined {
+const CONFLICT_MSG = 'Les donnees ont ete modifiees depuis votre dernier chargement. Fermez le formulaire et reessayez.'
+
+export function update(id: number, data: TenantInput, expectedUpdatedAt: string): Tenant | undefined {
   const current = getById(id)
   if (!current) return undefined
 
   const payload = normalizeTenantInput(data, current)
 
-  getDb().prepare(`
+  const result = getDb().prepare(`
     UPDATE tenants SET
       first_name=@first_name,
       last_name=@last_name,
@@ -225,9 +229,14 @@ export function update(id: number, data: TenantInput): Tenant | undefined {
       dossier_employment_proof=@dossier_employment_proof,
       dossier_tax_notice=@dossier_tax_notice,
       dossier_bank_details=@dossier_bank_details,
-      dossier_notes=@dossier_notes
-    WHERE id=@id
-  `).run({ ...payload, id })
+      dossier_notes=@dossier_notes,
+      updated_at=datetime('now')
+    WHERE id=@id AND updated_at=@expected_updated_at
+  `).run({ ...payload, id, expected_updated_at: expectedUpdatedAt })
+
+  if (result.changes === 0) {
+    throw new Error(CONFLICT_MSG)
+  }
 
   return getById(id)
 }

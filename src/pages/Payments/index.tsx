@@ -140,7 +140,7 @@ export default function Payments() {
   async function handleSave(data: PaymentInput) {
     try {
       if (editing) {
-        await window.api.payments.update(editing.id, data)
+        await window.api.payments.update(editing.id, data, editing.updated_at)
       } else {
         await window.api.payments.create(data)
       }
@@ -153,7 +153,11 @@ export default function Payments() {
   }
 
   async function handleMarkPaid(payment: Payment) {
-    await window.api.payments.markPaid(payment.id, today())
+    try {
+      await window.api.payments.markPaid(payment.id, today(), payment.updated_at)
+    } catch (err) {
+      alert(err instanceof Error ? err.message : String(err))
+    }
     load()
   }
 

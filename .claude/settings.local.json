@@ -6,7 +6,9 @@
       "Bash(npx electron-vite:*)",
       "Bash(node -e \"const e = require\\(''d:/leaseFrance/node_modules/electron''\\); console.log\\(typeof e, Object.keys\\(e || {}\\).join\\('',''\\)\\)\")",
       "Bash(npx eslint:*)",
-      "Bash(npx vitest:*)"
+      "Bash(npx vitest:*)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(npm test:*)"
     ]
   }
 }

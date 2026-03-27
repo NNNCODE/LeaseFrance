@@ -80,7 +80,8 @@ function initSchema(db: Database.Database): void {
       zip        TEXT    NOT NULL,
       type       TEXT    NOT NULL DEFAULT 'appartement',
       area_m2    REAL,
-      created_at TEXT    NOT NULL DEFAULT (datetime('now'))
+      created_at TEXT    NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT    NOT NULL DEFAULT (datetime('now'))
     );
 
     CREATE TABLE IF NOT EXISTS tenants (
@@ -102,7 +103,8 @@ function initSchema(db: Database.Database): void {
       dossier_tax_notice         INTEGER NOT NULL DEFAULT 0,
       dossier_bank_details       INTEGER NOT NULL DEFAULT 0,
       dossier_notes              TEXT,
-      created_at                 TEXT    NOT NULL DEFAULT (datetime('now'))
+      created_at                 TEXT    NOT NULL DEFAULT (datetime('now')),
+      updated_at                 TEXT    NOT NULL DEFAULT (datetime('now'))
     );
 
     CREATE TABLE IF NOT EXISTS leases (
@@ -122,7 +124,8 @@ function initSchema(db: Database.Database): void {
       irl_reference_index   REAL,
       irl_reference_quarter TEXT,
       status                TEXT    NOT NULL DEFAULT 'active',
-      created_at            TEXT    NOT NULL DEFAULT (datetime('now'))
+      created_at            TEXT    NOT NULL DEFAULT (datetime('now')),
+      updated_at            TEXT    NOT NULL DEFAULT (datetime('now'))
     );
 
     CREATE TABLE IF NOT EXISTS payments (
@@ -136,7 +139,8 @@ function initSchema(db: Database.Database): void {
       payment_method  TEXT    DEFAULT 'virement',
       status          TEXT    NOT NULL DEFAULT 'pending',
       notes           TEXT,
-      created_at      TEXT    NOT NULL DEFAULT (datetime('now'))
+      created_at      TEXT    NOT NULL DEFAULT (datetime('now')),
+      updated_at      TEXT    NOT NULL DEFAULT (datetime('now'))
     );
 
     CREATE TABLE IF NOT EXISTS documents (
@@ -252,6 +256,12 @@ function initSchema(db: Database.Database): void {
   ensureColumnExists(db, 'tenants', 'dossier_bank_details', 'INTEGER NOT NULL DEFAULT 0')
   ensureColumnExists(db, 'tenants', 'dossier_notes', 'TEXT')
   ensureColumnExists(db, 'documents', 'status', "TEXT NOT NULL DEFAULT 'generated'")
+
+  // Optimistic locking: add updated_at to core tables and backfill from created_at
+  for (const table of ['properties', 'tenants', 'leases', 'payments']) {
+    ensureColumnExists(db, table, 'updated_at', 'TEXT')
+    db.exec(`UPDATE ${table} SET updated_at = created_at WHERE updated_at IS NULL`)
+  }
 
   // Unique constraint: one payment record per lease per month
   // First deduplicate: keep the row with highest priority status (paid > late > pending),

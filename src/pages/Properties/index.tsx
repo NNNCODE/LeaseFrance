@@ -58,7 +58,7 @@ export default function Properties() {
 
   async function handleSave(data: PropertyInput) {
     if (editing) {
-      await window.api.properties.update(editing.id, data)
+      await window.api.properties.update(editing.id, data, editing.updated_at)
     } else {
       await window.api.properties.create(data)
     }
