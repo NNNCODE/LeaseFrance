@@ -222,4 +222,10 @@ function initSchema(db: Database.Database): void {
   ensureColumnExists(db, 'tenants', 'dossier_bank_details', 'INTEGER NOT NULL DEFAULT 0')
   ensureColumnExists(db, 'tenants', 'dossier_notes', 'TEXT')
   ensureColumnExists(db, 'documents', 'status', "TEXT NOT NULL DEFAULT 'generated'")
+
+  // Unique constraint: one payment record per lease per month
+  db.exec(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_payments_lease_period
+    ON payments(lease_id, period_month, period_year)
+  `)
 }

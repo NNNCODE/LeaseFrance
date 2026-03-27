@@ -164,6 +164,11 @@ interface PaymentSummary {
   total_late: number
 }
 
+interface AutoRentResult {
+  created: number
+  markedLate: number
+}
+
 interface PaymentReminder {
   id: number
   payment_id: number
@@ -386,6 +391,8 @@ interface Window {
       update:     (id: number, data: Partial<PaymentInput>) => Promise<Payment>
       markPaid:   (id: number, date: string) => Promise<Payment>
       delete:     (id: number) => Promise<boolean>
+      generateMissing: () => Promise<AutoRentResult>
+      markOverdue:     () => Promise<number>
     }
     paymentReminders: {
       getByPayment: (paymentId: number) => Promise<PaymentReminder[]>

@@ -22,6 +22,7 @@ import * as manualRemindersDb from './db/queries/manualReminders'
 import * as documentsDb from './db/queries/documents'
 import * as irlDb from './db/queries/irl'
 import * as bankImportsDb from './db/queries/bankImports'
+import * as autoRentDb from './db/queries/autoRent'
 import * as fiscalExpensesDb from './db/queries/fiscalExpenses'
 import * as attachmentsDb from './db/queries/attachments'
 
@@ -136,6 +137,10 @@ ipcMain.handle('payments:create',    (_e, data) => paymentsDb.create(data))
 ipcMain.handle('payments:update',    (_e, id, data) => paymentsDb.update(id, data))
 ipcMain.handle('payments:markPaid',  (_e, id, date) => paymentsDb.markPaid(id, date))
 ipcMain.handle('payments:delete',    (_e, id) => paymentsDb.remove(id))
+
+// Auto-rent IPC
+ipcMain.handle('payments:generateMissing', () => autoRentDb.generateMissingPayments())
+ipcMain.handle('payments:markOverdue',     () => autoRentDb.markOverduePayments())
 
 // Payment reminders IPC
 ipcMain.handle('paymentReminders:getByPayment', (_e, paymentId) => paymentRemindersDb.getByPayment(paymentId))

@@ -72,21 +72,28 @@ export function getById(id: number): Payment | undefined {
 
 export function create(data: PaymentInput): Payment {
   const db = getDb()
-  const result = db.prepare(`
-    INSERT INTO payments
-      (lease_id, period_month, period_year, rent_amount, charges_amount,
-       payment_date, payment_method, status, notes)
-    VALUES
-      (@lease_id, @period_month, @period_year, @rent_amount, @charges_amount,
-       @payment_date, @payment_method, @status, @notes)
-  `).run({
-    ...data,
-    payment_date:   data.payment_date   ?? null,
-    payment_method: data.payment_method ?? 'virement',
-    status:         data.status         ?? 'pending',
-    notes:          data.notes          ?? null,
-  })
-  return getById(result.lastInsertRowid as number)!
+  try {
+    const result = db.prepare(`
+      INSERT INTO payments
+        (lease_id, period_month, period_year, rent_amount, charges_amount,
+         payment_date, payment_method, status, notes)
+      VALUES
+        (@lease_id, @period_month, @period_year, @rent_amount, @charges_amount,
+         @payment_date, @payment_method, @status, @notes)
+    `).run({
+      ...data,
+      payment_date:   data.payment_date   ?? null,
+      payment_method: data.payment_method ?? 'virement',
+      status:         data.status         ?? 'pending',
+      notes:          data.notes          ?? null,
+    })
+    return getById(result.lastInsertRowid as number)!
+  } catch (err) {
+    if (err instanceof Error && err.message.includes('UNIQUE constraint failed')) {
+      throw new Error('Un paiement existe deja pour ce bail et cette periode. Modifiez le paiement existant.')
+    }
+    throw err
+  }
 }
 
 export function update(id: number, data: Partial<PaymentInput>): Payment | undefined {

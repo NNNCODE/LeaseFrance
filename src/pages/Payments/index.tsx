@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Plus, CreditCard, CheckCircle2, Clock, AlertCircle,
   Building2, User, Euro, CalendarDays, X, Save,
-  Trash2, AlertTriangle, Pencil, ChevronDown, StickyNote, Receipt, ScrollText, ArrowRightLeft,
+  Trash2, AlertTriangle, Pencil, ChevronDown, StickyNote, Receipt, ScrollText, ArrowRightLeft, RefreshCw,
 } from 'lucide-react'
 import { pdf } from '@react-pdf/renderer'
 import { Button } from '@/components/ui/button'
@@ -77,6 +77,29 @@ export default function Payments() {
   const [deleting,  setDeleting]  = useState<Payment | null>(null)
   const [reminding, setReminding] = useState<Payment | null>(null)
   const [showImport, setShowImport] = useState(false)
+  const [syncResult, setSyncResult] = useState<AutoRentResult | null>(null)
+  const [syncing, setSyncing] = useState(false)
+
+  async function syncAndLoad() {
+    setLoading(true)
+    setSyncing(true)
+    try {
+      const result = await window.api.payments.generateMissing()
+      if (result.created > 0 || result.markedLate > 0) {
+        setSyncResult(result)
+        setTimeout(() => setSyncResult(null), 5000)
+      }
+    } finally {
+      setSyncing(false)
+    }
+    const [pays, leas] = await Promise.all([
+      window.api.payments.getAll(),
+      window.api.leases.getAll(),
+    ])
+    setPayments(pays)
+    setLeases(leas)
+    setLoading(false)
+  }
 
   async function load() {
     setLoading(true)
@@ -89,7 +112,7 @@ export default function Payments() {
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { syncAndLoad() }, [])
 
   // Regrouper par mois/année
   const filtered = useMemo(() => {
@@ -203,6 +226,14 @@ export default function Payments() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button
+            variant="ghost"
+            onClick={() => syncAndLoad()}
+            disabled={syncing}
+            title="Synchroniser les paiements"
+          >
+            <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
+          </Button>
           <Button variant="secondary" onClick={() => setShowImport(true)} disabled={!canImport}>
             <ArrowRightLeft className="w-4 h-4" />
             Import banque CSV
@@ -213,6 +244,28 @@ export default function Payments() {
           </Button>
         </div>
       </div>
+
+      {/* Sync notification */}
+      <AnimatePresence>
+        {syncResult && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 border border-primary/20 text-sm text-primary"
+          >
+            <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+            <span>
+              {syncResult.created > 0 && `${syncResult.created} paiement${syncResult.created > 1 ? 's' : ''} généré${syncResult.created > 1 ? 's' : ''}`}
+              {syncResult.created > 0 && syncResult.markedLate > 0 && ' · '}
+              {syncResult.markedLate > 0 && `${syncResult.markedLate} marqué${syncResult.markedLate > 1 ? 's' : ''} en retard`}
+            </span>
+            <button onClick={() => setSyncResult(null)} className="ml-auto p-0.5 hover:bg-primary/10 rounded">
+              <X className="w-3 h-3" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {noLeases && payments.length === 0 ? (
         <EmptyState />

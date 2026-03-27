@@ -50,6 +50,8 @@ contextBridge.exposeInMainWorld('api', {
     update:     (id: number, data: unknown) => ipcRenderer.invoke('payments:update', id, data),
     markPaid:   (id: number, date: string) => ipcRenderer.invoke('payments:markPaid', id, date),
     delete:     (id: number) => ipcRenderer.invoke('payments:delete', id),
+    generateMissing: () => ipcRenderer.invoke('payments:generateMissing') as Promise<{ created: number; markedLate: number }>,
+    markOverdue:     () => ipcRenderer.invoke('payments:markOverdue') as Promise<number>,
   },
   paymentReminders: {
     getByPayment: (paymentId: number) => ipcRenderer.invoke('paymentReminders:getByPayment', paymentId),
