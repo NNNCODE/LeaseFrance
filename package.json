@@ -8,6 +8,8 @@
     "build": "node scripts/build.mjs",
     "dist": "node scripts/build.mjs && electron-builder --config electron-builder.yml",
     "preview": "cross-env ELECTRON_RUN_AS_NODE= electron-vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "postinstall": "electron-rebuild -f -w better-sqlite3"
   },
@@ -50,6 +52,7 @@
     "javascript-obfuscator": "^5.3.0",
     "postcss": "^8.4.39",
     "tailwindcss": "^3.4.6",
-    "typescript": "^5.5.3"
+    "typescript": "^5.5.3",
+    "vitest": "^4.1.2"
   }
 }
