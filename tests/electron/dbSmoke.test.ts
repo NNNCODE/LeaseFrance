@@ -13,13 +13,13 @@ import type BetterSqlite3 from 'better-sqlite3'
 
 let Database: typeof import('better-sqlite3') | null = null
 let runMigrations: typeof import('../../electron/db/migrations').runMigrations | null = null
-let seedIrlIndicesIfEmpty: typeof import('../../electron/db/irlSeed').seedIrlIndicesIfEmpty | null = null
+let seedIrlIndices: typeof import('../../electron/db/irlSeed').seedIrlIndices | null = null
 let loadError: string | null = null
 
 try {
   Database = require('better-sqlite3')
   runMigrations = require('../../electron/db/migrations').runMigrations
-  seedIrlIndicesIfEmpty = require('../../electron/db/irlSeed').seedIrlIndicesIfEmpty
+  seedIrlIndices = require('../../electron/db/irlSeed').seedIrlIndices
 } catch (err: any) {
   loadError = err.message
 }
@@ -74,10 +74,10 @@ describe.skipIf(!!loadError)('Database migration smoke tests', () => {
     }
   })
 
-  it('sets user_version to 1 after baseline migration', () => {
+  it('sets user_version to 2 after migrations', () => {
     runMigrations!(db)
     const version = db.pragma('user_version', { simple: true }) as number
-    expect(version).toBe(1)
+    expect(version).toBe(2)
   })
 
   it('is idempotent — running migrations twice does not throw', () => {
@@ -85,7 +85,7 @@ describe.skipIf(!!loadError)('Database migration smoke tests', () => {
     expect(() => runMigrations!(db)).not.toThrow()
 
     const version = db.pragma('user_version', { simple: true }) as number
-    expect(version).toBe(1)
+    expect(version).toBe(2)
   })
 
   it('creates idx_payments_lease_period unique index', () => {
@@ -222,6 +222,7 @@ describe.skipIf(!!loadError)('Database migration smoke tests', () => {
       .map((c) => c.name)
     expect(leaseCols).toContain('deposit_received_date')
     expect(leaseCols).toContain('deposit_notes')
+    expect(leaseCols).toContain('contract_details')
     expect(leaseCols).toContain('updated_at')
 
     const tenantCols = (db.prepare('PRAGMA table_info(tenants)').all() as Array<{ name: string }>)
@@ -230,7 +231,7 @@ describe.skipIf(!!loadError)('Database migration smoke tests', () => {
     expect(tenantCols).toContain('dossier_id_document')
 
     // user_version stamped
-    expect(db.pragma('user_version', { simple: true })).toBe(1)
+    expect(db.pragma('user_version', { simple: true })).toBe(2)
   })
 
   it('deduplicates payments when upgrading a pre-migration DB with duplicates', () => {
@@ -318,7 +319,7 @@ describe.skipIf(!!loadError)('Database migration smoke tests', () => {
 
   it('IRL seed data populates correctly', () => {
     runMigrations!(db)
-    seedIrlIndicesIfEmpty!(db)
+    seedIrlIndices!(db)
 
     const count = (db.prepare('SELECT COUNT(*) as n FROM irl_indices').get() as { n: number }).n
     expect(count).toBeGreaterThanOrEqual(13)
@@ -326,13 +327,30 @@ describe.skipIf(!!loadError)('Database migration smoke tests', () => {
 
   it('IRL seed is idempotent', () => {
     runMigrations!(db)
-    seedIrlIndicesIfEmpty!(db)
+    seedIrlIndices!(db)
     const count1 = (db.prepare('SELECT COUNT(*) as n FROM irl_indices').get() as { n: number }).n
 
-    seedIrlIndicesIfEmpty!(db)
+    seedIrlIndices!(db)
     const count2 = (db.prepare('SELECT COUNT(*) as n FROM irl_indices').get() as { n: number }).n
 
     expect(count2).toBe(count1)
+  })
+
+  it('IRL seed backfills missing baseline rows into non-empty databases', () => {
+    runMigrations!(db)
+    db.prepare('INSERT INTO irl_indices (year, quarter, value) VALUES (?, ?, ?)').run(2030, 1, 200.01)
+
+    seedIrlIndices!(db)
+
+    const seededQuarter = db
+      .prepare('SELECT value FROM irl_indices WHERE year = ? AND quarter = ?')
+      .get(2025, 1) as { value: number } | undefined
+    const customQuarter = db
+      .prepare('SELECT value FROM irl_indices WHERE year = ? AND quarter = ?')
+      .get(2030, 1) as { value: number } | undefined
+
+    expect(seededQuarter?.value).toBe(145.4)
+    expect(customQuarter?.value).toBe(200.01)
   })
 
   // ── CRUD basics ───────────────────────────────────────────────────────────

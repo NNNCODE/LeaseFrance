@@ -40,6 +40,8 @@ contextBridge.exposeInMainWorld('api', {
     count:  () => ipcRenderer.invoke('leases:count'),
     create: (data: unknown) => ipcRenderer.invoke('leases:create', data),
     update: (id: number, data: unknown, expectedUpdatedAt: string) => ipcRenderer.invoke('leases:update', id, data, expectedUpdatedAt),
+    updateContractDetails: (id: number, contractDetails: unknown, expectedUpdatedAt: string) =>
+      ipcRenderer.invoke('leases:updateContractDetails', id, contractDetails, expectedUpdatedAt),
     delete: (id: number) => ipcRenderer.invoke('leases:delete', id),
   },
   payments: {

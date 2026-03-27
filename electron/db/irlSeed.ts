@@ -16,10 +16,7 @@ const SEED_DATA: [number, number, number][] = [
   [2025, 1, 145.4],
 ]
 
-export function seedIrlIndicesIfEmpty(db: Database.Database): void {
-  const count = (db.prepare('SELECT COUNT(*) as n FROM irl_indices').get() as { n: number }).n
-  if (count > 0) return
-
+export function seedIrlIndices(db: Database.Database): void {
   const insert = db.prepare(
     'INSERT OR IGNORE INTO irl_indices (year, quarter, value) VALUES (?, ?, ?)',
   )
@@ -29,4 +26,9 @@ export function seedIrlIndicesIfEmpty(db: Database.Database): void {
     }
   })
   tx()
+}
+
+// Backwards-compatible alias while older callers/tests are still updated.
+export function seedIrlIndicesIfEmpty(db: Database.Database): void {
+  seedIrlIndices(db)
 }

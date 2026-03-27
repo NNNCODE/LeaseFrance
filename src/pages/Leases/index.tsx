@@ -10,13 +10,14 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import IrlManagerModal from '@/components/irl/IrlManagerModal'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import DepositManagementModal, { type DepositManagementInput } from './DepositManagementModal'
 import ChargeReconciliationModal from './ChargeReconciliationModal'
 import { getDepositReturnedAmount, getDepositStatus, getDepositStatusMeta } from './depositUtils'
 import {
   calculateRevision, isRevisionEligible, isAnniversaryWithinDays,
-  parseQuarter, formatQuarter, QUARTER_LABELS,
+  parseQuarter, formatQuarter, QUARTER_LABELS, getIrlDatasetStatus,
   type RevisionResult,
 } from '@/lib/irl'
 
@@ -51,6 +52,7 @@ const emptyForm: LeaseInput = {
   deposit_refund_date: null,
   deposit_retained_amount: 0,
   deposit_notes: null,
+  contract_details: null,
   status: 'active',
 }
 
@@ -61,6 +63,7 @@ export default function Leases() {
   const [irlIndices, setIrlIndices] = useState<IrlIndex[]>([])
   const [loading, setLoading]     = useState(true)
   const [showForm, setShowForm]   = useState(false)
+  const [showIrlManager, setShowIrlManager] = useState(false)
   const [editing, setEditing]     = useState<Lease | null>(null)
   const [deleting, setDeleting]   = useState<Lease | null>(null)
   const [deleteError, setDeleteError] = useState('')
@@ -134,6 +137,7 @@ export default function Leases() {
         deposit_notes: lease.deposit_notes,
         irl_reference_index: newIrlValue,
         irl_reference_quarter: newIrlQuarter,
+        contract_details: lease.contract_details,
         status: lease.status,
       }, lease.updated_at)
       setRevising(null)
@@ -162,6 +166,7 @@ export default function Leases() {
         deposit_notes: data.deposit_notes,
         irl_reference_index: lease.irl_reference_index,
         irl_reference_quarter: lease.irl_reference_quarter,
+        contract_details: lease.contract_details,
         status: lease.status,
       }, lease.updated_at)
       setManagingDeposit(null)
@@ -180,11 +185,12 @@ export default function Leases() {
     isRevisionEligible(l.type, l.start_date, l.irl_reference_index, l.irl_reference_quarter) &&
     isAnniversaryWithinDays(l.start_date, 60)
   )
+  const irlDatasetStatus = getIrlDatasetStatus(irlIndices)
 
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold text-textPrimary">Baux</h1>
           <p className="text-textMuted text-sm mt-1">
@@ -192,11 +198,38 @@ export default function Leases() {
             {ended > 0 && ` · ${ended} terminé${ended !== 1 ? 's' : ''}`}
           </p>
         </div>
-        <Button onClick={openAdd}>
-          <Plus className="w-4 h-4" />
-          Nouveau bail
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="secondary" onClick={() => setShowIrlManager(true)}>
+            <TrendingUp className="w-4 h-4" />
+            Gerer l IRL
+          </Button>
+          <Button onClick={openAdd}>
+            <Plus className="w-4 h-4" />
+            Nouveau bail
+          </Button>
+        </div>
       </div>
+
+      {irlDatasetStatus.isStale && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-start gap-3 p-4 bg-warning/10 border border-warning/20 rounded-xl"
+        >
+          <AlertTriangle className="w-5 h-5 text-warning mt-0.5 shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-textPrimary">
+              Les donnees IRL locales s arretent a {irlDatasetStatus.latestLabel ?? 'une date inconnue'}
+            </p>
+            <p className="text-xs text-textMuted mt-0.5">
+              Ajoutez les derniers indices publies pour garder les revisions et documents IRL exploitables.
+            </p>
+          </div>
+          <Button variant="secondary" size="sm" onClick={() => setShowIrlManager(true)}>
+            Ouvrir
+          </Button>
+        </motion.div>
+      )}
 
       {/* IRL revision alert */}
       {revisionEligible.length > 0 && (
@@ -273,7 +306,21 @@ export default function Leases() {
             lease={revising}
             irlIndices={irlIndices}
             onApply={handleApplyRevision}
+            onManageIrl={() => {
+              setRevising(null)
+              setShowIrlManager(true)
+            }}
             onClose={() => setRevising(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showIrlManager && (
+          <IrlManagerModal
+            indices={irlIndices}
+            onChanged={load}
+            onClose={() => setShowIrlManager(false)}
           />
         )}
       </AnimatePresence>
@@ -497,6 +544,7 @@ function LeaseFormModal({
           deposit_notes: initial.deposit_notes,
           irl_reference_index: initial.irl_reference_index,
           irl_reference_quarter: initial.irl_reference_quarter,
+          contract_details: initial.contract_details,
           status: initial.status,
         }
       : emptyForm
@@ -809,10 +857,11 @@ function LeaseFormModal({
 
 // ── Revision modal ────────────────────────────────────────────────────────────
 
-function RevisionModal({ lease, irlIndices, onApply, onClose }: {
+function RevisionModal({ lease, irlIndices, onApply, onManageIrl, onClose }: {
   lease: Lease
   irlIndices: IrlIndex[]
   onApply: (leaseId: number, newRent: number, newIrlValue: number, newIrlQuarter: string) => Promise<void>
+  onManageIrl: () => void
   onClose: () => void
 }) {
   const [applying, setApplying] = useState(false)
@@ -913,7 +962,10 @@ function RevisionModal({ lease, irlIndices, onApply, onClose }: {
             <p className="text-xs text-textMuted">
               Modifiez le bail pour définir l'IRL de référence, ou ajoutez un indice IRL plus récent.
             </p>
-            <Button variant="secondary" onClick={onClose} className="mt-2">Fermer</Button>
+            <div className="flex gap-2 mt-2">
+              <Button variant="secondary" onClick={onManageIrl}>Gerer l IRL</Button>
+              <Button variant="secondary" onClick={onClose}>Fermer</Button>
+            </div>
           </div>
         ) : (
           <div className="flex flex-col gap-4 p-6">

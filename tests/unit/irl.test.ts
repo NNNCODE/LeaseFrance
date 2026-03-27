@@ -6,6 +6,8 @@ import {
   getRelevantAnniversaryDate,
   parseQuarter,
   formatQuarter,
+  getCurrentQuarter,
+  getIrlDatasetStatus,
   QUARTER_LABELS,
 } from '../../src/lib/irl'
 
@@ -151,6 +153,44 @@ describe('formatQuarter', () => {
 })
 
 // ── QUARTER_LABELS ───────────────────────────────────────────────────────────
+
+describe('getCurrentQuarter', () => {
+  it('maps a date to the expected quarter', () => {
+    expect(getCurrentQuarter(new Date('2026-03-26T12:00:00Z'))).toEqual({ year: 2026, quarter: 1 })
+    expect(getCurrentQuarter(new Date('2026-07-01T12:00:00Z'))).toEqual({ year: 2026, quarter: 3 })
+  })
+})
+
+describe('getIrlDatasetStatus', () => {
+  it('marks an empty dataset as stale', () => {
+    expect(getIrlDatasetStatus([], new Date('2026-03-26T12:00:00Z'))).toMatchObject({
+      latestLabel: null,
+      quarterLag: null,
+      isStale: true,
+    })
+  })
+
+  it('reports the latest local quarter and lag', () => {
+    const status = getIrlDatasetStatus([
+      { year: 2025, quarter: 1, value: 145.4 },
+      { year: 2024, quarter: 4, value: 145.17 },
+    ], new Date('2026-03-26T12:00:00Z'))
+
+    expect(status.latestLabel).toBe('2025-T1')
+    expect(status.latestValue).toBe(145.4)
+    expect(status.quarterLag).toBe(4)
+    expect(status.isStale).toBe(true)
+  })
+
+  it('does not flag a dataset that is only one quarter behind', () => {
+    const status = getIrlDatasetStatus([
+      { year: 2025, quarter: 4, value: 145.9 },
+    ], new Date('2026-03-26T12:00:00Z'))
+
+    expect(status.quarterLag).toBe(1)
+    expect(status.isStale).toBe(false)
+  })
+})
 
 describe('QUARTER_LABELS', () => {
   it('has labels for all four quarters', () => {

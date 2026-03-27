@@ -134,6 +134,8 @@ ipcMain.handle('leases:getAll',  () => leasesDb.getAll())
 ipcMain.handle('leases:count',   () => leasesDb.count())
 ipcMain.handle('leases:create',  (_e, data) => leasesDb.create(data))
 ipcMain.handle('leases:update',  (_e, id, data, expectedUpdatedAt) => leasesDb.update(id, data, expectedUpdatedAt))
+ipcMain.handle('leases:updateContractDetails', (_e, id, contractDetails, expectedUpdatedAt) =>
+  leasesDb.updateContractDetails(id, contractDetails, expectedUpdatedAt))
 ipcMain.handle('leases:delete',  (_e, id) => leasesDb.remove(id))
 
 // Payments IPC
@@ -179,6 +181,7 @@ ipcMain.handle('documents:savePdf', async (_e, leaseId: number, fileName: string
     quittance: 'Enregistrer la quittance',
     recu: 'Enregistrer le recu de loyer',
     avis_revision_loyer: "Enregistrer l'avis de revision du loyer",
+    contrat_location_meublee: 'Enregistrer le contrat de location meublee',
     recu_depot_garantie: 'Enregistrer le recu de depot de garantie',
     solde_depot_garantie: 'Enregistrer le solde de depot de garantie',
     relance_amiable: 'Enregistrer la relance amiable',

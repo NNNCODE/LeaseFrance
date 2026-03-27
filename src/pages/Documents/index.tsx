@@ -23,6 +23,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { buildFurnishedLeaseContractPdfData } from '@/lib/leaseContractDocument'
 import {
   DepositReceiptPDF,
   DepositSettlementPDF,
@@ -31,6 +32,7 @@ import {
   type DepositSettlementPdfData,
   type RentRevisionNoticePdfData,
 } from '@/lib/pdf/documentTemplates'
+import { FurnishedLeaseContractPDF } from '@/lib/pdf/furnishedLeaseContract'
 import { RecuPDF, type RecuData } from '@/lib/pdf/recu'
 import { QuittancePDF, type QuittanceData } from '@/lib/pdf/quittance'
 import { formatDate } from '@/lib/utils'
@@ -38,6 +40,7 @@ import { useAuthStore } from '@/stores/useAuthStore'
 import GenerateDocumentModal, { type GenerateDocumentRequest } from './GenerateDocumentModal'
 import {
   MONTHS,
+  canGenerateFurnishedLeaseContract,
   canGenerateDepositReceipt,
   canGenerateDepositSettlement,
   getDepositReturnedAmount,
@@ -76,6 +79,8 @@ function getDocumentMeta(type: string) {
       return { label: 'Recu de depot', variant: 'default' as const, icon: ShieldCheck, iconClass: 'text-primary', iconBg: 'bg-primary/10' }
     case 'solde_depot_garantie':
       return { label: 'Solde de depot', variant: 'warning' as const, icon: ShieldCheck, iconClass: 'text-warning', iconBg: 'bg-warning/10' }
+    case 'contrat_location_meublee':
+      return { label: 'Contrat meuble', variant: 'default' as const, icon: ScrollText, iconClass: 'text-primary', iconBg: 'bg-primary/10' }
     default:
       return { label: 'Quittance', variant: 'muted' as const, icon: FileText, iconClass: 'text-primary', iconBg: 'bg-primary/10' }
   }
@@ -87,6 +92,7 @@ const DOC_TYPE_FILTERS: Array<{ value: string; label: string }> = [
   { value: 'quittance', label: 'Quittance' },
   { value: 'recu', label: 'Recu' },
   { value: 'avis_revision_loyer', label: 'Avis de revision' },
+  { value: 'contrat_location_meublee', label: 'Contrat meuble' },
   { value: 'recu_depot_garantie', label: 'Recu de depot' },
   { value: 'solde_depot_garantie', label: 'Solde de depot' },
   { value: 'relance_amiable', label: 'Relance amiable' },
@@ -142,11 +148,13 @@ export default function Documents() {
 
   const paidPayments = payments.filter((payment) => payment.status === 'paid')
   const revisableLeaseCount = leases.filter((lease) => Boolean(getRevisionTemplateContext(lease, irlIndices))).length
+  const furnishedLeaseCount = leases.filter(canGenerateFurnishedLeaseContract).length
   const depositReceiptCount = leases.filter(canGenerateDepositReceipt).length
   const depositSettlementCount = leases.filter(canGenerateDepositSettlement).length
   const canGenerateAnyDocument = (
     paidPayments.length > 0
     || revisableLeaseCount > 0
+    || furnishedLeaseCount > 0
     || depositReceiptCount > 0
     || depositSettlementCount > 0
   )
@@ -213,6 +221,9 @@ export default function Documents() {
         break
       case 'rent_revision_notice':
         saveTemplateParams('rent_revision_notice', { leaseId: request.leaseId, noticeDate: request.noticeDate, effectiveDate: request.effectiveDate })
+        break
+      case 'furnished_lease_contract':
+        saveTemplateParams('furnished_lease_contract', { leaseId: request.leaseId })
         break
       case 'deposit_receipt':
         saveTemplateParams('deposit_receipt', { leaseId: request.leaseId })
@@ -305,6 +316,29 @@ export default function Documents() {
         )
       }
 
+      case 'furnished_lease_contract': {
+        const lease = leases.find((entry) => entry.id === request.leaseId)
+        if (!lease) return false
+
+        const persistedLease = await window.api.leases.updateContractDetails(
+          lease.id,
+          request.contractDetails,
+          lease.updated_at,
+        )
+        if (!persistedLease) return false
+
+        setLeases((current) => current.map((entry) => entry.id === persistedLease.id ? persistedLease : entry))
+
+        const data = buildFurnishedLeaseContractPdfData(persistedLease, profile, request.contractDetails)
+        const blob = await pdf(<FurnishedLeaseContractPDF data={data} />).toBlob()
+        return saveGeneratedPdf(
+          persistedLease.id,
+          `Contrat_location_meublee_${persistedLease.tenant_last_name}_${persistedLease.start_date}.pdf`,
+          blob,
+          'contrat_location_meublee',
+        )
+      }
+
       case 'deposit_receipt': {
         const lease = leases.find((entry) => entry.id === request.leaseId)
         if (!lease || !lease.deposit_received_date || lease.deposit_amount <= 0) return false
@@ -393,6 +427,7 @@ export default function Documents() {
       quittance: 'payment_certificate',
       recu: 'payment_certificate',
       avis_revision_loyer: 'rent_revision_notice',
+      contrat_location_meublee: 'furnished_lease_contract',
       recu_depot_garantie: 'deposit_receipt',
       solde_depot_garantie: 'deposit_settlement',
     }
@@ -499,7 +534,7 @@ export default function Documents() {
             <p className="text-sm text-textMuted mt-1">
               {hasFilters
                 ? 'Essayez d ajuster vos filtres ou votre recherche.'
-                : 'Ouvrez le centre de modeles pour generer une quittance, un avis de revision ou un document de depot.'}
+                : 'Ouvrez le centre de modeles pour generer une quittance, un avis de revision, un contrat meuble ou un document de depot.'}
             </p>
           </div>
         </div>
@@ -528,6 +563,7 @@ export default function Documents() {
       <AnimatePresence>
         {showForm && (
           <GenerateDocumentModal
+            profile={profile}
             payments={paidPayments}
             leases={leases}
             irlIndices={irlIndices}
@@ -586,7 +622,7 @@ function DocRow({
   const [showStatusMenu, setShowStatusMenu] = useState(false)
 
   // Determine if this doc type supports regeneration
-  const canRegenerate = ['quittance', 'recu', 'avis_revision_loyer', 'recu_depot_garantie', 'solde_depot_garantie'].includes(doc.type)
+  const canRegenerate = ['quittance', 'recu', 'avis_revision_loyer', 'contrat_location_meublee', 'recu_depot_garantie', 'solde_depot_garantie'].includes(doc.type)
 
   return (
     <motion.div
@@ -874,8 +910,8 @@ function EmptyState() {
       <div>
         <p className="text-lg font-semibold text-textPrimary">Aucune source de document</p>
         <p className="text-sm text-textMuted mt-1">
-          Les modeles deviennent disponibles des qu un paiement est marque paye, qu un bail peut etre revise
-          ou qu un depot de garantie est encaisse ou restitue.
+          Les modeles deviennent disponibles des qu un paiement est marque paye, qu un bail meuble est actif,
+          qu un bail peut etre revise ou qu un depot de garantie est encaisse ou restitue.
         </p>
       </div>
     </div>

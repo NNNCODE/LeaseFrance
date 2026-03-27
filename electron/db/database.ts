@@ -3,7 +3,7 @@ import { mkdirSync } from 'fs'
 import { dirname } from 'path'
 import { getCurrentAccountDbPath } from '../auth'
 import { runMigrations } from './migrations'
-import { seedIrlIndicesIfEmpty } from './irlSeed'
+import { seedIrlIndices } from './irlSeed'
 
 let db: Database.Database | null = null
 
@@ -19,7 +19,7 @@ export function getDb(): Database.Database {
   db.pragma('foreign_keys = ON')
 
   runMigrations(db)
-  seedIrlIndicesIfEmpty(db)
+  seedIrlIndices(db)
   return db
 }
 

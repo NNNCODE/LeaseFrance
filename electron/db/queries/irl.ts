@@ -1,5 +1,5 @@
 import { getDb } from '../database'
-import { seedIrlIndicesIfEmpty } from '../irlSeed'
+import { seedIrlIndices } from '../irlSeed'
 
 export interface IrlIndex {
   id: number
@@ -48,5 +48,5 @@ export function remove(id: number): boolean {
 // Source : https://www.insee.fr/fr/statistiques/serie/001515333
 
 export function seedIfEmpty(): void {
-  seedIrlIndicesIfEmpty(getDb())
+  seedIrlIndices(getDb())
 }

@@ -20,6 +20,7 @@ export type DocumentTemplateKind =
   | 'rent_revision_notice'
   | 'deposit_receipt'
   | 'deposit_settlement'
+  | 'furnished_lease_contract'
 
 export interface RevisionTemplateContext {
   revision: RevisionResult
@@ -40,6 +41,10 @@ export function canGenerateDepositReceipt(lease: Lease): boolean {
 
 export function canGenerateDepositSettlement(lease: Lease): boolean {
   return lease.deposit_amount > 0 && Boolean(lease.deposit_refund_date)
+}
+
+export function canGenerateFurnishedLeaseContract(lease: Lease): boolean {
+  return lease.type === 'meuble'
 }
 
 export function getDepositReturnedAmount(lease: Pick<Lease, 'deposit_amount' | 'deposit_refund_date' | 'deposit_retained_amount'>): number {

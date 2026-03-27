@@ -29,6 +29,15 @@ export interface RevisionResult {
   newLabel: string
 }
 
+export interface IrlDatasetStatus {
+  latestYear: number | null
+  latestQuarter: number | null
+  latestValue: number | null
+  latestLabel: string | null
+  quarterLag: number | null
+  isStale: boolean
+}
+
 /**
  * Calcule la révision IRL du loyer
  */
@@ -125,6 +134,54 @@ export function parseQuarter(q: string): { year: number; quarter: number } | nul
  */
 export function formatQuarter(year: number, quarter: number): string {
   return `${year}-T${quarter}`
+}
+
+export function getCurrentQuarter(now = new Date()): { year: number; quarter: number } {
+  return {
+    year: now.getFullYear(),
+    quarter: Math.floor(now.getMonth() / 3) + 1,
+  }
+}
+
+function getQuarterOrdinal(year: number, quarter: number): number {
+  return year * 4 + quarter - 1
+}
+
+export function getIrlDatasetStatus(
+  indices: Array<{ year: number; quarter: number; value: number }>,
+  now = new Date(),
+): IrlDatasetStatus {
+  if (indices.length === 0) {
+    return {
+      latestYear: null,
+      latestQuarter: null,
+      latestValue: null,
+      latestLabel: null,
+      quarterLag: null,
+      isStale: true,
+    }
+  }
+
+  const latest = [...indices].sort((a, b) => {
+    if (b.year !== a.year) return b.year - a.year
+    return b.quarter - a.quarter
+  })[0]
+
+  const current = getCurrentQuarter(now)
+  const quarterLag = Math.max(
+    0,
+    getQuarterOrdinal(current.year, current.quarter) - getQuarterOrdinal(latest.year, latest.quarter),
+  )
+
+  return {
+    latestYear: latest.year,
+    latestQuarter: latest.quarter,
+    latestValue: latest.value,
+    latestLabel: formatQuarter(latest.year, latest.quarter),
+    quarterLag,
+    // Two full quarters behind the current quarter is already a meaningful warning.
+    isStale: quarterLag >= 2,
+  }
 }
 
 /**

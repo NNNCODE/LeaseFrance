@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import {
   CheckCircle2,
@@ -7,14 +7,22 @@ import {
   FileText,
   Info,
   Receipt,
+  ScrollText,
   ShieldCheck,
   TrendingUp,
   X,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import FurnishedLeaseContractEditor from './FurnishedLeaseContractEditor'
+import {
+  getFurnishedLeaseContractAdvisories,
+  getFurnishedLeaseContractBlockingIssues,
+  prepareLeaseContractDetails,
+} from '@/lib/leaseContractDocument'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import {
+  canGenerateFurnishedLeaseContract,
   MONTHS,
   canGenerateDepositReceipt,
   canGenerateDepositSettlement,
@@ -29,8 +37,10 @@ export type GenerateDocumentRequest =
   | { kind: 'rent_revision_notice'; leaseId: number; noticeDate: string; effectiveDate: string }
   | { kind: 'deposit_receipt'; leaseId: number }
   | { kind: 'deposit_settlement'; leaseId: number }
+  | { kind: 'furnished_lease_contract'; leaseId: number; contractDetails: LeaseContractDetails }
 
 interface GenerateDocumentModalProps {
+  profile: UserProfile | null
   payments: Payment[]
   leases: Lease[]
   irlIndices: IrlIndex[]
@@ -53,6 +63,7 @@ function today() {
 }
 
 export default function GenerateDocumentModal({
+  profile,
   payments,
   leases,
   irlIndices,
@@ -64,6 +75,7 @@ export default function GenerateDocumentModal({
   const revisableLeases = leases
     .map((lease) => ({ lease, context: getRevisionTemplateContext(lease, irlIndices) }))
     .filter((entry): entry is { lease: Lease; context: NonNullable<ReturnType<typeof getRevisionTemplateContext>> } => Boolean(entry.context))
+  const furnishedContractLeases = leases.filter(canGenerateFurnishedLeaseContract)
   const depositReceiptLeases = leases.filter(canGenerateDepositReceipt)
   const depositSettlementLeases = leases.filter(canGenerateDepositSettlement)
 
@@ -81,6 +93,13 @@ export default function GenerateDocumentModal({
       description: 'Genere a partir de la reference IRL du bail.',
       count: revisableLeases.length,
       icon: TrendingUp,
+    },
+    {
+      kind: 'furnished_lease_contract',
+      title: 'Contrat location meublee',
+      description: 'Modele officiel meuble avec champs complementaires.',
+      count: furnishedContractLeases.length,
+      icon: ScrollText,
     },
     {
       kind: 'deposit_receipt',
@@ -102,6 +121,7 @@ export default function GenerateDocumentModal({
   const [selectedId, setSelectedId] = useState(0)
   const [noticeDate, setNoticeDate] = useState(today())
   const [effectiveDate, setEffectiveDate] = useState(today())
+  const [contractDetails, setContractDetails] = useState<LeaseContractDetails | null>(null)
   const [generating, setGenerating] = useState(false)
   const [done, setDone] = useState(false)
   const [error, setError] = useState('')
@@ -118,6 +138,10 @@ export default function GenerateDocumentModal({
   }, [cards, template, initialTemplate])
 
   useEffect(() => {
+    setMemoryApplied(false)
+  }, [template])
+
+  useEffect(() => {
     if (!template) return
 
     switch (template) {
@@ -126,6 +150,9 @@ export default function GenerateDocumentModal({
         break
       case 'rent_revision_notice':
         setSelectedId((current) => revisableLeases.some((entry) => entry.lease.id === current) ? current : (revisableLeases[0]?.lease.id ?? 0))
+        break
+      case 'furnished_lease_contract':
+        setSelectedId((current) => furnishedContractLeases.some((lease) => lease.id === current) ? current : (furnishedContractLeases[0]?.id ?? 0))
         break
       case 'deposit_receipt':
         setSelectedId((current) => depositReceiptLeases.some((lease) => lease.id === current) ? current : (depositReceiptLeases[0]?.id ?? 0))
@@ -136,7 +163,7 @@ export default function GenerateDocumentModal({
       default:
         setSelectedId(0)
     }
-  }, [depositReceiptLeases, depositSettlementLeases, payments, revisableLeases, template])
+  }, [depositReceiptLeases, depositSettlementLeases, furnishedContractLeases, payments, revisableLeases, template])
 
   // Apply remembered template params once
   useEffect(() => {
@@ -164,23 +191,47 @@ export default function GenerateDocumentModal({
         if (lid && depositReceiptLeases.some((l) => l.id === lid)) setSelectedId(lid)
         break
       }
+      case 'furnished_lease_contract': {
+        const lid = params.leaseId as number
+        if (lid && furnishedContractLeases.some((l) => l.id === lid)) setSelectedId(lid)
+        break
+      }
       case 'deposit_settlement': {
         const lid = params.leaseId as number
         if (lid && depositSettlementLeases.some((l) => l.id === lid)) setSelectedId(lid)
         break
       }
     }
-  }, [template, memoryApplied, getTemplateParams, payments, revisableLeases, depositReceiptLeases, depositSettlementLeases])
+  }, [template, memoryApplied, getTemplateParams, payments, revisableLeases, furnishedContractLeases, depositReceiptLeases, depositSettlementLeases])
 
   const selectedPayment = payments.find((payment) => payment.id === selectedId) ?? null
   const selectedRevisable = revisableLeases.find((entry) => entry.lease.id === selectedId) ?? null
+  const selectedFurnishedLease = furnishedContractLeases.find((lease) => lease.id === selectedId) ?? null
   const selectedDepositReceiptLease = depositReceiptLeases.find((lease) => lease.id === selectedId) ?? null
   const selectedDepositSettlementLease = depositSettlementLeases.find((lease) => lease.id === selectedId) ?? null
+
+  useEffect(() => {
+    if (template !== 'furnished_lease_contract' || !selectedFurnishedLease) return
+    setContractDetails(prepareLeaseContractDetails(selectedFurnishedLease, profile))
+  }, [template, selectedFurnishedLease, profile])
 
   useEffect(() => {
     if (template !== 'rent_revision_notice' || !selectedRevisable) return
     setEffectiveDate(selectedRevisable.context.effectiveDate)
   }, [selectedId, selectedRevisable, template])
+
+  const contractBlockingIssues = useMemo(
+    () => template === 'furnished_lease_contract' && selectedFurnishedLease && contractDetails
+      ? getFurnishedLeaseContractBlockingIssues(selectedFurnishedLease, contractDetails, profile)
+      : [],
+    [template, selectedFurnishedLease, contractDetails, profile],
+  )
+  const contractAdvisories = useMemo(
+    () => template === 'furnished_lease_contract' && selectedFurnishedLease && contractDetails
+      ? getFurnishedLeaseContractAdvisories(selectedFurnishedLease, contractDetails)
+      : [],
+    [template, selectedFurnishedLease, contractDetails],
+  )
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
@@ -215,6 +266,21 @@ export default function GenerateDocumentModal({
         case 'deposit_settlement':
           saved = await onGenerate({ kind: 'deposit_settlement', leaseId: selectedId })
           break
+        case 'furnished_lease_contract':
+          if (!selectedFurnishedLease || !contractDetails) {
+            setGenerating(false)
+            return setError('Selectionnez un bail meuble.')
+          }
+          if (contractBlockingIssues.length > 0) {
+            setGenerating(false)
+            return setError('Le contrat comporte encore des mentions obligatoires a completer.')
+          }
+          saved = await onGenerate({
+            kind: 'furnished_lease_contract',
+            leaseId: selectedId,
+            contractDetails,
+          })
+          break
       }
 
       if (saved) {
@@ -232,40 +298,43 @@ export default function GenerateDocumentModal({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-50 overflow-y-auto bg-black/60 p-4 backdrop-blur-sm sm:p-6"
       onClick={(event) => event.target === event.currentTarget && onClose()}
     >
-      <motion.div
-        initial={{ opacity: 0, scale: 0.96, y: 12 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.96, y: 12 }}
-        transition={{ duration: 0.2, ease: 'easeOut' }}
-        className="w-full max-w-3xl bg-surface border border-border rounded-2xl shadow-2xl overflow-hidden"
-      >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <div className="flex items-center gap-2">
-            <FileText className="w-4 h-4 text-primary" />
-            <h2 className="text-base font-semibold text-textPrimary">Centre de modeles</h2>
-          </div>
-          <button onClick={onClose} className="text-textMuted hover:text-textPrimary transition-colors">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        {done ? (
-          <div className="flex flex-col items-center gap-3 px-6 py-10">
-            <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-success/10">
-              <CheckCircle2 className="w-7 h-7 text-success" />
+      <div className="flex min-h-full items-start justify-center sm:items-center">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96, y: 12 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.96, y: 12 }}
+          transition={{ duration: 0.2, ease: 'easeOut' }}
+          className="my-auto flex max-h-[calc(100vh-2rem)] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-2xl sm:max-h-[calc(100vh-3rem)]"
+        >
+          <div className="flex shrink-0 items-center justify-between border-b border-border px-6 py-4">
+            <div className="flex items-center gap-2">
+              <FileText className="w-4 h-4 text-primary" />
+              <h2 className="text-base font-semibold text-textPrimary">Centre de modeles</h2>
             </div>
-            <p className="text-base font-semibold text-textPrimary">Document genere</p>
-            <p className="text-sm text-textMuted text-center">
-              Le PDF a ete enregistre puis ajoute a la liste des documents.
-            </p>
-            <Button onClick={onClose} className="mt-2">Fermer</Button>
+            <button onClick={onClose} className="text-textMuted hover:text-textPrimary transition-colors">
+              <X className="w-4 h-4" />
+            </button>
           </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="flex flex-col gap-5 p-6">
-            <div className="grid grid-cols-2 gap-3">
+
+          {done ? (
+            <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-10 text-center">
+              <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-success/10">
+                <CheckCircle2 className="w-7 h-7 text-success" />
+              </div>
+              <p className="text-base font-semibold text-textPrimary">Document genere</p>
+              <p className="text-sm text-textMuted">
+                Le PDF a ete enregistre puis ajoute a la liste des documents.
+              </p>
+              <Button onClick={onClose} className="mt-2">Fermer</Button>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+              <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
+                <div className="flex flex-col gap-5 pr-1">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {cards.map((card) => {
                 const Icon = card.icon
                 const active = template === card.kind
@@ -299,15 +368,15 @@ export default function GenerateDocumentModal({
                   </button>
                 )
               })}
-            </div>
+                  </div>
 
-            {!template ? (
-              <div className="rounded-xl border border-border bg-surfaceHigh/50 px-4 py-5 text-sm text-textMuted">
-                Aucun modele ne peut etre genere pour le moment. Verifiez qu un paiement est marque paye, qu un bail est revisable
-                ou qu un depot de garantie a ete encaisse ou restitue.
-              </div>
-            ) : (
-              <>
+                  {!template ? (
+                    <div className="rounded-xl border border-border bg-surfaceHigh/50 px-4 py-5 text-sm text-textMuted">
+                      Aucun modele ne peut etre genere pour le moment. Verifiez qu un paiement est marque paye, qu un bail est revisable
+                      ou qu un bail meuble / depot de garantie soit disponible.
+                    </div>
+                  ) : (
+                    <>
                 {template === 'payment_certificate' && (
                   <TemplateSection
                     label="Paiement"
@@ -345,6 +414,28 @@ export default function GenerateDocumentModal({
                   </TemplateSection>
                 )}
 
+                {template === 'furnished_lease_contract' && (
+                  <TemplateSection
+                    label="Bail meuble"
+                    selectValue={selectedId}
+                    onSelect={(value) => setSelectedId(Number(value))}
+                    options={furnishedContractLeases.map((lease) => ({
+                      id: lease.id,
+                      label: `${lease.tenant_first_name} ${lease.tenant_last_name} · ${lease.property_name}`,
+                    }))}
+                  >
+                    {selectedFurnishedLease && contractDetails && (
+                      <FurnishedLeaseContractEditor
+                        lease={selectedFurnishedLease}
+                        details={contractDetails}
+                        blockingIssues={contractBlockingIssues}
+                        advisories={contractAdvisories}
+                        onChange={setContractDetails}
+                      />
+                    )}
+                  </TemplateSection>
+                )}
+
                 {template === 'deposit_receipt' && (
                   <TemplateSection
                     label="Bail"
@@ -372,21 +463,30 @@ export default function GenerateDocumentModal({
                     {selectedDepositSettlementLease && <DepositSettlementPreview lease={selectedDepositSettlementLease} />}
                   </TemplateSection>
                 )}
-              </>
-            )}
+                    </>
+                  )}
 
-            {error && <p className="text-xs text-danger bg-danger/10 rounded-lg px-3 py-2">{error}</p>}
+                  {error && <p className="text-xs text-danger bg-danger/10 rounded-lg px-3 py-2">{error}</p>}
+                </div>
+              </div>
 
-            <div className="flex gap-2 pt-1">
-              <Button type="button" variant="secondary" onClick={onClose} className="flex-1">Annuler</Button>
-              <Button type="submit" disabled={!template || !selectedId || generating} className="flex-1">
-                <Download className="w-3.5 h-3.5" />
-                {generating ? 'Generation...' : 'Generer le PDF'}
-              </Button>
-            </div>
-          </form>
-        )}
-      </motion.div>
+              <div className="shrink-0 border-t border-border px-6 py-4">
+                <div className="flex gap-2">
+                  <Button type="button" variant="secondary" onClick={onClose} className="flex-1">Annuler</Button>
+                  <Button
+                    type="submit"
+                    disabled={!template || !selectedId || generating || (template === 'furnished_lease_contract' && contractBlockingIssues.length > 0)}
+                    className="flex-1"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    {generating ? 'Generation...' : 'Generer le PDF'}
+                  </Button>
+                </div>
+              </div>
+            </form>
+          )}
+        </motion.div>
+      </div>
     </motion.div>
   )
 }
