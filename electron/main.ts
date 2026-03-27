@@ -1,5 +1,5 @@
 import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron'
-import { writeFileSync, copyFileSync, existsSync, readFileSync, mkdirSync, unlinkSync } from 'fs'
+import { writeFileSync, copyFileSync, existsSync, readFileSync, mkdirSync, unlinkSync, statSync } from 'fs'
 import { join, dirname, extname } from 'path'
 import { randomBytes } from 'crypto'
 import { closeDb, getDb, getDbPath } from './db/database'
@@ -11,6 +11,13 @@ import {
   hasPassword, importAccountFromBackup, setupPassword, verifyPassword,
   changePassword, updateProfile,
 } from './auth'
+import {
+  BACKUP_EXTENSION, buildBackupArchive, ensureBackupPath,
+  readRestorePayload, removeSqliteSidecars,
+  getBackupSettings, saveBackupSettings, recordBackupDone,
+  startAutoBackupTimer, stopAutoBackupTimer,
+  verifyBackupFile, previewBackupFile,
+} from './backupManager'
 import * as propertiesDb from './db/queries/properties'
 import * as tenantsDb from './db/queries/tenants'
 import * as leasesDb from './db/queries/leases'
@@ -316,120 +323,7 @@ ipcMain.handle('attachments:delete', (_e, id: number) => {
 ipcMain.handle('bankImports:findDuplicates', (_e, fingerprints: string[]) => bankImportsDb.findDuplicates(fingerprints))
 ipcMain.handle('bankImports:recordImported', (_e, entries: Array<{ fingerprint: string; tx_date: string; description: string; amount: number; payment_id: number | null }>) => bankImportsDb.recordImported(entries))
 
-// Backup / restore IPC
-const BACKUP_EXTENSION = '.lfbackup'
-
-interface BackupArchiveV1 {
-  version: 1
-  createdAt: string
-  dbBase64: string
-  authBase64: string
-}
-
-function hasValidSqliteHeader(buffer: Buffer): boolean {
-  return buffer.toString('utf8', 0, 15) === 'SQLite format 3'
-}
-
-function ensureBackupPath(filePath: string): string {
-  return extname(filePath).toLowerCase() === BACKUP_EXTENSION
-    ? filePath
-    : `${filePath}${BACKUP_EXTENSION}`
-}
-
-function removeSqliteSidecars(dbPath: string): void {
-  for (const suffix of ['-wal', '-shm']) {
-    const sidecarPath = `${dbPath}${suffix}`
-    if (existsSync(sidecarPath)) {
-      unlinkSync(sidecarPath)
-    }
-  }
-}
-
-async function buildBackupArchive(): Promise<BackupArchiveV1> {
-  const tempDbPath = join(
-    app.getPath('temp'),
-    `leasefrance_backup_${Date.now()}_${randomBytes(6).toString('hex')}.db`,
-  )
-
-  try {
-    await getDb().backup(tempDbPath)
-
-    const dbBuffer = readFileSync(tempDbPath)
-    if (!hasValidSqliteHeader(dbBuffer)) {
-      throw new Error('La sauvegarde SQLite generee est invalide.')
-    }
-
-    return {
-      version: 1,
-      createdAt: new Date().toISOString(),
-      dbBase64: dbBuffer.toString('base64'),
-      authBase64: Buffer.from(exportCurrentAccountAuth(), 'utf8').toString('base64'),
-    }
-  } finally {
-    if (existsSync(tempDbPath)) {
-      unlinkSync(tempDbPath)
-    }
-  }
-}
-
-function parseBackupArchive(raw: string): { dbBuffer: Buffer; authBuffer: Buffer } {
-  let archive: unknown
-  try {
-    archive = JSON.parse(raw)
-  } catch {
-    throw new Error("Le fichier de sauvegarde est illisible ou n'est pas au format attendu.")
-  }
-
-  if (
-    !archive ||
-    typeof archive !== 'object' ||
-    (archive as { version?: unknown }).version !== 1 ||
-    typeof (archive as { dbBase64?: unknown }).dbBase64 !== 'string' ||
-    typeof (archive as { authBase64?: unknown }).authBase64 !== 'string'
-  ) {
-    throw new Error('Le fichier de sauvegarde est incomplet.')
-  }
-
-  const dbBuffer = Buffer.from((archive as BackupArchiveV1).dbBase64, 'base64')
-  const authBuffer = Buffer.from((archive as BackupArchiveV1).authBase64, 'base64')
-
-  if (!hasValidSqliteHeader(dbBuffer)) {
-    throw new Error("La base de donnees incluse dans la sauvegarde est invalide.")
-  }
-
-  try {
-    JSON.parse(authBuffer.toString('utf8'))
-  } catch {
-    throw new Error("Le profil d'authentification inclus dans la sauvegarde est invalide.")
-  }
-
-  return { dbBuffer, authBuffer }
-}
-
-function readRestorePayload(srcPath: string): { dbBuffer: Buffer; authBuffer: Buffer } {
-  if (extname(srcPath).toLowerCase() === BACKUP_EXTENSION) {
-    return parseBackupArchive(readFileSync(srcPath, 'utf8'))
-  }
-
-  const dbBuffer = readFileSync(srcPath)
-  if (!hasValidSqliteHeader(dbBuffer)) {
-    throw new Error("Le fichier selectionne n'est pas une base de donnees SQLite valide.")
-  }
-
-  const authSrc = srcPath.replace(/\.db$/i, '_auth.json')
-  if (!existsSync(authSrc)) {
-    throw new Error("Cette sauvegarde legacy est incomplete : le fichier companion _auth.json est introuvable.")
-  }
-
-  const authBuffer = readFileSync(authSrc)
-  try {
-    JSON.parse(authBuffer.toString('utf8'))
-  } catch {
-    throw new Error("Le fichier companion _auth.json est invalide.")
-  }
-
-  return { dbBuffer, authBuffer }
-}
+// ── Backup / restore IPC ─────────────────────────────────────────────────────
 
 ipcMain.handle('backup:create', async () => {
   const timestamp = new Date().toISOString().slice(0, 10)
@@ -444,30 +338,70 @@ ipcMain.handle('backup:create', async () => {
   const archive = await buildBackupArchive()
   writeFileSync(targetPath, JSON.stringify(archive), 'utf8')
 
+  const size = statSync(targetPath).size
+  recordBackupDone(targetPath, size)
+
   return { saved: true, path: targetPath }
 })
 
-ipcMain.handle('backup:restore', async () => {
+ipcMain.handle('backup:getSettings', () => {
+  return getBackupSettings()
+})
+
+ipcMain.handle('backup:updateSettings', (_e, patch: Partial<import('./backupManager').BackupSettings>) => {
+  const updated = saveBackupSettings(patch)
+  // Restart or stop the timer according to new settings
+  if (updated.autoEnabled && updated.destinationFolder) {
+    startAutoBackupTimer()
+  } else {
+    stopAutoBackupTimer()
+  }
+  return updated
+})
+
+ipcMain.handle('backup:pickFolder', async () => {
   const { filePaths, canceled } = await dialog.showOpenDialog({
-    title: 'Restaurer les donnees',
+    title: 'Choisir le dossier de sauvegarde automatique',
+    properties: ['openDirectory', 'createDirectory'],
+  })
+  if (canceled || filePaths.length === 0) return null
+  return filePaths[0]
+})
+
+ipcMain.handle('backup:verify', async () => {
+  const { filePaths, canceled } = await dialog.showOpenDialog({
+    title: 'Verifier une sauvegarde',
+    filters: [{ name: 'LeaseFrance Backup', extensions: [BACKUP_EXTENSION.slice(1)] }],
+    properties: ['openFile'],
+  })
+  if (canceled || filePaths.length === 0) return null
+  return verifyBackupFile(filePaths[0])
+})
+
+ipcMain.handle('backup:preview', async () => {
+  const { filePaths, canceled } = await dialog.showOpenDialog({
+    title: 'Selectionner une sauvegarde a restaurer',
     filters: [
       { name: 'LeaseFrance Backup', extensions: [BACKUP_EXTENSION.slice(1)] },
       { name: 'SQLite Database (legacy)', extensions: ['db'] },
     ],
     properties: ['openFile'],
   })
-  if (canceled || filePaths.length === 0) return { restored: false }
+  if (canceled || filePaths.length === 0) return null
+  return previewBackupFile(filePaths[0])
+})
 
-  const srcPath = filePaths[0]
+ipcMain.handle('backup:restoreFromPath', async (_e, filePath: string) => {
   let payload: { dbBuffer: Buffer; authBuffer: Buffer }
   try {
-    payload = readRestorePayload(srcPath)
+    payload = readRestorePayload(filePath)
   } catch (err) {
     return { restored: false, error: err instanceof Error ? err.message : String(err) }
   }
 
-  // Close current DB connection before replacing
   closeDb()
+  stopAutoBackupTimer()
+
   let targetAccountId: string
   try {
     targetAccountId = importAccountFromBackup(payload.authBuffer.toString('utf8')).accountId
@@ -479,7 +413,6 @@ ipcMain.handle('backup:restore', async () => {
   removeSqliteSidecars(dbPath)
   writeFileSync(dbPath, payload.dbBuffer)
 
-  // Relaunch the app
   app.relaunch()
   app.exit(0)
   return { restored: true }
@@ -512,6 +445,7 @@ app.whenReady()
     }
 
     createWindow()
+    startAutoBackupTimer()
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow()
@@ -523,5 +457,6 @@ app.whenReady()
   })
 
 app.on('window-all-closed', () => {
+  stopAutoBackupTimer()
   if (process.platform !== 'darwin') app.quit()
 })

@@ -344,6 +344,33 @@ interface BankImportEntry {
   payment_id: number | null
 }
 
+interface BackupSettings {
+  autoEnabled: boolean
+  intervalHours: number
+  destinationFolder: string
+  maxBackups: number
+  lastBackupAt: string | null
+  lastBackupPath: string | null
+  lastBackupSizeBytes: number | null
+}
+
+interface BackupVerifyResult {
+  valid: boolean
+  createdAt: string | null
+  fileSize: number
+  errors: string[]
+}
+
+interface BackupPreviewResult {
+  filePath: string
+  valid: boolean
+  createdAt: string | null
+  fileSize: number
+  profile: { name: string; email: string } | null
+  tables: Array<{ name: string; label: string; count: number }>
+  errors: string[]
+}
+
 interface Window {
   api: {
     window: {
@@ -455,9 +482,15 @@ interface Window {
       recordImported:  (entries: BankImportEntry[]) => Promise<void>
     }
     backup: {
-      create:         () => Promise<{ saved: boolean; path: string | null }>
-      restore:        () => Promise<{ restored: boolean; error?: string }>
-      openDataFolder: () => Promise<void>
+      create:          () => Promise<{ saved: boolean; path: string | null }>
+      getSettings:     () => Promise<BackupSettings>
+      updateSettings:  (patch: Partial<BackupSettings>) => Promise<BackupSettings>
+      pickFolder:      () => Promise<string | null>
+      verify:          () => Promise<BackupVerifyResult | null>
+      preview:         () => Promise<BackupPreviewResult | null>
+      restoreFromPath: (filePath: string) => Promise<{ restored: boolean; error?: string }>
+      openDataFolder:  () => Promise<void>
+      onAutoDone:      (cb: (e: unknown, data: { path: string; sizeBytes: number; at: string }) => void) => () => void
     }
     irl: {
       getAll:              () => Promise<IrlIndex[]>

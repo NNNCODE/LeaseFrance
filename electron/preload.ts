@@ -106,9 +106,18 @@ contextBridge.exposeInMainWorld('api', {
     recordImported:  (entries: Array<{ fingerprint: string; tx_date: string; description: string; amount: number; payment_id: number | null }>) => ipcRenderer.invoke('bankImports:recordImported', entries),
   },
   backup: {
-    create:         () => ipcRenderer.invoke('backup:create'),
-    restore:        () => ipcRenderer.invoke('backup:restore'),
-    openDataFolder: () => ipcRenderer.invoke('backup:openDataFolder'),
+    create:          () => ipcRenderer.invoke('backup:create'),
+    getSettings:     () => ipcRenderer.invoke('backup:getSettings'),
+    updateSettings:  (patch: Record<string, unknown>) => ipcRenderer.invoke('backup:updateSettings', patch),
+    pickFolder:      () => ipcRenderer.invoke('backup:pickFolder'),
+    verify:          () => ipcRenderer.invoke('backup:verify'),
+    preview:         () => ipcRenderer.invoke('backup:preview'),
+    restoreFromPath: (filePath: string) => ipcRenderer.invoke('backup:restoreFromPath', filePath),
+    openDataFolder:  () => ipcRenderer.invoke('backup:openDataFolder'),
+    onAutoDone:      (cb: (_e: unknown, data: { path: string; sizeBytes: number; at: string }) => void) => {
+      ipcRenderer.on('backup:autoDone', cb)
+      return () => { ipcRenderer.removeListener('backup:autoDone', cb) }
+    },
   },
   irl: {
     getAll:             () => ipcRenderer.invoke('irl:getAll'),
