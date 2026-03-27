@@ -40,6 +40,36 @@ function ensureColumnExists(db: Database.Database, table: string, column: string
   }
 }
 
+function ensureUniquePaymentPerPeriod(db: Database.Database): void {
+  // Skip if index already exists
+  const idx = db.prepare(
+    `SELECT 1 FROM sqlite_master WHERE type='index' AND name='idx_payments_lease_period'`
+  ).get()
+  if (idx) return
+
+  // Remove duplicates: for each (lease_id, period_month, period_year) group,
+  // keep the best row (paid > late > pending, then highest id as tiebreaker).
+  db.exec(`
+    DELETE FROM payments WHERE id NOT IN (
+      SELECT id FROM (
+        SELECT id,
+          ROW_NUMBER() OVER (
+            PARTITION BY lease_id, period_month, period_year
+            ORDER BY
+              CASE status WHEN 'paid' THEN 0 WHEN 'late' THEN 1 ELSE 2 END,
+              id DESC
+          ) AS rn
+        FROM payments
+      ) WHERE rn = 1
+    )
+  `)
+
+  db.exec(`
+    CREATE UNIQUE INDEX idx_payments_lease_period
+    ON payments(lease_id, period_month, period_year)
+  `)
+}
+
 function initSchema(db: Database.Database): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS properties (
@@ -224,8 +254,7 @@ function initSchema(db: Database.Database): void {
   ensureColumnExists(db, 'documents', 'status', "TEXT NOT NULL DEFAULT 'generated'")
 
   // Unique constraint: one payment record per lease per month
-  db.exec(`
-    CREATE UNIQUE INDEX IF NOT EXISTS idx_payments_lease_period
-    ON payments(lease_id, period_month, period_year)
-  `)
+  // First deduplicate: keep the row with highest priority status (paid > late > pending),
+  // then the one with the latest id as tiebreaker.
+  ensureUniquePaymentPerPeriod(db)
 }
