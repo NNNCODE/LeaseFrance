@@ -10,5 +10,5 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["tests/**/*.ts"]
+  "include": ["tests/**/*.ts", "electron/**/*.ts"]
 }
