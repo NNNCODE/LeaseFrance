@@ -1,143 +1,161 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
+import type {
+  BackupAutoDonePayload,
+  LeaseFranceApi,
+  LeaseFranceInvokeChannels,
+  LeaseFranceWindowChannels,
+} from '../src/shared/ipc'
 
-contextBridge.exposeInMainWorld('api', {
+function invoke<Channel extends keyof LeaseFranceInvokeChannels>(channel: Channel) {
+  return (...args: LeaseFranceInvokeChannels[Channel]['args']) =>
+    ipcRenderer.invoke(channel, ...args) as Promise<LeaseFranceInvokeChannels[Channel]['return']>
+}
+
+function send<Channel extends keyof LeaseFranceWindowChannels>(channel: Channel) {
+  return (...args: LeaseFranceWindowChannels[Channel]['args']) => {
+    ipcRenderer.send(channel, ...args)
+  }
+}
+
+const api: LeaseFranceApi = {
   window: {
-    minimize: () => ipcRenderer.send('window:minimize'),
-    maximize: () => ipcRenderer.send('window:maximize'),
-    close:    () => ipcRenderer.send('window:close'),
+    minimize: send('window:minimize'),
+    maximize: send('window:maximize'),
+    close: send('window:close'),
   },
   auth: {
-    hasPassword:   () => ipcRenderer.invoke('auth:hasPassword'),
-    getProfile:    () => ipcRenderer.invoke('auth:getProfile'),
-    restoreRememberedSession: () => ipcRenderer.invoke('auth:restoreRememberedSession'),
-    setup:         (pwd: string, name: string, email: string) => ipcRenderer.invoke('auth:setup', pwd, name, email),
-    verify:        (email: string, pwd: string, remember: boolean) => ipcRenderer.invoke('auth:verify', email, pwd, remember),
-    change:        (old: string, next: string) => ipcRenderer.invoke('auth:change', old, next),
-    updateProfile: (name: string, email: string, address?: string, city?: string, phone?: string, signatureImage?: string) => ipcRenderer.invoke('auth:updateProfile', name, email, address, city, phone, signatureImage),
-    delete:        (pwd: string) => ipcRenderer.invoke('auth:delete', pwd),
-    lockSession:   () => ipcRenderer.invoke('auth:lockSession'),
-    hasRecoveryKey:       () => ipcRenderer.invoke('auth:hasRecoveryKey'),
-    verifyRecoveryKey:    (key: string) => ipcRenderer.invoke('auth:verifyRecoveryKey', key),
-    resetWithRecoveryKey: (key: string, newPwd: string) => ipcRenderer.invoke('auth:resetWithRecoveryKey', key, newPwd),
-    regenerateRecoveryKey:(pwd: string) => ipcRenderer.invoke('auth:regenerateRecoveryKey', pwd),
+    hasPassword: invoke('auth:hasPassword'),
+    getProfile: invoke('auth:getProfile'),
+    restoreRememberedSession: invoke('auth:restoreRememberedSession'),
+    setup: invoke('auth:setup'),
+    verify: invoke('auth:verify'),
+    change: invoke('auth:change'),
+    updateProfile: invoke('auth:updateProfile'),
+    delete: invoke('auth:delete'),
+    lockSession: invoke('auth:lockSession'),
+    hasRecoveryKey: invoke('auth:hasRecoveryKey'),
+    verifyRecoveryKey: invoke('auth:verifyRecoveryKey'),
+    resetWithRecoveryKey: invoke('auth:resetWithRecoveryKey'),
+    regenerateRecoveryKey: invoke('auth:regenerateRecoveryKey'),
   },
   properties: {
-    getAll: () => ipcRenderer.invoke('properties:getAll'),
-    count:  () => ipcRenderer.invoke('properties:count'),
-    create: (data: unknown) => ipcRenderer.invoke('properties:create', data),
-    update: (id: number, data: unknown, expectedUpdatedAt: string) => ipcRenderer.invoke('properties:update', id, data, expectedUpdatedAt),
-    delete: (id: number) => ipcRenderer.invoke('properties:delete', id),
+    getAll: invoke('properties:getAll'),
+    count: invoke('properties:count'),
+    create: invoke('properties:create'),
+    update: invoke('properties:update'),
+    delete: invoke('properties:delete'),
   },
   tenants: {
-    getAll: () => ipcRenderer.invoke('tenants:getAll'),
-    count:  () => ipcRenderer.invoke('tenants:count'),
-    create: (data: unknown) => ipcRenderer.invoke('tenants:create', data),
-    update: (id: number, data: unknown, expectedUpdatedAt: string) => ipcRenderer.invoke('tenants:update', id, data, expectedUpdatedAt),
-    delete: (id: number) => ipcRenderer.invoke('tenants:delete', id),
+    getAll: invoke('tenants:getAll'),
+    count: invoke('tenants:count'),
+    create: invoke('tenants:create'),
+    update: invoke('tenants:update'),
+    delete: invoke('tenants:delete'),
   },
   leases: {
-    getAll: () => ipcRenderer.invoke('leases:getAll'),
-    count:  () => ipcRenderer.invoke('leases:count'),
-    create: (data: unknown) => ipcRenderer.invoke('leases:create', data),
-    update: (id: number, data: unknown, expectedUpdatedAt: string) => ipcRenderer.invoke('leases:update', id, data, expectedUpdatedAt),
-    updateContractDetails: (id: number, contractDetails: unknown, expectedUpdatedAt: string) =>
-      ipcRenderer.invoke('leases:updateContractDetails', id, contractDetails, expectedUpdatedAt),
-    delete: (id: number) => ipcRenderer.invoke('leases:delete', id),
+    getAll: invoke('leases:getAll'),
+    count: invoke('leases:count'),
+    create: invoke('leases:create'),
+    update: invoke('leases:update'),
+    updateContractDetails: invoke('leases:updateContractDetails'),
+    delete: invoke('leases:delete'),
   },
   payments: {
-    getAll:     () => ipcRenderer.invoke('payments:getAll'),
-    getByLease: (leaseId: number) => ipcRenderer.invoke('payments:getByLease', leaseId),
-    getSummary: () => ipcRenderer.invoke('payments:getSummary'),
-    create:     (data: unknown) => ipcRenderer.invoke('payments:create', data),
-    update:     (id: number, data: unknown, expectedUpdatedAt: string) => ipcRenderer.invoke('payments:update', id, data, expectedUpdatedAt),
-    markPaid:   (id: number, date: string, expectedUpdatedAt: string) => ipcRenderer.invoke('payments:markPaid', id, date, expectedUpdatedAt),
-    delete:     (id: number) => ipcRenderer.invoke('payments:delete', id),
-    generateMissing: () => ipcRenderer.invoke('payments:generateMissing') as Promise<{ created: number; markedLate: number }>,
-    markOverdue:     () => ipcRenderer.invoke('payments:markOverdue') as Promise<number>,
+    getAll: invoke('payments:getAll'),
+    getByLease: invoke('payments:getByLease'),
+    getSummary: invoke('payments:getSummary'),
+    create: invoke('payments:create'),
+    update: invoke('payments:update'),
+    markPaid: invoke('payments:markPaid'),
+    delete: invoke('payments:delete'),
+    generateMissing: invoke('payments:generateMissing'),
+    markOverdue: invoke('payments:markOverdue'),
   },
   paymentReminders: {
-    getByPayment: (paymentId: number) => ipcRenderer.invoke('paymentReminders:getByPayment', paymentId),
-    create:       (data: unknown) => ipcRenderer.invoke('paymentReminders:create', data),
+    getByPayment: invoke('paymentReminders:getByPayment'),
+    create: invoke('paymentReminders:create'),
   },
   inspections: {
-    getAll:  () => ipcRenderer.invoke('inspections:getAll'),
-    create:  (data: unknown) => ipcRenderer.invoke('inspections:create', data),
-    update:  (id: number, data: unknown) => ipcRenderer.invoke('inspections:update', id, data),
-    delete:  (id: number) => ipcRenderer.invoke('inspections:delete', id),
+    getAll: invoke('inspections:getAll'),
+    create: invoke('inspections:create'),
+    update: invoke('inspections:update'),
+    delete: invoke('inspections:delete'),
   },
   chargeReconciliations: {
-    getByLease: (leaseId: number) => ipcRenderer.invoke('chargeReconciliations:getByLease', leaseId),
-    create:     (data: unknown) => ipcRenderer.invoke('chargeReconciliations:create', data),
-    update:     (id: number, data: unknown) => ipcRenderer.invoke('chargeReconciliations:update', id, data),
-    delete:     (id: number) => ipcRenderer.invoke('chargeReconciliations:delete', id),
+    getByLease: invoke('chargeReconciliations:getByLease'),
+    create: invoke('chargeReconciliations:create'),
+    update: invoke('chargeReconciliations:update'),
+    delete: invoke('chargeReconciliations:delete'),
   },
   manualReminders: {
-    getAll:  () => ipcRenderer.invoke('manualReminders:getAll'),
-    create:  (data: unknown) => ipcRenderer.invoke('manualReminders:create', data),
-    update:  (id: number, data: unknown) => ipcRenderer.invoke('manualReminders:update', id, data),
-    delete:  (id: number) => ipcRenderer.invoke('manualReminders:delete', id),
+    getAll: invoke('manualReminders:getAll'),
+    create: invoke('manualReminders:create'),
+    update: invoke('manualReminders:update'),
+    delete: invoke('manualReminders:delete'),
   },
   reminders: {
-    getFeed: () => ipcRenderer.invoke('reminders:getFeed'),
+    getFeed: invoke('reminders:getFeed'),
   },
   dashboard: {
-    getSnapshot: () => ipcRenderer.invoke('dashboard:getSnapshot'),
+    getSnapshot: invoke('dashboard:getSnapshot'),
   },
   search: {
-    query: (query: string, filter: 'all' | 'properties' | 'tenants' | 'leases' | 'payments' | 'reminders' | 'inspections') =>
-      ipcRenderer.invoke('search:query', query, filter),
+    query: invoke('search:query'),
   },
   documents: {
-    getAll:    () => ipcRenderer.invoke('documents:getAll'),
-    getGenerationAvailability: () => ipcRenderer.invoke('documents:getGenerationAvailability'),
-    getGenerationSources: () => ipcRenderer.invoke('documents:getGenerationSources'),
-    delete:    (id: number) => ipcRenderer.invoke('documents:delete', id),
-    savePdf:   (leaseId: number, fileName: string, buffer: Uint8Array, docType?: string) => ipcRenderer.invoke('documents:savePdf', leaseId, fileName, buffer, docType),
-    updateStatus: (id: number, status: string) => ipcRenderer.invoke('documents:updateStatus', id, status),
-    readFile:  (filePath: string) => ipcRenderer.invoke('documents:readFile', filePath) as Promise<{ data: Uint8Array | null; mimeType: string | null; error: string | null }>,
-    openFile:  (filePath: string) => ipcRenderer.invoke('documents:openFile', filePath),
+    getAll: invoke('documents:getAll'),
+    getGenerationAvailability: invoke('documents:getGenerationAvailability'),
+    getGenerationSources: invoke('documents:getGenerationSources'),
+    delete: invoke('documents:delete'),
+    savePdf: invoke('documents:savePdf'),
+    updateStatus: invoke('documents:updateStatus'),
+    readFile: invoke('documents:readFile'),
+    openFile: invoke('documents:openFile'),
   },
   exports: {
-    saveFile: (fileName: string, buffer: Uint8Array, filters?: unknown) => ipcRenderer.invoke('exports:saveFile', fileName, buffer, filters),
+    saveFile: invoke('exports:saveFile'),
   },
   fiscalExpenses: {
-    getAll:   () => ipcRenderer.invoke('fiscalExpenses:getAll'),
-    getByYear:(year: number) => ipcRenderer.invoke('fiscalExpenses:getByYear', year),
-    create:   (data: unknown) => ipcRenderer.invoke('fiscalExpenses:create', data),
-    update:   (id: number, data: unknown) => ipcRenderer.invoke('fiscalExpenses:update', id, data),
-    delete:   (id: number) => ipcRenderer.invoke('fiscalExpenses:delete', id),
+    getAll: invoke('fiscalExpenses:getAll'),
+    getByYear: invoke('fiscalExpenses:getByYear'),
+    create: invoke('fiscalExpenses:create'),
+    update: invoke('fiscalExpenses:update'),
+    delete: invoke('fiscalExpenses:delete'),
   },
   attachments: {
-    getByEntity: (entityType: string, entityId: number) => ipcRenderer.invoke('attachments:getByEntity', entityType, entityId),
-    getAll:      () => ipcRenderer.invoke('attachments:getAll'),
-    upload:      (entityType: string, entityId: number, slot: string | null) => ipcRenderer.invoke('attachments:upload', entityType, entityId, slot),
-    read:        (id: number) => ipcRenderer.invoke('attachments:read', id) as Promise<{ data: Uint8Array | null; mimeType: string | null; error: string | null }>,
-    open:        (id: number) => ipcRenderer.invoke('attachments:open', id),
-    delete:      (id: number) => ipcRenderer.invoke('attachments:delete', id),
+    getByEntity: invoke('attachments:getByEntity'),
+    getAll: invoke('attachments:getAll'),
+    upload: invoke('attachments:upload'),
+    read: invoke('attachments:read'),
+    open: invoke('attachments:open'),
+    delete: invoke('attachments:delete'),
   },
   bankImports: {
-    findDuplicates:  (fingerprints: string[]) => ipcRenderer.invoke('bankImports:findDuplicates', fingerprints),
-    recordImported:  (entries: Array<{ fingerprint: string; tx_date: string; description: string; amount: number; payment_id: number | null }>) => ipcRenderer.invoke('bankImports:recordImported', entries),
+    findDuplicates: invoke('bankImports:findDuplicates'),
+    recordImported: invoke('bankImports:recordImported'),
   },
   backup: {
-    create:          () => ipcRenderer.invoke('backup:create'),
-    getSettings:     () => ipcRenderer.invoke('backup:getSettings'),
-    updateSettings:  (patch: Record<string, unknown>) => ipcRenderer.invoke('backup:updateSettings', patch),
-    pickFolder:      () => ipcRenderer.invoke('backup:pickFolder'),
-    verify:          () => ipcRenderer.invoke('backup:verify'),
-    preview:         () => ipcRenderer.invoke('backup:preview'),
-    restoreFromPath: (filePath: string) => ipcRenderer.invoke('backup:restoreFromPath', filePath),
-    openDataFolder:  () => ipcRenderer.invoke('backup:openDataFolder'),
-    onAutoDone:      (cb: (_e: unknown, data: { path: string; sizeBytes: number; at: string }) => void) => {
-      ipcRenderer.on('backup:autoDone', cb)
-      return () => { ipcRenderer.removeListener('backup:autoDone', cb) }
+    create: invoke('backup:create'),
+    getSettings: invoke('backup:getSettings'),
+    updateSettings: invoke('backup:updateSettings'),
+    pickFolder: invoke('backup:pickFolder'),
+    verify: invoke('backup:verify'),
+    preview: invoke('backup:preview'),
+    restoreFromPath: invoke('backup:restoreFromPath'),
+    openDataFolder: invoke('backup:openDataFolder'),
+    onAutoDone: (cb) => {
+      const listener = (event: IpcRendererEvent, data: BackupAutoDonePayload) => cb(event, data)
+      ipcRenderer.on('backup:autoDone', listener)
+      return () => { ipcRenderer.removeListener('backup:autoDone', listener) }
     },
   },
   irl: {
-    getAll:             () => ipcRenderer.invoke('irl:getAll'),
-    getByQuarter:       (year: number, quarter: number) => ipcRenderer.invoke('irl:getByQuarter', year, quarter),
-    getLatestForQuarter:(quarter: number) => ipcRenderer.invoke('irl:getLatestForQuarter', quarter),
-    upsert:             (year: number, quarter: number, value: number) => ipcRenderer.invoke('irl:upsert', year, quarter, value),
-    delete:             (id: number) => ipcRenderer.invoke('irl:delete', id),
+    getAll: invoke('irl:getAll'),
+    getByQuarter: invoke('irl:getByQuarter'),
+    getLatestForQuarter: invoke('irl:getLatestForQuarter'),
+    upsert: invoke('irl:upsert'),
+    delete: invoke('irl:delete'),
   },
-})
+}
+
+contextBridge.exposeInMainWorld('api', api)
