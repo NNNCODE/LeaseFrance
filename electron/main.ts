@@ -109,7 +109,7 @@ ipcMain.handle('auth:verify',   (_e, email: string, pwd: string, remember: boole
 ipcMain.handle('auth:change',   (_e, oldPwd: string, newPwd: string)           => changePassword(oldPwd, newPwd))
 ipcMain.handle('auth:updateProfile', (_e, name: string, email: string, address?: string, city?: string, phone?: string, signatureImage?: string) => updateProfile(name, email, address, city, phone, signatureImage))
 ipcMain.handle('auth:delete',   (_e, pwd: string)                              => { closeDb(); return deleteAccount(pwd) })
-ipcMain.handle('auth:lockSession', () => { closeDb(); lockCurrentSession() })
+ipcMain.handle('auth:lockSession', () => { closeDb(); return lockCurrentSession() })
 ipcMain.handle('auth:hasRecoveryKey',      () => hasRecoveryKey())
 ipcMain.handle('auth:verifyRecoveryKey',   (_e, key: string) => verifyRecoveryKey(key))
 ipcMain.handle('auth:resetWithRecoveryKey',(_e, key: string, newPwd: string) => resetWithRecoveryKey(key, newPwd))
@@ -407,7 +407,7 @@ ipcMain.handle('backup:restoreFromPath', async (_e, filePath: string) => {
 
   let targetAccountId: string
   try {
-    targetAccountId = importAccountFromBackup(payload.authBuffer.toString('utf8')).accountId
+    targetAccountId = (await importAccountFromBackup(payload.authBuffer.toString('utf8'))).accountId
   } catch (err) {
     return { restored: false, error: err instanceof Error ? err.message : String(err) }
   }

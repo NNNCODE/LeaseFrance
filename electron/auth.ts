@@ -1,6 +1,7 @@
 import { app } from 'electron'
 import { join } from 'path'
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'fs'
+import { mkdir as mkdirAsync } from 'fs/promises'
 import { randomBytes, scryptSync, timingSafeEqual } from 'crypto'
 
 const USER_DATA_PATH = app.getPath('userData')
@@ -61,10 +62,8 @@ function ensureAccountsDir(): void {
   mkdirSync(ACCOUNTS_DIR, { recursive: true })
 }
 
-function sleepSync(ms: number): void {
-  const buffer = new SharedArrayBuffer(4)
-  const array = new Int32Array(buffer)
-  Atomics.wait(array, 0, 0, ms)
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 function isLockStale(): boolean {
@@ -75,22 +74,46 @@ function isLockStale(): boolean {
   }
 }
 
-function acquireStoreLock(): () => void {
-  ensureUserDataDir()
-  const deadline = Date.now() + LOCK_TIMEOUT_MS
+function releaseStoreLock(): void {
+  rmSync(ACCOUNTS_LOCK_DIR, { recursive: true, force: true })
+}
 
-  while (true) {
+function tryAcquireStoreLockSync(): (() => void) | null {
+  ensureUserDataDir()
+  for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
       mkdirSync(ACCOUNTS_LOCK_DIR)
-      return () => {
-        rmSync(ACCOUNTS_LOCK_DIR, { recursive: true, force: true })
-      }
+      return releaseStoreLock
     } catch (error) {
       const code = (error as NodeJS.ErrnoException).code
       if (code !== 'EEXIST') throw error
 
       if (isLockStale()) {
-        rmSync(ACCOUNTS_LOCK_DIR, { recursive: true, force: true })
+        releaseStoreLock()
+        continue
+      }
+
+      return null
+    }
+  }
+
+  return null
+}
+
+async function acquireStoreLock(): Promise<() => void> {
+  ensureUserDataDir()
+  const deadline = Date.now() + LOCK_TIMEOUT_MS
+
+  while (true) {
+    try {
+      await mkdirAsync(ACCOUNTS_LOCK_DIR)
+      return releaseStoreLock
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code
+      if (code !== 'EEXIST') throw error
+
+      if (isLockStale()) {
+        releaseStoreLock()
         continue
       }
 
@@ -98,15 +121,15 @@ function acquireStoreLock(): () => void {
         throw new Error("Impossible d'acquerir le verrou d'ecriture des comptes.")
       }
 
-      sleepSync(LOCK_WAIT_MS)
+      await delay(LOCK_WAIT_MS)
     }
   }
 }
 
-function withStoreWriteLock<T>(operation: () => T): T {
-  const release = acquireStoreLock()
+async function withStoreWriteLock<T>(operation: () => T | Promise<T>): Promise<T> {
+  const release = await acquireStoreLock()
   try {
-    return operation()
+    return await operation()
   } finally {
     release()
   }
@@ -220,9 +243,13 @@ function migrateLegacyAuthIfNeededLocked(): void {
 
 function migrateLegacyAuthIfNeeded(): void {
   if (existsSync(ACCOUNTS_FILE) || !existsSync(LEGACY_AUTH_FILE)) return
-  withStoreWriteLock(() => {
+  const release = tryAcquireStoreLockSync()
+  if (!release) return
+  try {
     migrateLegacyAuthIfNeededLocked()
-  })
+  } finally {
+    release()
+  }
 }
 
 function loadStore(): AccountsStore {
@@ -274,8 +301,8 @@ function loadStoreFromDisk(): AccountsStore {
   }
 }
 
-function withLockedStore<T>(operation: (store: AccountsStore) => T): T {
-  return withStoreWriteLock(() => {
+async function withLockedStore<T>(operation: (store: AccountsStore) => T | Promise<T>): Promise<T> {
+  return withStoreWriteLock(async () => {
     migrateLegacyAuthIfNeededLocked()
     return operation(loadStoreFromDisk())
   })
@@ -354,9 +381,9 @@ export function clearActiveAccount(): void {
   activeAccountId = null
 }
 
-export function lockCurrentSession(): void {
+export async function lockCurrentSession(): Promise<void> {
   activeAccountId = null
-  withLockedStore((store) => {
+  await withLockedStore((store) => {
     if (!store.rememberedAccountId) return
     store.rememberedAccountId = null
     saveStore(store)
@@ -396,7 +423,7 @@ export function getProfile(): UserProfile | null {
   return account ? accountProfile(account) : null
 }
 
-export function restoreRememberedSession(): UserProfile | null {
+export async function restoreRememberedSession(): Promise<UserProfile | null> {
   const store = loadStore()
   const account = getRememberedAccount(store)
   if (account) {
@@ -405,7 +432,7 @@ export function restoreRememberedSession(): UserProfile | null {
   }
 
   if (store.rememberedAccountId) {
-    withLockedStore((lockedStore) => {
+    await withLockedStore((lockedStore) => {
       if (!getRememberedAccount(lockedStore) && lockedStore.rememberedAccountId) {
         lockedStore.rememberedAccountId = null
         saveStore(lockedStore)
@@ -422,9 +449,9 @@ export function hasRecoveryKey(): boolean {
   return Boolean(account?.recoveryHash && account?.recoverySalt)
 }
 
-export function setupPassword(password: string, name: string, email: string): string | null {
+export async function setupPassword(password: string, name: string, email: string): Promise<string | null> {
   const normalizedEmail = normalizeEmail(email)
-  const result = withLockedStore((store) => {
+  const result = await withLockedStore((store) => {
     if (store.accounts.some((account) => account.email === normalizedEmail)) {
       return null
     }
@@ -465,7 +492,7 @@ export function setupPassword(password: string, name: string, email: string): st
   return result.recoveryKey
 }
 
-export function verifyPassword(email: string, password: string, rememberSession = false): boolean {
+export function verifyPassword(email: string, password: string, rememberSession = false): Promise<boolean> {
   return withLockedStore((store) => {
     const account = findAccountByEmail(store, email)
     if (!account) return false
@@ -478,7 +505,7 @@ export function verifyPassword(email: string, password: string, rememberSession 
   })
 }
 
-export function changePassword(oldPassword: string, newPassword: string): boolean {
+export function changePassword(oldPassword: string, newPassword: string): Promise<boolean> {
   return withLockedStore((store) => {
     const account = requireCurrentAccount(store)
     if (!verifyHash(oldPassword, account.salt, account.hash)) return false
@@ -491,7 +518,7 @@ export function changePassword(oldPassword: string, newPassword: string): boolea
   })
 }
 
-export function verifyRecoveryKey(key: string): boolean {
+export function verifyRecoveryKey(key: string): Promise<boolean> {
   return withLockedStore((store) => {
     const account = findAccountByRecoveryKey(store, key)
     if (!account) return false
@@ -501,7 +528,7 @@ export function verifyRecoveryKey(key: string): boolean {
   })
 }
 
-export function resetWithRecoveryKey(key: string, newPassword: string): string | null {
+export function resetWithRecoveryKey(key: string, newPassword: string): Promise<string | null> {
   return withLockedStore((store) => {
     const account = findAccountByRecoveryKey(store, key)
     if (!account) return null
@@ -520,7 +547,7 @@ export function resetWithRecoveryKey(key: string, newPassword: string): string |
   })
 }
 
-export function regenerateRecoveryKey(password: string): string | null {
+export function regenerateRecoveryKey(password: string): Promise<string | null> {
   return withLockedStore((store) => {
     const account = requireCurrentAccount(store)
     if (!verifyHash(password, account.salt, account.hash)) return null
@@ -535,7 +562,7 @@ export function regenerateRecoveryKey(password: string): string | null {
   })
 }
 
-export function updateProfile(name: string, email: string, address?: string, city?: string, phone?: string, signatureImage?: string): boolean {
+export function updateProfile(name: string, email: string, address?: string, city?: string, phone?: string, signatureImage?: string): Promise<boolean> {
   const normalizedEmail = normalizeEmail(email)
   return withLockedStore((store) => {
     const account = requireCurrentAccount(store)
@@ -553,8 +580,8 @@ export function updateProfile(name: string, email: string, address?: string, cit
   })
 }
 
-export function deleteAccount(password: string): boolean {
-  const accountId = withLockedStore((store) => {
+export async function deleteAccount(password: string): Promise<boolean> {
+  const accountId = await withLockedStore((store) => {
     const account = requireCurrentAccount(store)
     if (!verifyHash(password, account.salt, account.hash)) return null
 
@@ -577,7 +604,7 @@ export function exportCurrentAccountAuth(): string {
   return JSON.stringify(account)
 }
 
-export function importAccountFromBackup(payload: string): { accountId: string } {
+export async function importAccountFromBackup(payload: string): Promise<{ accountId: string }> {
   let raw: Partial<AuthAccount>
   try {
     raw = JSON.parse(payload) as Partial<AuthAccount>
@@ -592,7 +619,7 @@ export function importAccountFromBackup(payload: string): { accountId: string } 
     }
   }
 
-  const accountId = withLockedStore((store) => {
+  const accountId = await withLockedStore((store) => {
     const normalizedEmail = normalizeEmail(raw.email!)
     const existing = store.accounts.find((account) => account.email === normalizedEmail)
     const reusableId = typeof raw.id === 'string' && !store.accounts.some((account) => account.id === raw.id)
