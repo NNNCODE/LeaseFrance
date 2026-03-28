@@ -40,9 +40,6 @@ import { useAuthStore } from '@/stores/useAuthStore'
 import GenerateDocumentModal, { type GenerateDocumentRequest } from './GenerateDocumentModal'
 import {
   MONTHS,
-  canGenerateFurnishedLeaseContract,
-  canGenerateDepositReceipt,
-  canGenerateDepositSettlement,
   getDepositReturnedAmount,
   getRevisionTemplateContext,
   isFullPayment,
@@ -116,7 +113,18 @@ export default function Documents() {
   const [payments, setPayments] = useState<Payment[]>([])
   const [leases, setLeases] = useState<Lease[]>([])
   const [irlIndices, setIrlIndices] = useState<IrlIndex[]>([])
+  const [sourcesLoaded, setSourcesLoaded] = useState(false)
+  const [generationAvailability, setGenerationAvailability] = useState<DocumentGenerationAvailability>({
+    paymentCertificates: 0,
+    rentRevisionNotices: 0,
+    furnishedLeaseContracts: 0,
+    depositReceipts: 0,
+    depositSettlements: 0,
+    canGenerateAny: false,
+  })
   const [loading, setLoading] = useState(true)
+  const [generationLoading, setGenerationLoading] = useState(false)
+  const [error, setError] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [deleting, setDeleting] = useState<DocumentRecord | null>(null)
   const [previewDoc, setPreviewDoc] = useState<DocumentRecord | null>(null)
@@ -131,33 +139,25 @@ export default function Documents() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const [nextDocs, nextPayments, nextLeases, nextIrl] = await Promise.all([
-      window.api.documents.getAll(),
-      window.api.payments.getAll(),
-      window.api.leases.getAll(),
-      window.api.irl.getAll(),
-    ])
-    setDocs(nextDocs)
-    setPayments(nextPayments)
-    setLeases(nextLeases)
-    setIrlIndices(nextIrl)
-    setLoading(false)
+    setError('')
+    try {
+      const [nextDocs, nextAvailability] = await Promise.all([
+        window.api.documents.getAll(),
+        window.api.documents.getGenerationAvailability(),
+      ])
+      setDocs(nextDocs)
+      setGenerationAvailability(nextAvailability)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
   useEffect(() => { load() }, [load])
 
-  const paidPayments = payments.filter((payment) => payment.status === 'paid')
-  const revisableLeaseCount = leases.filter((lease) => Boolean(getRevisionTemplateContext(lease, irlIndices))).length
-  const furnishedLeaseCount = leases.filter(canGenerateFurnishedLeaseContract).length
-  const depositReceiptCount = leases.filter(canGenerateDepositReceipt).length
-  const depositSettlementCount = leases.filter(canGenerateDepositSettlement).length
-  const canGenerateAnyDocument = (
-    paidPayments.length > 0
-    || revisableLeaseCount > 0
-    || furnishedLeaseCount > 0
-    || depositReceiptCount > 0
-    || depositSettlementCount > 0
-  )
+  const paidPayments = payments
+  const canGenerateAnyDocument = generationAvailability.canGenerateAny
 
   // ── Filter logic ─────────────────────────────────────────────
   const filteredDocs = useMemo(() => {
@@ -202,6 +202,26 @@ export default function Documents() {
       const stored = JSON.parse(localStorage.getItem(TEMPLATE_PARAMS_KEY) || '{}')
       return stored[kind] ?? null
     } catch { return null }
+  }
+
+  async function ensureGenerationSources() {
+    if (sourcesLoaded) return true
+
+    setGenerationLoading(true)
+    setError('')
+    try {
+      const sources = await window.api.documents.getGenerationSources()
+      setPayments(sources.payments)
+      setLeases(sources.leases)
+      setIrlIndices(sources.irlIndices)
+      setSourcesLoaded(true)
+      return true
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+      return false
+    } finally {
+      setGenerationLoading(false)
+    }
   }
 
   // ── Generation ───────────────────────────────────────────────
@@ -413,15 +433,15 @@ export default function Documents() {
     if (!deleting) return
     await window.api.documents.delete(deleting.id)
     setDeleting(null)
-    load()
+    await load()
   }
 
   async function handleStatusChange(doc: DocumentRecord, newStatus: string) {
     await window.api.documents.updateStatus(doc.id, newStatus)
-    load()
+    await load()
   }
 
-  function handleRegenerate(doc: DocumentRecord) {
+  async function handleRegenerate(doc: DocumentRecord) {
     // Map doc type to template kind
     const kindMap: Record<string, DocumentTemplateKind> = {
       quittance: 'payment_certificate',
@@ -432,11 +452,15 @@ export default function Documents() {
       solde_depot_garantie: 'deposit_settlement',
     }
     const kind = kindMap[doc.type] ?? null
+    const ready = await ensureGenerationSources()
+    if (!ready) return
     setRegenerateKind(kind)
     setShowForm(true)
   }
 
-  function handleOpenModal() {
+  async function handleOpenModal() {
+    const ready = await ensureGenerationSources()
+    if (!ready) return
     setRegenerateKind(null)
     setShowForm(true)
   }
@@ -454,13 +478,19 @@ export default function Documents() {
             {filteredDocs.length !== docs.length ? ` · ${filteredDocs.length} affiche${filteredDocs.length !== 1 ? 's' : ''}` : ''}
           </p>
         </div>
-        <Button onClick={handleOpenModal} disabled={!canGenerateAnyDocument}>
+        <Button onClick={() => { void handleOpenModal() }} disabled={!canGenerateAnyDocument || generationLoading}>
           <FileText className="w-4 h-4" />
-          Nouveau document
+          {generationLoading ? 'Chargement...' : 'Nouveau document'}
         </Button>
       </div>
 
       {/* ── Search + Filters ────────────────────────────────── */}
+      {error && (
+        <div className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
+          {error}
+        </div>
+      )}
+
       {(docs.length > 0 || hasFilters) && (
         <div className="flex items-center gap-3">
           <div className="relative flex-1 max-w-sm">
@@ -514,14 +544,14 @@ export default function Documents() {
       )}
 
       {/* ── Document List ───────────────────────────────────── */}
-      {!canGenerateAnyDocument && docs.length === 0 ? (
-        <EmptyState />
-      ) : loading ? (
+      {loading ? (
         <div className="flex flex-col gap-3">
           {[1, 2, 3].map((index) => (
             <div key={index} className="h-16 bg-surface border border-border rounded-2xl animate-pulse" />
           ))}
         </div>
+      ) : !canGenerateAnyDocument && docs.length === 0 ? (
+        <EmptyState />
       ) : filteredDocs.length === 0 ? (
         <div className="flex flex-col items-center gap-3 py-16 text-center">
           <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10">
@@ -553,7 +583,7 @@ export default function Documents() {
               onPreview={() => setPreviewDoc(doc)}
               onDelete={() => setDeleting(doc)}
               onStatusChange={(status) => handleStatusChange(doc, status)}
-              onRegenerate={() => handleRegenerate(doc)}
+              onRegenerate={() => { void handleRegenerate(doc) }}
             />
           ))}
         </motion.div>
@@ -561,7 +591,7 @@ export default function Documents() {
 
       {/* ── Generate Modal ──────────────────────────────────── */}
       <AnimatePresence>
-        {showForm && (
+        {showForm && sourcesLoaded && (
           <GenerateDocumentModal
             profile={profile}
             payments={paidPayments}

@@ -32,6 +32,10 @@ import * as bankImportsDb from './db/queries/bankImports'
 import * as autoRentDb from './db/queries/autoRent'
 import * as fiscalExpensesDb from './db/queries/fiscalExpenses'
 import * as attachmentsDb from './db/queries/attachments'
+import { getDashboardSnapshot } from './services/dashboard'
+import { getDocumentGenerationAvailability, getDocumentGenerationSources } from './services/documents'
+import { getReminderFeed } from './services/reminders'
+import { querySearch, type SearchFilterKey } from './services/search'
 
 const isDev = process.env['ELECTRON_RENDERER_URL'] !== undefined
 
@@ -173,8 +177,15 @@ ipcMain.handle('manualReminders:create', (_e, data) => manualRemindersDb.create(
 ipcMain.handle('manualReminders:update', (_e, id, data) => manualRemindersDb.update(id, data))
 ipcMain.handle('manualReminders:delete', (_e, id) => manualRemindersDb.remove(id))
 
+// Dashboard + search IPC
+ipcMain.handle('dashboard:getSnapshot', () => getDashboardSnapshot())
+ipcMain.handle('search:query', (_e, query: string, filter: SearchFilterKey) => querySearch(query, filter))
+ipcMain.handle('reminders:getFeed', () => getReminderFeed())
+
 // Documents IPC
 ipcMain.handle('documents:getAll', () => documentsDb.getAll())
+ipcMain.handle('documents:getGenerationAvailability', () => getDocumentGenerationAvailability())
+ipcMain.handle('documents:getGenerationSources', () => getDocumentGenerationSources())
 ipcMain.handle('documents:delete', (_e, id) => documentsDb.remove(id))
 ipcMain.handle('documents:savePdf', async (_e, leaseId: number, fileName: string, buffer: number[], docType?: string) => {
   const titleMap: Record<string, string> = {

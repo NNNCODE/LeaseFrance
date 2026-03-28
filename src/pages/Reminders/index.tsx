@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
@@ -20,22 +20,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { formatDate } from '@/lib/utils'
-import { getRelevantAnniversaryDate, isAnniversaryWithinDays, isRevisionEligible } from '@/lib/irl'
 import ManualReminderModal from './ManualReminderModal'
-
-interface ReminderItem {
-  id: string
-  source: 'derived' | 'manual'
-  title: string
-  category: string
-  due_date: string
-  notes: string | null
-  lease_id: number | null
-  property_name: string | null
-  tenant_label: string | null
-  status: 'pending' | 'done'
-  derived_kind?: 'lease_end' | 'irl_revision'
-}
 
 const MANUAL_CATEGORY_META: Record<string, { label: string; icon: React.ElementType }> = {
   insurance: { label: 'Assurance', icon: ShieldCheck },
@@ -44,8 +29,16 @@ const MANUAL_CATEGORY_META: Record<string, { label: string; icon: React.ElementT
   custom: { label: 'Libre', icon: BellRing },
 }
 
-function toIsoDate(value: Date) {
-  return value.toISOString().split('T')[0]
+const EMPTY_FEED: ReminderFeed = {
+  pendingItems: [],
+  completedManual: [],
+  manualReminders: [],
+  stats: {
+    overdue: 0,
+    upcoming30: 0,
+    manualPending: 0,
+    completed: 0,
+  },
 }
 
 function daysUntil(date: string) {
@@ -65,7 +58,7 @@ function timingMeta(dueDate: string) {
   return { label: `Dans ${days} j`, variant: 'muted' as const }
 }
 
-function categoryMeta(item: ReminderItem) {
+function categoryMeta(item: ReminderFeedItem) {
   if (item.source === 'derived') {
     return item.derived_kind === 'irl_revision'
       ? { label: 'IRL', icon: TrendingUp }
@@ -75,79 +68,13 @@ function categoryMeta(item: ReminderItem) {
   return MANUAL_CATEGORY_META[item.category] ?? MANUAL_CATEGORY_META.custom
 }
 
-function buildDerivedReminders(leases: Lease[]): ReminderItem[] {
-  const reminders: ReminderItem[] = []
-
-  for (const lease of leases) {
-    if (lease.status !== 'active') continue
-
-    if (lease.end_date) {
-      const due = daysUntil(lease.end_date)
-      if (due >= -30 && due <= 120) {
-        reminders.push({
-          id: `lease-end-${lease.id}`,
-          source: 'derived',
-          title: 'Fin du bail',
-          category: 'lease_end',
-          due_date: lease.end_date,
-          notes: 'Le bail approche de son terme. Verifiez renouvellement, sortie ou conge.',
-          lease_id: lease.id,
-          property_name: lease.property_name,
-          tenant_label: `${lease.tenant_first_name} ${lease.tenant_last_name}`,
-          status: 'pending',
-          derived_kind: 'lease_end',
-        })
-      }
-    }
-
-    if (
-      isRevisionEligible(lease.type, lease.start_date, lease.irl_reference_index, lease.irl_reference_quarter) &&
-      isAnniversaryWithinDays(lease.start_date, 60)
-    ) {
-      const anniversary = getRelevantAnniversaryDate(lease.start_date)
-      reminders.push({
-        id: `irl-${lease.id}`,
-        source: 'derived',
-        title: 'Revision IRL possible',
-        category: 'irl_revision',
-        due_date: toIsoDate(anniversary),
-        notes: lease.irl_reference_quarter
-          ? `Date anniversaire du bail. Reference actuelle : ${lease.irl_reference_quarter}.`
-          : 'Date anniversaire du bail pour une eventuelle revision IRL.',
-        lease_id: lease.id,
-        property_name: lease.property_name,
-        tenant_label: `${lease.tenant_first_name} ${lease.tenant_last_name}`,
-        status: 'pending',
-        derived_kind: 'irl_revision',
-      })
-    }
-  }
-
-  return reminders
-}
-
-function normalizeManual(reminders: ManualReminder[]): ReminderItem[] {
-  return reminders.map((reminder) => ({
-    id: `manual-${reminder.id}`,
-    source: 'manual',
-    title: reminder.title,
-    category: reminder.category,
-    due_date: reminder.due_date,
-    notes: reminder.notes,
-    lease_id: reminder.lease_id,
-    property_name: reminder.property_name,
-    tenant_label: reminder.tenant_first_name && reminder.tenant_last_name
-      ? `${reminder.tenant_first_name} ${reminder.tenant_last_name}`
-      : null,
-    status: reminder.status,
-  }))
-}
-
 export default function Reminders() {
   const navigate = useNavigate()
   const [leases, setLeases] = useState<Lease[]>([])
-  const [manualReminders, setManualReminders] = useState<ManualReminder[]>([])
+  const [leasesLoaded, setLeasesLoaded] = useState(false)
+  const [feed, setFeed] = useState<ReminderFeed>(EMPTY_FEED)
   const [loading, setLoading] = useState(true)
+  const [formLoading, setFormLoading] = useState(false)
   const [error, setError] = useState('')
   const [editing, setEditing] = useState<ManualReminder | null>(null)
   const [showForm, setShowForm] = useState(false)
@@ -158,12 +85,7 @@ export default function Reminders() {
     setError('')
 
     try {
-      const [leaseRows, manualRows] = await Promise.all([
-        window.api.leases.getAll(),
-        window.api.manualReminders.getAll(),
-      ])
-      setLeases(leaseRows)
-      setManualReminders(manualRows)
+      setFeed(await window.api.reminders.getFeed())
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
@@ -173,31 +95,38 @@ export default function Reminders() {
 
   useEffect(() => { load() }, [])
 
-  const derived = useMemo(() => buildDerivedReminders(leases), [leases])
-  const normalizedManual = useMemo(() => normalizeManual(manualReminders), [manualReminders])
-  const pendingItems = useMemo(
-    () => [...derived, ...normalizedManual.filter((item) => item.status === 'pending')]
-      .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime()),
-    [derived, normalizedManual]
-  )
-  const completedManual = useMemo(
-    () => normalizedManual.filter((item) => item.status === 'done')
-      .sort((a, b) => new Date(b.due_date).getTime() - new Date(a.due_date).getTime()),
-    [normalizedManual]
-  )
+  async function ensureLeases() {
+    if (leasesLoaded) return true
 
-  const stats = useMemo(() => ({
-    overdue: pendingItems.filter((item) => daysUntil(item.due_date) < 0).length,
-    upcoming30: pendingItems.filter((item) => {
-      const days = daysUntil(item.due_date)
-      return days >= 0 && days <= 30
-    }).length,
-    manualPending: normalizedManual.filter((item) => item.status === 'pending').length,
-    completed: completedManual.length,
-  }), [completedManual.length, normalizedManual, pendingItems])
+    setFormLoading(true)
+    setError('')
+    try {
+      setLeases(await window.api.leases.getAll())
+      setLeasesLoaded(true)
+      return true
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+      return false
+    } finally {
+      setFormLoading(false)
+    }
+  }
 
-  function openCreate() {
+  function findManualReminder(itemId: string) {
+    return feed.manualReminders.find((entry) => entry.id === Number(itemId.replace('manual-', ''))) ?? null
+  }
+
+  async function openCreate() {
+    const ready = await ensureLeases()
+    if (!ready) return
     setEditing(null)
+    setShowForm(true)
+  }
+
+  async function openEdit(reminder: ManualReminder) {
+    const ready = await ensureLeases()
+    if (!ready) return
+    setEditing(reminder)
     setShowForm(true)
   }
 
@@ -240,9 +169,9 @@ export default function Reminders() {
             Centralisez les rappels derives des baux et vos rappels manuels.
           </p>
         </div>
-        <Button onClick={openCreate}>
+        <Button onClick={() => { void openCreate() }} disabled={formLoading}>
           <Plus className="w-4 h-4" />
-          Nouveau rappel
+          {formLoading ? 'Chargement...' : 'Nouveau rappel'}
         </Button>
       </div>
 
@@ -253,10 +182,10 @@ export default function Reminders() {
       ) : null}
 
       <div className="grid grid-cols-4 gap-4">
-        <StatCard label="En retard" value={stats.overdue} icon={AlertTriangle} tone="danger" />
-        <StatCard label="Dans 30 jours" value={stats.upcoming30} icon={CalendarClock} tone="warning" />
-        <StatCard label="Manuels ouverts" value={stats.manualPending} icon={BellRing} tone="primary" />
-        <StatCard label="Termines" value={stats.completed} icon={CheckCircle2} tone="success" />
+        <StatCard label="En retard" value={feed.stats.overdue} icon={AlertTriangle} tone="danger" />
+        <StatCard label="Dans 30 jours" value={feed.stats.upcoming30} icon={CalendarClock} tone="warning" />
+        <StatCard label="Manuels ouverts" value={feed.stats.manualPending} icon={BellRing} tone="primary" />
+        <StatCard label="Termines" value={feed.stats.completed} icon={CheckCircle2} tone="success" />
       </div>
 
       <Card>
@@ -266,7 +195,7 @@ export default function Reminders() {
               <h2 className="text-base font-semibold text-textPrimary">A traiter</h2>
               <p className="text-sm text-textMuted mt-1">Rappels derives automatiquement et rappels manuels encore ouverts.</p>
             </div>
-            <Badge variant="muted">{pendingItems.length} element{pendingItems.length !== 1 ? 's' : ''}</Badge>
+            <Badge variant="muted">{feed.pendingItems.length} element{feed.pendingItems.length !== 1 ? 's' : ''}</Badge>
           </div>
 
           {loading ? (
@@ -275,7 +204,7 @@ export default function Reminders() {
                 <div key={index} className="h-20 rounded-2xl border border-border bg-surfaceHigh/20 animate-pulse" />
               ))}
             </div>
-          ) : pendingItems.length === 0 ? (
+          ) : feed.pendingItems.length === 0 ? (
             <EmptyState
               title='Aucune echeance imminente'
               description='Ajoutez un rappel manuel ou laissez l application vous signaler les fins de bail et revisions IRL.'
@@ -287,27 +216,24 @@ export default function Reminders() {
               animate="show"
               variants={{ hidden: {}, show: { transition: { staggerChildren: 0.05 } } }}
             >
-              {pendingItems.map((item) => (
+              {feed.pendingItems.map((item) => (
                 <ReminderRow
                   key={item.id}
                   item={item}
                   onOpenLease={() => item.lease_id && navigate('/leases')}
                   onEdit={() => {
                     if (item.source !== 'manual') return
-                    const reminder = manualReminders.find((entry) => entry.id === Number(item.id.replace('manual-', '')))
-                    if (reminder) {
-                      setEditing(reminder)
-                      setShowForm(true)
-                    }
+                    const reminder = findManualReminder(item.id)
+                    if (reminder) void openEdit(reminder)
                   }}
                   onToggleDone={() => {
                     if (item.source !== 'manual') return
-                    const reminder = manualReminders.find((entry) => entry.id === Number(item.id.replace('manual-', '')))
-                    if (reminder) handleStatusChange(reminder, 'done')
+                    const reminder = findManualReminder(item.id)
+                    if (reminder) void handleStatusChange(reminder, 'done')
                   }}
                   onDelete={() => {
                     if (item.source !== 'manual') return
-                    const reminder = manualReminders.find((entry) => entry.id === Number(item.id.replace('manual-', '')))
+                    const reminder = findManualReminder(item.id)
                     if (reminder) setDeleting(reminder)
                   }}
                 />
@@ -324,18 +250,18 @@ export default function Reminders() {
               <h2 className="text-base font-semibold text-textPrimary">Rappels manuels termines</h2>
               <p className="text-sm text-textMuted mt-1">Historique des rappels clos ou deja traites.</p>
             </div>
-            <Badge variant="muted">{completedManual.length}</Badge>
+            <Badge variant="muted">{feed.completedManual.length}</Badge>
           </div>
 
-          {completedManual.length === 0 ? (
+          {feed.completedManual.length === 0 ? (
             <EmptyState
               title='Aucun rappel termine'
               description='Les rappels que vous marquez comme faits apparaitront ici.'
             />
           ) : (
             <div className="flex flex-col gap-3">
-              {completedManual.map((item) => {
-                const reminder = manualReminders.find((entry) => entry.id === Number(item.id.replace('manual-', '')))
+              {feed.completedManual.map((item) => {
+                const reminder = findManualReminder(item.id)
                 if (!reminder) return null
 
                 return (
@@ -344,10 +270,9 @@ export default function Reminders() {
                     item={item}
                     onOpenLease={() => item.lease_id && navigate('/leases')}
                     onEdit={() => {
-                      setEditing(reminder)
-                      setShowForm(true)
+                      void openEdit(reminder)
                     }}
-                    onToggleDone={() => handleStatusChange(reminder, 'pending')}
+                    onToggleDone={() => { void handleStatusChange(reminder, 'pending') }}
                     onDelete={() => setDeleting(reminder)}
                   />
                 )
@@ -358,7 +283,7 @@ export default function Reminders() {
       </Card>
 
       <AnimatePresence>
-        {showForm && (
+        {showForm && leasesLoaded && (
           <ManualReminderModal
             leases={leases}
             initial={editing}
@@ -388,7 +313,7 @@ function ReminderRow({
   onToggleDone,
   onDelete,
 }: {
-  item: ReminderItem
+  item: ReminderFeedItem
   onOpenLease: () => void
   onEdit: () => void
   onToggleDone: () => void

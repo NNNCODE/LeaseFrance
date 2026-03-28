@@ -77,8 +77,20 @@ contextBridge.exposeInMainWorld('api', {
     update:  (id: number, data: unknown) => ipcRenderer.invoke('manualReminders:update', id, data),
     delete:  (id: number) => ipcRenderer.invoke('manualReminders:delete', id),
   },
+  reminders: {
+    getFeed: () => ipcRenderer.invoke('reminders:getFeed'),
+  },
+  dashboard: {
+    getSnapshot: () => ipcRenderer.invoke('dashboard:getSnapshot'),
+  },
+  search: {
+    query: (query: string, filter: 'all' | 'properties' | 'tenants' | 'leases' | 'payments' | 'reminders' | 'inspections') =>
+      ipcRenderer.invoke('search:query', query, filter),
+  },
   documents: {
     getAll:    () => ipcRenderer.invoke('documents:getAll'),
+    getGenerationAvailability: () => ipcRenderer.invoke('documents:getGenerationAvailability'),
+    getGenerationSources: () => ipcRenderer.invoke('documents:getGenerationSources'),
     delete:    (id: number) => ipcRenderer.invoke('documents:delete', id),
     savePdf:   (leaseId: number, fileName: string, buffer: number[], docType?: string) => ipcRenderer.invoke('documents:savePdf', leaseId, fileName, buffer, docType),
     updateStatus: (id: number, status: string) => ipcRenderer.invoke('documents:updateStatus', id, status),

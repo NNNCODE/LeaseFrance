@@ -385,6 +385,110 @@ interface DocumentRecord {
   tenant_last_name: string
 }
 
+type SearchCategory = 'properties' | 'tenants' | 'leases' | 'payments' | 'reminders' | 'inspections'
+type SearchFilterKey = 'all' | SearchCategory
+
+interface SearchResult {
+  id: string
+  category: SearchCategory
+  title: string
+  subtitle: string
+  route: string
+  badge?: string
+  badgeColor?: string
+}
+
+interface DashboardRevenuePoint {
+  month: string
+  revenus: number
+}
+
+interface DashboardExpiringLease extends Lease {
+  days_until_end: number
+}
+
+interface DashboardTenantDossier extends Tenant {
+  completed_dossier_count: number
+  attachment_count: number
+}
+
+interface DashboardPendingReminder extends ManualReminder {
+  days_until_due: number
+}
+
+interface ReminderFeedItem {
+  id: string
+  source: 'derived' | 'manual'
+  title: string
+  category: string
+  due_date: string
+  notes: string | null
+  lease_id: number | null
+  property_name: string | null
+  tenant_label: string | null
+  status: 'pending' | 'done'
+  derived_kind?: 'lease_end' | 'irl_revision'
+}
+
+interface ReminderFeedStats {
+  overdue: number
+  upcoming30: number
+  manualPending: number
+  completed: number
+}
+
+interface ReminderFeed {
+  pendingItems: ReminderFeedItem[]
+  completedManual: ReminderFeedItem[]
+  manualReminders: ManualReminder[]
+  stats: ReminderFeedStats
+}
+
+interface DashboardSnapshot {
+  counts: {
+    properties: number
+    tenants: number
+    leases: number
+    payments: number
+  }
+  monthRevenue: number
+  monthPaymentsTotal: number
+  monthPaymentsPaid: number
+  lateAmount: number
+  lateCount: number
+  revenueData: DashboardRevenuePoint[]
+  recentPayments: Payment[]
+  latePaymentsPreview: Payment[]
+  expiringLeasesCount: number
+  expiringLeasesPreview: DashboardExpiringLease[]
+  depositsToReturnCount: number
+  depositsToReturnPreview: Lease[]
+  depositsAwaitingCount: number
+  depositsAwaitingPreview: Lease[]
+  incompleteDossiersCount: number
+  incompleteDossiersPreview: DashboardTenantDossier[]
+  pendingRemindersCount: number
+  pendingRemindersPreview: DashboardPendingReminder[]
+  irlRevisionLeasesCount: number
+  irlRevisionLeasesPreview: Lease[]
+  totalActions: number
+}
+
+interface DocumentGenerationAvailability {
+  paymentCertificates: number
+  rentRevisionNotices: number
+  furnishedLeaseContracts: number
+  depositReceipts: number
+  depositSettlements: number
+  canGenerateAny: boolean
+}
+
+interface DocumentGenerationSources {
+  payments: Payment[]
+  leases: Lease[]
+  irlIndices: IrlIndex[]
+}
+
 interface IrlIndex {
   id: number
   year: number
@@ -539,13 +643,24 @@ interface Window {
       update:  (id: number, data: ManualReminderInput) => Promise<ManualReminder>
       delete:  (id: number) => Promise<boolean>
     }
+    reminders: {
+      getFeed: () => Promise<ReminderFeed>
+    }
+    dashboard: {
+      getSnapshot: () => Promise<DashboardSnapshot>
+    }
+    search: {
+      query: (query: string, filter: SearchFilterKey) => Promise<SearchResult[]>
+    }
     documents: {
-      getAll:       () => Promise<DocumentRecord[]>
-      delete:       (id: number) => Promise<boolean>
-      updateStatus: (id: number, status: string) => Promise<boolean>
-      readFile:     (filePath: string) => Promise<{ data: string | null; error: string | null }>
-      savePdf:      (leaseId: number, fileName: string, buffer: number[], docType?: string) => Promise<{ saved: boolean; path: string | null }>
-      openFile:     (filePath: string) => Promise<void>
+      getAll:                     () => Promise<DocumentRecord[]>
+      getGenerationAvailability:  () => Promise<DocumentGenerationAvailability>
+      getGenerationSources:       () => Promise<DocumentGenerationSources>
+      delete:                     (id: number) => Promise<boolean>
+      updateStatus:               (id: number, status: string) => Promise<boolean>
+      readFile:                   (filePath: string) => Promise<{ data: string | null; error: string | null }>
+      savePdf:                    (leaseId: number, fileName: string, buffer: number[], docType?: string) => Promise<{ saved: boolean; path: string | null }>
+      openFile:                   (filePath: string) => Promise<void>
     }
     exports: {
       saveFile: (

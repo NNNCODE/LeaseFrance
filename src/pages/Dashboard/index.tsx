@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
@@ -12,9 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { isRevisionEligible, isAnniversaryWithinDays } from '@/lib/irl'
-import { getDepositStatus } from '@/pages/Leases/depositUtils'
-import { getCompletedDossierCount, DOSSIER_ITEMS } from '@/pages/Tenants/tenantFileHelpers'
+import { DOSSIER_ITEMS } from '@/pages/Tenants/tenantFileHelpers'
 import {
   AreaChart, Area, XAxis, YAxis,
   CartesianGrid, Tooltip, ResponsiveContainer,
@@ -22,20 +20,40 @@ import {
 
 // ── Types locaux ───────────────────────────────────────────────────────────────
 
-interface DashboardData {
-  propertiesCount: number
-  tenantsCount: number
-  leasesCount: number
-  payments: Payment[]
-  leases: Lease[]
-  tenants: Tenant[]
-  reminders: ManualReminder[]
-  attachments: Attachment[]
-}
 
 const MONTHS_SHORT = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc']
 
 // ── Onboarding ────────────────────────────────────────────────────────────────
+
+const EMPTY_SNAPSHOT: DashboardSnapshot = {
+  counts: {
+    properties: 0,
+    tenants: 0,
+    leases: 0,
+    payments: 0,
+  },
+  monthRevenue: 0,
+  monthPaymentsTotal: 0,
+  monthPaymentsPaid: 0,
+  lateAmount: 0,
+  lateCount: 0,
+  revenueData: [],
+  recentPayments: [],
+  latePaymentsPreview: [],
+  expiringLeasesCount: 0,
+  expiringLeasesPreview: [],
+  depositsToReturnCount: 0,
+  depositsToReturnPreview: [],
+  depositsAwaitingCount: 0,
+  depositsAwaitingPreview: [],
+  incompleteDossiersCount: 0,
+  incompleteDossiersPreview: [],
+  pendingRemindersCount: 0,
+  pendingRemindersPreview: [],
+  irlRevisionLeasesCount: 0,
+  irlRevisionLeasesPreview: [],
+  totalActions: 0,
+}
 
 const STEPS = [
   { key: 'properties', icon: Building2, label: 'Ajouter un bien',      description: 'Enregistrez votre premier logement.', route: '/properties', color: 'text-primary', bg: 'bg-primary/10', border: 'border-primary/20' },
@@ -116,14 +134,6 @@ function EmptyState({ message }: { message: string }) {
   )
 }
 
-function daysUntil(dateStr: string): number {
-  const target = new Date(dateStr)
-  const now = new Date()
-  now.setHours(0, 0, 0, 0)
-  target.setHours(0, 0, 0, 0)
-  return Math.round((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-}
-
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.07 } } }
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' } } }
 
@@ -131,155 +141,61 @@ const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transiti
 
 export default function Dashboard() {
   const navigate = useNavigate()
-  const [data, setData] = useState<DashboardData>({
-    propertiesCount: 0,
-    tenantsCount: 0,
-    leasesCount: 0,
-    payments: [],
-    leases: [],
-    tenants: [],
-    reminders: [],
-    attachments: [],
-  })
+  const [snapshot, setSnapshot] = useState<DashboardSnapshot>(EMPTY_SNAPSHOT)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    Promise.all([
-      window.api.properties.count(),
-      window.api.tenants.count(),
-      window.api.leases.count(),
-      window.api.payments.getAll(),
-      window.api.leases.getAll(),
-      window.api.tenants.getAll(),
-      window.api.manualReminders.getAll(),
-      window.api.attachments.getAll(),
-    ]).then(([propertiesCount, tenantsCount, leasesCount, payments, leases, tenants, reminders, attachments]) => {
-      setData({ propertiesCount, tenantsCount, leasesCount, payments, leases, tenants, reminders, attachments })
-      setLoading(false)
-    }).catch(() => setLoading(false))
+    window.api.dashboard.getSnapshot()
+      .then((nextSnapshot) => {
+        setSnapshot(nextSnapshot)
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
   }, [])
 
   // ── KPIs ──
-  const now = new Date()
-  const thisMonth = now.getMonth() + 1
-  const thisYear  = now.getFullYear()
-
-  const monthPayments = data.payments.filter(
-    (p) => p.period_month === thisMonth && p.period_year === thisYear
-  )
-  const monthRevenue  = monthPayments.filter((p) => p.status === 'paid')
-    .reduce((s, p) => s + p.rent_amount + p.charges_amount, 0)
-  const latePayments  = data.payments.filter((p) => p.status === 'late')
-  const lateAmount    = latePayments.reduce((s, p) => s + p.rent_amount + p.charges_amount, 0)
-  const lateCount     = latePayments.length
+  const counts = snapshot.counts
+  const monthRevenue = snapshot.monthRevenue
+  const monthPaymentsTotal = snapshot.monthPaymentsTotal
+  const monthPaymentsPaid = snapshot.monthPaymentsPaid
+  const latePayments = snapshot.latePaymentsPreview
+  const lateAmount = snapshot.lateAmount
+  const lateCount = snapshot.lateCount
 
   // ── Revenus 6 mois glissants ──
-  const revenueData = useMemo(() => {
-    const months: { month: string; revenus: number }[] = []
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(thisYear, thisMonth - 1 - i, 1)
-      const m = d.getMonth() + 1
-      const y = d.getFullYear()
-      const total = data.payments
-        .filter((p) => p.status === 'paid' && p.period_month === m && p.period_year === y)
-        .reduce((s, p) => s + p.rent_amount + p.charges_amount, 0)
-      months.push({ month: MONTHS_SHORT[m - 1], revenus: total })
-    }
-    return months
-  }, [data.payments, thisMonth, thisYear])
+  const revenueData = snapshot.revenueData
 
   const hasChartData = revenueData.some((d) => d.revenus > 0)
 
   // ── Paiements récents (5 derniers) ──
-  const recentPayments = useMemo(() =>
-    [...data.payments]
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-      .slice(0, 5),
-    [data.payments]
-  )
+  const recentPayments = snapshot.recentPayments
 
   // ── Baux éligibles révision IRL ──
-  const irlRevisionLeases = useMemo(() =>
-    data.leases.filter((l) =>
-      l.status === 'active' &&
-      isRevisionEligible(l.type, l.start_date, l.irl_reference_index, l.irl_reference_quarter) &&
-      isAnniversaryWithinDays(l.start_date, 60)
-    ),
-    [data.leases]
-  )
+  const irlRevisionLeases = snapshot.irlRevisionLeasesPreview
+  const irlRevisionLeasesCount = snapshot.irlRevisionLeasesCount
 
   // ── Baux à échéance (fin dans 90 jours ou dépassée de 30 jours) ──
-  const expiringLeases = useMemo(() =>
-    data.leases
-      .filter((l) => l.status === 'active' && l.end_date)
-      .map((l) => ({ ...l, _days: daysUntil(l.end_date!) }))
-      .filter((l) => l._days >= -30 && l._days <= 90)
-      .sort((a, b) => a._days - b._days),
-    [data.leases]
-  )
+  const expiringLeases = snapshot.expiringLeasesPreview
+  const expiringLeasesCount = snapshot.expiringLeasesCount
 
   // ── Dépôts à restituer (bail terminé, dépôt toujours détenu) ──
-  const depositsToReturn = useMemo(() =>
-    data.leases.filter((l) => {
-      if (l.status === 'active') return false
-      const status = getDepositStatus(l)
-      return status === 'held'
-    }),
-    [data.leases]
-  )
+  const depositsToReturn = snapshot.depositsToReturnPreview
+  const depositsToReturnCount = snapshot.depositsToReturnCount
 
   // ── Dépôts en attente d'encaissement ──
-  const depositsAwaiting = useMemo(() =>
-    data.leases.filter((l) => {
-      if (l.status !== 'active') return false
-      return getDepositStatus(l) === 'awaiting'
-    }),
-    [data.leases]
-  )
+  const depositsAwaiting = snapshot.depositsAwaitingPreview
+  const depositsAwaitingCount = snapshot.depositsAwaitingCount
 
   // ── Dossiers locatifs incomplets (locataires avec bail actif) ──
-  const incompleteDossiers = useMemo(() => {
-    const activeLeasesTenantIds = new Set(
-      data.leases.filter((l) => l.status === 'active').map((l) => l.tenant_id)
-    )
-    // Count attachment files per tenant
-    const tenantFileCount = new Map<number, number>()
-    for (const a of data.attachments) {
-      if (a.entity_type === 'tenant') {
-        tenantFileCount.set(a.entity_id, (tenantFileCount.get(a.entity_id) ?? 0) + 1)
-      }
-    }
-    return data.tenants
-      .filter((t) => activeLeasesTenantIds.has(t.id))
-      .map((t) => ({ ...t, _completed: getCompletedDossierCount(t), _files: tenantFileCount.get(t.id) ?? 0 }))
-      .filter((t) => t._completed < DOSSIER_ITEMS.length)
-      .sort((a, b) => a._completed - b._completed)
-  }, [data.tenants, data.leases, data.attachments])
+  const incompleteDossiers = snapshot.incompleteDossiersPreview
+  const incompleteDossiersCount = snapshot.incompleteDossiersCount
 
   // ── Rappels en attente ──
-  const pendingReminders = useMemo(() =>
-    data.reminders
-      .filter((r) => r.status === 'pending')
-      .sort((a, b) => a.due_date.localeCompare(b.due_date)),
-    [data.reminders]
-  )
+  const pendingReminders = snapshot.pendingRemindersPreview
+  const pendingRemindersCount = snapshot.pendingRemindersCount
 
   // ── Onboarding counts ──
-  const counts = {
-    properties: data.propertiesCount,
-    tenants:    data.tenantsCount,
-    leases:     data.leasesCount,
-    payments:   data.payments.length,
-  }
-
-  // Total action items for the command center badge
-  const totalActions = lateCount
-    + expiringLeases.length
-    + depositsToReturn.length
-    + depositsAwaiting.length
-    + incompleteDossiers.length
-    + pendingReminders.length
-    + irlRevisionLeases.length
+  const totalActions = snapshot.totalActions
 
   const today = new Date().toLocaleDateString('fr-FR', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
@@ -311,26 +227,26 @@ export default function Dashboard() {
         <KpiCard
           title="Revenus du mois"
           value={formatCurrency(monthRevenue)}
-          delta={monthPayments.length > 0 ? `${monthPayments.filter((p) => p.status === 'paid').length}/${monthPayments.length} payés` : 'Aucun paiement'}
+          delta={monthPaymentsTotal > 0 ? `${monthPaymentsPaid}/${monthPaymentsTotal} payés` : 'Aucun paiement'}
           icon={TrendingUp}
           color="primary"
           positive={monthRevenue > 0}
         />
         <KpiCard
           title="Locataires actifs"
-          value={String(data.tenantsCount)}
-          delta={data.tenantsCount > 0 ? `${data.leasesCount} bail${data.leasesCount !== 1 ? 's' : ''} actif${data.leasesCount !== 1 ? 's' : ''}` : 'Aucun locataire'}
+          value={String(counts.tenants)}
+          delta={counts.tenants > 0 ? `${counts.leases} bail${counts.leases !== 1 ? 's' : ''} actif${counts.leases !== 1 ? 's' : ''}` : 'Aucun locataire'}
           icon={Users}
           color="success"
-          positive={data.tenantsCount > 0}
+          positive={counts.tenants > 0}
         />
         <KpiCard
           title="Baux en cours"
-          value={String(data.leasesCount)}
-          delta={data.leasesCount > 0 ? `${data.propertiesCount} bien${data.propertiesCount !== 1 ? 's' : ''}` : 'Aucun bail'}
+          value={String(counts.leases)}
+          delta={counts.leases > 0 ? `${counts.properties} bien${counts.properties !== 1 ? 's' : ''}` : 'Aucun bail'}
           icon={FileText}
           color="warning"
-          positive={data.leasesCount > 0}
+          positive={counts.leases > 0}
         />
         <KpiCard
           title="Impayés"
@@ -400,34 +316,34 @@ export default function Dashboard() {
                       {lateCount} impayé{lateCount > 1 ? 's' : ''} — {formatCurrency(lateAmount)}
                     </AlertRow>
                   )}
-                  {expiringLeases.length > 0 && (
+                  {expiringLeasesCount > 0 && (
                     <AlertRow icon={CalendarDays} color="warning" onClick={() => navigate('/leases')}>
-                      {expiringLeases.length} bail{expiringLeases.length > 1 ? 'x' : ''} à échéance
+                      {expiringLeasesCount} bail{expiringLeasesCount > 1 ? 'x' : ''} à échéance
                     </AlertRow>
                   )}
-                  {depositsToReturn.length > 0 && (
+                  {depositsToReturnCount > 0 && (
                     <AlertRow icon={Wallet} color="warning" onClick={() => navigate('/leases')}>
-                      {depositsToReturn.length} dépôt{depositsToReturn.length > 1 ? 's' : ''} à restituer
+                      {depositsToReturnCount} dépôt{depositsToReturnCount > 1 ? 's' : ''} à restituer
                     </AlertRow>
                   )}
-                  {depositsAwaiting.length > 0 && (
+                  {depositsAwaitingCount > 0 && (
                     <AlertRow icon={Wallet} color="primary" onClick={() => navigate('/leases')}>
-                      {depositsAwaiting.length} dépôt{depositsAwaiting.length > 1 ? 's' : ''} à encaisser
+                      {depositsAwaitingCount} dépôt{depositsAwaitingCount > 1 ? 's' : ''} à encaisser
                     </AlertRow>
                   )}
-                  {incompleteDossiers.length > 0 && (
+                  {incompleteDossiersCount > 0 && (
                     <AlertRow icon={FolderOpen} color="warning" onClick={() => navigate('/tenants')}>
-                      {incompleteDossiers.length} dossier{incompleteDossiers.length > 1 ? 's' : ''} incomplet{incompleteDossiers.length > 1 ? 's' : ''}
+                      {incompleteDossiersCount} dossier{incompleteDossiersCount > 1 ? 's' : ''} incomplet{incompleteDossiersCount > 1 ? 's' : ''}
                     </AlertRow>
                   )}
-                  {pendingReminders.length > 0 && (
+                  {pendingRemindersCount > 0 && (
                     <AlertRow icon={Bell} color="primary" onClick={() => navigate('/reminders')}>
-                      {pendingReminders.length} rappel{pendingReminders.length > 1 ? 's' : ''} en attente
+                      {pendingRemindersCount} rappel{pendingRemindersCount > 1 ? 's' : ''} en attente
                     </AlertRow>
                   )}
-                  {irlRevisionLeases.length > 0 && (
+                  {irlRevisionLeasesCount > 0 && (
                     <AlertRow icon={TrendingUp} color="primary" onClick={() => navigate('/leases')}>
-                      {irlRevisionLeases.length} révision{irlRevisionLeases.length > 1 ? 's' : ''} IRL éligible{irlRevisionLeases.length > 1 ? 's' : ''}
+                      {irlRevisionLeasesCount} révision{irlRevisionLeasesCount > 1 ? 's' : ''} IRL éligible{irlRevisionLeasesCount > 1 ? 's' : ''}
                     </AlertRow>
                   )}
                 </>
@@ -475,7 +391,7 @@ export default function Dashboard() {
           )}
 
           {/* Baux à échéance */}
-          {expiringLeases.length > 0 && (
+          {expiringLeasesCount > 0 && (
             <Card>
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
@@ -492,7 +408,7 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent className="flex flex-col gap-1.5">
                 {expiringLeases.slice(0, 4).map((l) => {
-                  const overdue = l._days < 0
+                  const overdue = l.days_until_end < 0
                   return (
                     <div key={l.id} className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg border ${overdue ? 'bg-danger/5 border-danger/10' : 'bg-warning/5 border-warning/10'}`}>
                       <div className="min-w-0">
@@ -500,20 +416,20 @@ export default function Dashboard() {
                         <p className="text-[11px] text-textMuted">{l.property_name}</p>
                       </div>
                       <Badge variant={overdue ? 'danger' : 'warning'} className="text-[10px] shrink-0">
-                        {overdue ? `Expiré ${Math.abs(l._days)}j` : `${l._days}j`}
+                        {overdue ? `Expiré ${Math.abs(l.days_until_end)}j` : `${l.days_until_end}j`}
                       </Badge>
                     </div>
                   )
                 })}
-                {expiringLeases.length > 4 && (
-                  <p className="text-[11px] text-textMuted text-center mt-1">+ {expiringLeases.length - 4} autre{expiringLeases.length - 4 > 1 ? 's' : ''}</p>
+                {expiringLeasesCount > 4 && (
+                  <p className="text-[11px] text-textMuted text-center mt-1">+ {expiringLeasesCount - 4} autre{expiringLeasesCount - 4 > 1 ? 's' : ''}</p>
                 )}
               </CardContent>
             </Card>
           )}
 
           {/* Dépôts à restituer / encaisser */}
-          {(depositsToReturn.length > 0 || depositsAwaiting.length > 0) && (
+          {(depositsToReturnCount > 0 || depositsAwaitingCount > 0) && (
             <Card>
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
@@ -553,15 +469,15 @@ export default function Dashboard() {
                     </div>
                   </div>
                 ))}
-                {depositsToReturn.length + depositsAwaiting.length > 3 && (
-                  <p className="text-[11px] text-textMuted text-center mt-1">+ {depositsToReturn.length + depositsAwaiting.length - 3} autre{depositsToReturn.length + depositsAwaiting.length - 3 > 1 ? 's' : ''}</p>
+                {depositsToReturnCount + depositsAwaitingCount > 3 && (
+                  <p className="text-[11px] text-textMuted text-center mt-1">+ {depositsToReturnCount + depositsAwaitingCount - 3} autre{depositsToReturnCount + depositsAwaitingCount - 3 > 1 ? 's' : ''}</p>
                 )}
               </CardContent>
             </Card>
           )}
 
           {/* Dossiers incomplets */}
-          {incompleteDossiers.length > 0 && (
+          {incompleteDossiersCount > 0 && (
             <Card>
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
@@ -581,22 +497,22 @@ export default function Dashboard() {
                   <div key={t.id} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-warning/5 border border-warning/10">
                     <div className="min-w-0">
                       <p className="text-xs font-medium text-textPrimary truncate">{t.first_name} {t.last_name}</p>
-                      <p className="text-[11px] text-textMuted">{t.property_name ?? 'Aucun bien'}{t._files > 0 ? ` · ${t._files} fichier${t._files > 1 ? 's' : ''}` : ' · 0 fichier'}</p>
+                      <p className="text-[11px] text-textMuted">{t.property_name ?? 'Aucun bien'}{t.attachment_count > 0 ? ` · ${t.attachment_count} fichier${t.attachment_count > 1 ? 's' : ''}` : ' · 0 fichier'}</p>
                     </div>
-                    <Badge variant={t._completed === 0 ? 'danger' : 'warning'} className="text-[10px] shrink-0">
-                      {t._completed}/{DOSSIER_ITEMS.length}
+                    <Badge variant={t.completed_dossier_count === 0 ? 'danger' : 'warning'} className="text-[10px] shrink-0">
+                      {t.completed_dossier_count}/{DOSSIER_ITEMS.length}
                     </Badge>
                   </div>
                 ))}
-                {incompleteDossiers.length > 4 && (
-                  <p className="text-[11px] text-textMuted text-center mt-1">+ {incompleteDossiers.length - 4} autre{incompleteDossiers.length - 4 > 1 ? 's' : ''}</p>
+                {incompleteDossiersCount > 4 && (
+                  <p className="text-[11px] text-textMuted text-center mt-1">+ {incompleteDossiersCount - 4} autre{incompleteDossiersCount - 4 > 1 ? 's' : ''}</p>
                 )}
               </CardContent>
             </Card>
           )}
 
           {/* Rappels en attente */}
-          {pendingReminders.length > 0 && (
+          {pendingRemindersCount > 0 && (
             <Card>
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
@@ -613,8 +529,7 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent className="flex flex-col gap-1.5">
                 {pendingReminders.slice(0, 4).map((r) => {
-                  const d = daysUntil(r.due_date)
-                  const overdue = d < 0
+                  const overdue = r.days_until_due < 0
                   return (
                     <div key={r.id} className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg border ${overdue ? 'bg-danger/5 border-danger/10' : 'bg-primary/5 border-primary/10'}`}>
                       <div className="min-w-0">
@@ -622,13 +537,13 @@ export default function Dashboard() {
                         <p className="text-[11px] text-textMuted">{formatDate(r.due_date)}{r.property_name ? ` · ${r.property_name}` : ''}</p>
                       </div>
                       <Badge variant={overdue ? 'danger' : 'default'} className="text-[10px] shrink-0">
-                        {overdue ? `En retard ${Math.abs(d)}j` : d === 0 ? "Aujourd'hui" : `${d}j`}
+                        {overdue ? `En retard ${Math.abs(r.days_until_due)}j` : r.days_until_due === 0 ? "Aujourd'hui" : `${r.days_until_due}j`}
                       </Badge>
                     </div>
                   )
                 })}
-                {pendingReminders.length > 4 && (
-                  <p className="text-[11px] text-textMuted text-center mt-1">+ {pendingReminders.length - 4} autre{pendingReminders.length - 4 > 1 ? 's' : ''}</p>
+                {pendingRemindersCount > 4 && (
+                  <p className="text-[11px] text-textMuted text-center mt-1">+ {pendingRemindersCount - 4} autre{pendingRemindersCount - 4 > 1 ? 's' : ''}</p>
                 )}
               </CardContent>
             </Card>
