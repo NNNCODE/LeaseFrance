@@ -422,7 +422,7 @@ export default function Documents() {
   }
 
   async function saveGeneratedPdf(leaseId: number, fileName: string, blob: Blob, docType: string) {
-    const buffer = Array.from(new Uint8Array(await blob.arrayBuffer()))
+    const buffer = new Uint8Array(await blob.arrayBuffer())
     const result = await window.api.documents.savePdf(leaseId, fileName, buffer, docType)
     if (!result.saved) return false
     await load()
@@ -777,11 +777,15 @@ function PdfPreviewModal({
   doc: DocumentRecord
   onClose: () => void
 }) {
-  const [pdfDataUrl, setPdfDataUrl] = useState<string | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    setPreviewUrl(null)
+    setError('')
+    setLoading(true)
+
     if (!doc.file_path) {
       setError('Aucun fichier associe.')
       setLoading(false)
@@ -789,21 +793,31 @@ function PdfPreviewModal({
     }
 
     let cancelled = false
+    let objectUrl: string | null = null
 
     async function loadPdf() {
       const result = await window.api.documents.readFile(doc.file_path!)
       if (cancelled) return
 
-      if (result.error || !result.data) {
+      if (result.error || !result.data || !result.mimeType) {
         setError(result.error || 'Impossible de lire le fichier.')
       } else {
-        setPdfDataUrl(`data:application/pdf;base64,${result.data}`)
+        const nextUrl = URL.createObjectURL(new Blob([result.data], { type: result.mimeType }))
+        if (cancelled) {
+          URL.revokeObjectURL(nextUrl)
+          return
+        }
+        objectUrl = nextUrl
+        setPreviewUrl(nextUrl)
       }
       setLoading(false)
     }
 
     loadPdf()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
+    }
   }, [doc.file_path])
 
   const meta = getDocumentMeta(doc.type)
@@ -867,9 +881,9 @@ function PdfPreviewModal({
               <AlertTriangle className="w-8 h-8 text-warning" />
               <p className="text-sm text-textMuted">{error}</p>
             </div>
-          ) : pdfDataUrl ? (
+          ) : previewUrl ? (
             <iframe
-              src={pdfDataUrl}
+              src={previewUrl}
               className="w-full h-full border-0"
               title="PDF Preview"
             />

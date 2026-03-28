@@ -131,7 +131,7 @@ export default function PaymentReminderModal({
 
     try {
       const blob = await pdf(<ReminderLetterPDF data={reminderData} />).toBlob()
-      const buffer = Array.from(new Uint8Array(await blob.arrayBuffer()))
+      const buffer = new Uint8Array(await blob.arrayBuffer())
       const fileName = `${stage}_${payment.tenant_last_name}_${fileSafeMonth(payment.period_month, payment.period_year)}.pdf`
       const result = await window.api.documents.savePdf(payment.lease_id, fileName, buffer, stage)
       if (!result.saved) {

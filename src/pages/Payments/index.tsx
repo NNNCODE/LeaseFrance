@@ -209,7 +209,7 @@ export default function Payments() {
       docType  = 'recu'
     }
 
-    const buffer = Array.from(new Uint8Array(await blob.arrayBuffer()))
+    const buffer = new Uint8Array(await blob.arrayBuffer())
     await window.api.documents.savePdf(payment.lease_id, fileName, buffer, docType)
   }
 

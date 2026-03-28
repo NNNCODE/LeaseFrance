@@ -245,12 +245,16 @@ function AttachmentPreviewModal({
   attachment: Attachment
   onClose: () => void
 }) {
-  const [dataUrl, setDataUrl] = useState<string | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     let cancelled = false
+    let objectUrl: string | null = null
+    setPreviewUrl(null)
+    setError('')
+    setLoading(true)
 
     async function loadFile() {
       const result = await window.api.attachments.read(attachment.id)
@@ -258,14 +262,23 @@ function AttachmentPreviewModal({
 
       if (result.error || !result.data) {
         setError(result.error || 'Impossible de lire le fichier.')
-      } else {
-        setDataUrl(`data:${result.mimeType};base64,${result.data}`)
+      } else if (result.mimeType) {
+        const nextUrl = URL.createObjectURL(new Blob([result.data], { type: result.mimeType }))
+        if (cancelled) {
+          URL.revokeObjectURL(nextUrl)
+          return
+        }
+        objectUrl = nextUrl
+        setPreviewUrl(nextUrl)
       }
       setLoading(false)
     }
 
     loadFile()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
+    }
   }, [attachment.id])
 
   const isImage = attachment.mime_type.startsWith('image/')
@@ -322,15 +335,15 @@ function AttachmentPreviewModal({
               <AlertTriangle className="w-8 h-8 text-warning" />
               <p className="text-sm text-textMuted">{error}</p>
             </div>
-          ) : dataUrl && isImage ? (
+          ) : previewUrl && isImage ? (
             <img
-              src={dataUrl}
+              src={previewUrl}
               alt={attachment.file_name}
               className="max-w-full max-h-full object-contain rounded-lg"
             />
-          ) : dataUrl && isPdf ? (
+          ) : previewUrl && isPdf ? (
             <iframe
-              src={dataUrl}
+              src={previewUrl}
               className="w-full h-full border-0"
               title="PDF Preview"
             />

@@ -658,14 +658,14 @@ interface Window {
       getGenerationSources:       () => Promise<DocumentGenerationSources>
       delete:                     (id: number) => Promise<boolean>
       updateStatus:               (id: number, status: string) => Promise<boolean>
-      readFile:                   (filePath: string) => Promise<{ data: string | null; error: string | null }>
-      savePdf:                    (leaseId: number, fileName: string, buffer: number[], docType?: string) => Promise<{ saved: boolean; path: string | null }>
+      readFile:                   (filePath: string) => Promise<{ data: Uint8Array | null; mimeType: string | null; error: string | null }>
+      savePdf:                    (leaseId: number, fileName: string, buffer: Uint8Array, docType?: string) => Promise<{ saved: boolean; path: string | null }>
       openFile:                   (filePath: string) => Promise<void>
     }
     exports: {
       saveFile: (
         fileName: string,
-        buffer: number[],
+        buffer: Uint8Array,
         filters?: Array<{ name: string; extensions: string[] }>
       ) => Promise<{ saved: boolean; path: string | null }>
     }
@@ -680,7 +680,7 @@ interface Window {
       getByEntity: (entityType: string, entityId: number) => Promise<Attachment[]>
       getAll:      () => Promise<Attachment[]>
       upload:      (entityType: string, entityId: number, slot: string | null) => Promise<Attachment[]>
-      read:        (id: number) => Promise<{ data: string | null; mimeType: string | null; error: string | null }>
+      read:        (id: number) => Promise<{ data: Uint8Array | null; mimeType: string | null; error: string | null }>
       open:        (id: number) => Promise<void>
       delete:      (id: number) => Promise<boolean>
     }

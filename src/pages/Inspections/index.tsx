@@ -161,7 +161,7 @@ export default function Inspections() {
     try {
       const data = buildInspectionPdfData(inspection, profile)
       const blob = await pdf(<InspectionPDF data={data} />).toBlob()
-      const buffer = Array.from(new Uint8Array(await blob.arrayBuffer()))
+      const buffer = new Uint8Array(await blob.arrayBuffer())
       const result = await window.api.documents.savePdf(
         inspection.lease_id,
         buildFileName(inspection),

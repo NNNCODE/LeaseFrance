@@ -49,6 +49,10 @@ function configureSessionDataPath(): void {
 
 configureSessionDataPath()
 
+function toNodeBuffer(data: Uint8Array): Buffer {
+  return Buffer.from(data)
+}
+
 function createWindow(): void {
   mainWindow = new BrowserWindow({
     width: 1280,
@@ -187,7 +191,7 @@ ipcMain.handle('documents:getAll', () => documentsDb.getAll())
 ipcMain.handle('documents:getGenerationAvailability', () => getDocumentGenerationAvailability())
 ipcMain.handle('documents:getGenerationSources', () => getDocumentGenerationSources())
 ipcMain.handle('documents:delete', (_e, id) => documentsDb.remove(id))
-ipcMain.handle('documents:savePdf', async (_e, leaseId: number, fileName: string, buffer: number[], docType?: string) => {
+ipcMain.handle('documents:savePdf', async (_e, leaseId: number, fileName: string, buffer: Uint8Array, docType?: string) => {
   const titleMap: Record<string, string> = {
     quittance: 'Enregistrer la quittance',
     recu: 'Enregistrer le recu de loyer',
@@ -208,7 +212,7 @@ ipcMain.handle('documents:savePdf', async (_e, leaseId: number, fileName: string
     filters: [{ name: 'PDF', extensions: ['pdf'] }],
   })
   if (canceled || !filePath) return { saved: false, path: null }
-  writeFileSync(filePath, Buffer.from(buffer))
+  writeFileSync(filePath, toNodeBuffer(buffer))
   documentsDb.create(leaseId, docType ?? 'quittance', filePath)
   return { saved: true, path: filePath }
 })
@@ -216,23 +220,23 @@ ipcMain.handle('documents:updateStatus', (_e, id: number, status: string) => doc
 ipcMain.handle('documents:readFile', (_e, filePath: string) => {
   try {
     const buffer = readFileSync(filePath)
-    return { data: buffer.toString('base64'), error: null }
+    return { data: buffer, mimeType: 'application/pdf', error: null }
   } catch {
-    return { data: null, error: 'Fichier introuvable' }
+    return { data: null, mimeType: null, error: 'Fichier introuvable' }
   }
 })
 ipcMain.handle('documents:openFile', (_e, filePath: string) => {
   shell.openPath(filePath)
 })
 
-ipcMain.handle('exports:saveFile', async (_e, fileName: string, buffer: number[], filters?: Array<{ name: string; extensions: string[] }>) => {
+ipcMain.handle('exports:saveFile', async (_e, fileName: string, buffer: Uint8Array, filters?: Array<{ name: string; extensions: string[] }>) => {
   const { filePath, canceled } = await dialog.showSaveDialog({
     title: 'Exporter le fichier',
     defaultPath: fileName,
     filters: filters && filters.length > 0 ? filters : undefined,
   })
   if (canceled || !filePath) return { saved: false, path: null }
-  writeFileSync(filePath, Buffer.from(buffer))
+  writeFileSync(filePath, toNodeBuffer(buffer))
   return { saved: true, path: filePath }
 })
 
@@ -278,8 +282,8 @@ ipcMain.handle('attachments:upload', async (_e, entityType: string, entityId: nu
     const storedName = `${Date.now()}_${randomBytes(6).toString('hex')}${ext}`
     const destPath = join(dir, storedName)
     copyFileSync(srcPath, destPath)
+    const fileSize = statSync(srcPath).size
 
-    const stat = readFileSync(srcPath)
     const mimeMap: Record<string, string> = {
       '.pdf': 'application/pdf',
       '.png': 'image/png',
@@ -297,7 +301,7 @@ ipcMain.handle('attachments:upload', async (_e, entityType: string, entityId: nu
       slot: slot || null,
       file_name: srcPath.split(/[/\\]/).pop() || storedName,
       mime_type: mimeMap[ext] || 'application/octet-stream',
-      file_size: stat.length,
+      file_size: fileSize,
       stored_name: storedName,
     })
     results.push(record)
@@ -312,7 +316,7 @@ ipcMain.handle('attachments:read', (_e, id: number) => {
   const filePath = join(getAttachmentsDir(), attachment.stored_name)
   try {
     const buffer = readFileSync(filePath)
-    return { data: buffer.toString('base64'), mimeType: attachment.mime_type, error: null }
+    return { data: buffer, mimeType: attachment.mime_type, error: null }
   } catch {
     return { data: null, mimeType: null, error: 'Fichier introuvable sur le disque' }
   }

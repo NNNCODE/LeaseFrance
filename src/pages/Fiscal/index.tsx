@@ -115,7 +115,7 @@ export default function Fiscal() {
 
     try {
       const csv = `\uFEFF${buildFiscalCsv(summary)}`
-      const buffer = Array.from(new TextEncoder().encode(csv))
+      const buffer = new TextEncoder().encode(csv)
       const result = await window.api.exports.saveFile(
         exportFileName('csv', selectedYear),
         buffer,
@@ -151,7 +151,7 @@ export default function Fiscal() {
         />
       ).toBlob()
 
-      const buffer = Array.from(new Uint8Array(await blob.arrayBuffer()))
+      const buffer = new Uint8Array(await blob.arrayBuffer())
       const result = await window.api.exports.saveFile(
         exportFileName('pdf', selectedYear),
         buffer,

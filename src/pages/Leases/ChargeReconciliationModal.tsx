@@ -266,7 +266,7 @@ export default function ChargeReconciliationModal({
 
     try {
       const blob = await pdf(<ChargeReconciliationPDF data={buildPdfData(lease, row, payments, profile)} />).toBlob()
-      const buffer = Array.from(new Uint8Array(await blob.arrayBuffer()))
+      const buffer = new Uint8Array(await blob.arrayBuffer())
       const result = await window.api.documents.savePdf(
         lease.id,
         fileNameFor(lease.tenant_last_name, row.year),
