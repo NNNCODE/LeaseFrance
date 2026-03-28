@@ -14,6 +14,7 @@
 import type Database from 'better-sqlite3'
 import { up as baseline } from './001_baseline'
 import { up as addLeaseContractDetails } from './002_lease_contract_details'
+import { up as addQueryIndexes } from './003_query_indexes'
 
 interface Migration {
   /** Target version after this migration completes (monotonically increasing). */
@@ -25,6 +26,7 @@ interface Migration {
 const migrations: Migration[] = [
   { version: 1, description: 'Baseline schema', up: baseline },
   { version: 2, description: 'Lease contract details', up: addLeaseContractDetails },
+  { version: 3, description: 'Query indexes', up: addQueryIndexes },
 ]
 
 /**

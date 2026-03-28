@@ -40,6 +40,19 @@ const EXPECTED_TABLES = [
   'bank_imports',
 ]
 
+const EXPECTED_INDEXES = [
+  'idx_payments_lease_period',
+  'idx_leases_status_tenant',
+  'idx_payments_lease_status',
+  'idx_payments_status_period',
+  'idx_payment_reminders_payment_sent_created',
+  'idx_inspections_date_created',
+  'idx_manual_reminders_status_due_created',
+  'idx_fiscal_expenses_year_property_category_created',
+  'idx_attachments_entity_slot_created',
+  'idx_documents_generated_at',
+]
+
 // ── Tests ────────────────────────────────────────────────────────────────────
 
 describe.skipIf(!!loadError)('Database migration smoke tests', () => {
@@ -74,10 +87,10 @@ describe.skipIf(!!loadError)('Database migration smoke tests', () => {
     }
   })
 
-  it('sets user_version to 2 after migrations', () => {
+  it('sets user_version to 3 after migrations', () => {
     runMigrations!(db)
     const version = db.pragma('user_version', { simple: true }) as number
-    expect(version).toBe(2)
+    expect(version).toBe(3)
   })
 
   it('is idempotent — running migrations twice does not throw', () => {
@@ -85,16 +98,18 @@ describe.skipIf(!!loadError)('Database migration smoke tests', () => {
     expect(() => runMigrations!(db)).not.toThrow()
 
     const version = db.pragma('user_version', { simple: true }) as number
-    expect(version).toBe(2)
+    expect(version).toBe(3)
   })
 
-  it('creates idx_payments_lease_period unique index', () => {
+  it('creates the expected secondary indexes', () => {
     runMigrations!(db)
 
-    const idx = db
-      .prepare("SELECT 1 FROM sqlite_master WHERE type='index' AND name='idx_payments_lease_period'")
-      .get()
-    expect(idx).toBeTruthy()
+    for (const indexName of EXPECTED_INDEXES) {
+      const idx = db
+        .prepare("SELECT 1 FROM sqlite_master WHERE type='index' AND name=?")
+        .get(indexName)
+      expect(idx).toBeTruthy()
+    }
   })
 
   // ── Upgrade from pre-migration database ─────────────────────────────────
@@ -231,7 +246,7 @@ describe.skipIf(!!loadError)('Database migration smoke tests', () => {
     expect(tenantCols).toContain('dossier_id_document')
 
     // user_version stamped
-    expect(db.pragma('user_version', { simple: true })).toBe(2)
+    expect(db.pragma('user_version', { simple: true })).toBe(3)
   })
 
   it('deduplicates payments when upgrading a pre-migration DB with duplicates', () => {
