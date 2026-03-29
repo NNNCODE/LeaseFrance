@@ -1,6 +1,6 @@
 # Architecture
 
-This document gives a high-level view of the LeaseFrance codebase.
+This document gives a high-level view of the RentFlow codebase.
 
 ## Runtime Architecture
 

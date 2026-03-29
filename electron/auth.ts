@@ -9,6 +9,8 @@ const ACCOUNTS_FILE = join(USER_DATA_PATH, 'accounts.json')
 const ACCOUNTS_LOCK_DIR = join(USER_DATA_PATH, 'accounts.lock')
 const ACCOUNTS_DIR = join(USER_DATA_PATH, 'accounts')
 const LEGACY_AUTH_FILE = join(USER_DATA_PATH, 'auth.json')
+// DB filename kept as 'leasefrance.db' for backward compatibility with existing installs.
+// TODO(rebrand): add migration to rename to 'rentflow.db' when safe to break compat.
 const LEGACY_DB_FILE = join(USER_DATA_PATH, 'leasefrance.db')
 const LEGACY_ATTACHMENTS_DIR = join(USER_DATA_PATH, 'attachments')
 const LOCK_WAIT_MS = 50

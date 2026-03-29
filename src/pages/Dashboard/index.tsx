@@ -73,7 +73,7 @@ function OnboardingGuide({ counts }: { counts: Record<string, number> }) {
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-primary" />
-            <CardTitle className="text-base">Démarrer avec LeaseFrance</CardTitle>
+            <CardTitle className="text-base">Démarrer avec RentFlow</CardTitle>
           </div>
           <CardDescription>
             {completedCount} / {STEPS.length} étapes complétées

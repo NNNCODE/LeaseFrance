@@ -330,7 +330,7 @@ export function InspectionPDF({ data }: { data: InspectionPdfData }) {
         </View>
 
         <Text style={s.legalNote}>
-          Document genere via LeaseFrance. Cette version MVP prevoit une signature du proprietaire et un emplacement de signature pour le locataire.
+          Document genere via RentFlow. Cette version MVP prevoit une signature du proprietaire et un emplacement de signature pour le locataire.
         </Text>
       </Page>
     </Document>

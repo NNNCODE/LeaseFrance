@@ -2,7 +2,7 @@
 
 ## Purpose
 
-LeaseFrance is a Windows desktop app for private landlords in France.
+RentFlow is a Windows desktop app for private landlords in France.
 It manages properties, tenants, leases, payments, IRL reference data, and PDF rent documents.
 
 This file is for Claude Code. Keep it short, concrete, and repo-specific.

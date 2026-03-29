@@ -1,4 +1,4 @@
-# LeaseFrance
+# RentFlow
 
 Application desktop Windows pour propriétaires bailleurs privés en France.
 面向法国个人房东的 Windows 桌面管理应用。

@@ -4,17 +4,17 @@ export interface BackupAutoDonePayload {
   at: string
 }
 
-export interface LeaseFranceWindowApi {
+export interface RentFlowWindowApi {
   minimize: () => void
   maximize: () => void
   close: () => void
 }
 
-export interface LeaseFranceBackupEventsApi {
+export interface RentFlowBackupEventsApi {
   onAutoDone: (cb: (_e: unknown, data: BackupAutoDonePayload) => void) => () => void
 }
 
-export interface LeaseFranceInvokeApi {
+export interface RentFlowInvokeApi {
   auth: {
     hasPassword: () => Promise<boolean>
     getProfile: () => Promise<UserProfile | null>
@@ -145,9 +145,9 @@ export interface LeaseFranceInvokeApi {
   }
 }
 
-export type LeaseFranceApi = Omit<LeaseFranceInvokeApi, 'backup'> & {
-  window: LeaseFranceWindowApi
-  backup: LeaseFranceInvokeApi['backup'] & LeaseFranceBackupEventsApi
+export type RentFlowApi = Omit<RentFlowInvokeApi, 'backup'> & {
+  window: RentFlowWindowApi
+  backup: RentFlowInvokeApi['backup'] & RentFlowBackupEventsApi
 }
 
 type AnyFn = (...args: never[]) => unknown
@@ -187,5 +187,5 @@ type EntriesToMap<U> = UnionToIntersection<
     : never
 >
 
-export type LeaseFranceInvokeChannels = EntriesToMap<NamespaceEntries<LeaseFranceInvokeApi>>
-export type LeaseFranceWindowChannels = EntriesToMap<NamespaceEntries<LeaseFranceWindowApi, 'window:'>>
+export type RentFlowInvokeChannels = EntriesToMap<NamespaceEntries<RentFlowInvokeApi>>
+export type RentFlowWindowChannels = EntriesToMap<NamespaceEntries<RentFlowWindowApi, 'window:'>>

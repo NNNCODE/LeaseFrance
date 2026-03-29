@@ -403,7 +403,7 @@ export function QuittancePDF({ data }: { data: QuittanceData }) {
 
         {/* ── Document footer ── */}
         <View style={s.docFooter} fixed>
-          <Text style={s.docFooterText}>{'Quittance de loyer générée le '}{genDate}{' via LeaseFrance'}</Text>
+          <Text style={s.docFooterText}>{'Quittance de loyer générée le '}{genDate}{' via RentFlow'}</Text>
           <Text style={s.docFooterText}>{'Document non fiscal — à conserver'}</Text>
         </View>
 

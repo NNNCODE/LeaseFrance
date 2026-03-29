@@ -10,7 +10,7 @@ export default function Topbar({ onSearchClick }: { onSearchClick?: () => void }
           <Home className="w-4 h-4 text-primary" />
         </div>
         <div>
-          <p className="text-sm font-semibold text-textPrimary">LeaseFrance</p>
+          <p className="text-sm font-semibold text-textPrimary">RentFlow</p>
           <p className="text-[11px] uppercase tracking-[0.22em] text-textMuted">Espace proprietaire</p>
         </div>
       </div>

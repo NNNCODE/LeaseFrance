@@ -567,5 +567,5 @@ interface BackupPreviewResult {
 }
 
 interface Window {
-  api: import('./shared/ipc').LeaseFranceApi
+  api: import('./shared/ipc').RentFlowApi
 }

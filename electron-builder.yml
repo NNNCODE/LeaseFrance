@@ -1,4 +1,11 @@
+# appId kept as com.leasefrance.app to avoid orphaning existing installs on Windows.
+# Changing appId makes the OS treat it as a different application (duplicate Add/Remove entry).
+# TODO(rebrand): change to com.rentflow.app when ready to drop upgrade-in-place support.
 appId: com.leasefrance.app
+# productName kept as LeaseFrance because Electron derives app.getPath('userData') from it.
+# Changing it moves the data directory from %APPDATA%/LeaseFrance to %APPDATA%/RentFlow,
+# which orphans existing databases and account data.
+# TODO(rebrand): change to RentFlow after adding userData migration logic in electron/main.ts.
 productName: LeaseFrance
 copyright: Copyright © 2026
 
@@ -29,7 +36,7 @@ nsis:
   language: 1036   # Français
   createDesktopShortcut: true
   createStartMenuShortcut: true
-  shortcutName: LeaseFrance
+  shortcutName: RentFlow
 
 # Ne pas inclure les devDependencies dans le build final
 npmRebuild: true

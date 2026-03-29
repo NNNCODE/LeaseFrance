@@ -1,23 +1,23 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
 import type {
   BackupAutoDonePayload,
-  LeaseFranceApi,
-  LeaseFranceInvokeChannels,
-  LeaseFranceWindowChannels,
+  RentFlowApi,
+  RentFlowInvokeChannels,
+  RentFlowWindowChannels,
 } from '../src/shared/ipc'
 
-function invoke<Channel extends keyof LeaseFranceInvokeChannels>(channel: Channel) {
-  return (...args: LeaseFranceInvokeChannels[Channel]['args']) =>
-    ipcRenderer.invoke(channel, ...args) as Promise<LeaseFranceInvokeChannels[Channel]['return']>
+function invoke<Channel extends keyof RentFlowInvokeChannels>(channel: Channel) {
+  return (...args: RentFlowInvokeChannels[Channel]['args']) =>
+    ipcRenderer.invoke(channel, ...args) as Promise<RentFlowInvokeChannels[Channel]['return']>
 }
 
-function send<Channel extends keyof LeaseFranceWindowChannels>(channel: Channel) {
-  return (...args: LeaseFranceWindowChannels[Channel]['args']) => {
+function send<Channel extends keyof RentFlowWindowChannels>(channel: Channel) {
+  return (...args: RentFlowWindowChannels[Channel]['args']) => {
     ipcRenderer.send(channel, ...args)
   }
 }
 
-const api: LeaseFranceApi = {
+const api: RentFlowApi = {
   window: {
     minimize: send('window:minimize'),
     maximize: send('window:maximize'),

@@ -1,6 +1,6 @@
 # Product Roadmap
 
-LeaseFrance is a local-first Windows desktop app for private landlords in France.
+RentFlow is a local-first Windows desktop app for private landlords in France.
 This file tracks medium- and long-term product direction.
 
 Use this file for:

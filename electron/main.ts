@@ -36,12 +36,12 @@ import { getDashboardSnapshot } from './services/dashboard'
 import { getDocumentGenerationAvailability, getDocumentGenerationSources } from './services/documents'
 import { getReminderFeed } from './services/reminders'
 import { querySearch } from './services/search'
-import type { LeaseFranceInvokeChannels, LeaseFranceWindowChannels } from '../src/shared/ipc'
+import type { RentFlowInvokeChannels, RentFlowWindowChannels } from '../src/shared/ipc'
 
 const isDev = process.env['ELECTRON_RENDERER_URL'] !== undefined
 
 let mainWindow: BrowserWindow | null = null
-const sessionDataPath = join(app.getPath('temp'), 'leasefrance', 'session-data', String(process.pid))
+const sessionDataPath = join(app.getPath('temp'), 'rentflow', 'session-data', String(process.pid))
 
 function configureSessionDataPath(): void {
   mkdirSync(sessionDataPath, { recursive: true })
@@ -54,16 +54,16 @@ function toNodeBuffer(data: Uint8Array): Buffer {
   return Buffer.from(data)
 }
 
-function handle<Channel extends keyof LeaseFranceInvokeChannels>(
+function handle<Channel extends keyof RentFlowInvokeChannels>(
   channel: Channel,
-  handler: (...args: LeaseFranceInvokeChannels[Channel]['args']) =>
-    LeaseFranceInvokeChannels[Channel]['return']
-    | Promise<LeaseFranceInvokeChannels[Channel]['return']>,
+  handler: (...args: RentFlowInvokeChannels[Channel]['args']) =>
+    RentFlowInvokeChannels[Channel]['return']
+    | Promise<RentFlowInvokeChannels[Channel]['return']>,
 ): void {
-  ipcMain.handle(channel, (_event, ...args: LeaseFranceInvokeChannels[Channel]['args']) => handler(...args))
+  ipcMain.handle(channel, (_event, ...args: RentFlowInvokeChannels[Channel]['args']) => handler(...args))
 }
 
-function onWindow<Channel extends keyof LeaseFranceWindowChannels>(
+function onWindow<Channel extends keyof RentFlowWindowChannels>(
   channel: Channel,
   listener: () => void,
 ): void {
@@ -365,8 +365,8 @@ handle('backup:create', async () => {
   const timestamp = new Date().toISOString().slice(0, 10)
   const { filePath, canceled } = await dialog.showSaveDialog({
     title: 'Sauvegarder les donnees',
-    defaultPath: `leasefrance_backup_${timestamp}${BACKUP_EXTENSION}`,
-    filters: [{ name: 'LeaseFrance Backup', extensions: [BACKUP_EXTENSION.slice(1)] }],
+    defaultPath: `rentflow_backup_${timestamp}${BACKUP_EXTENSION}`,
+    filters: [{ name: 'RentFlow Backup', extensions: [BACKUP_EXTENSION.slice(1)] }],
   })
   if (canceled || !filePath) return { saved: false, path: null }
 
@@ -407,7 +407,7 @@ handle('backup:pickFolder', async () => {
 handle('backup:verify', async () => {
   const { filePaths, canceled } = await dialog.showOpenDialog({
     title: 'Verifier une sauvegarde',
-    filters: [{ name: 'LeaseFrance Backup', extensions: [BACKUP_EXTENSION.slice(1)] }],
+    filters: [{ name: 'RentFlow Backup', extensions: [BACKUP_EXTENSION.slice(1)] }],
     properties: ['openFile'],
   })
   if (canceled || filePaths.length === 0) return null
@@ -418,7 +418,7 @@ handle('backup:preview', async () => {
   const { filePaths, canceled } = await dialog.showOpenDialog({
     title: 'Selectionner une sauvegarde a restaurer',
     filters: [
-      { name: 'LeaseFrance Backup', extensions: [BACKUP_EXTENSION.slice(1)] },
+      { name: 'RentFlow Backup', extensions: [BACKUP_EXTENSION.slice(1)] },
       { name: 'SQLite Database (legacy)', extensions: ['db'] },
     ],
     properties: ['openFile'],
