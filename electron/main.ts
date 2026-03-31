@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron'
+import { app, BrowserWindow, shell, ipcMain, dialog, session } from 'electron'
 import { writeFileSync, copyFileSync, existsSync, readFileSync, mkdirSync, unlinkSync, statSync } from 'fs'
 import { join, dirname, extname } from 'path'
 import { randomBytes } from 'crypto'
@@ -117,6 +117,19 @@ function createWindow(): void {
   if (!isDev) {
     mainWindow.webContents.on('context-menu', (e) => e.preventDefault())
   }
+
+  // Content Security Policy
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    const csp = isDev
+      ? "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' ws://localhost:* http://localhost:*;"
+      : "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self';"
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [csp],
+      },
+    })
+  })
 
   if (isDev) {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL']!)
