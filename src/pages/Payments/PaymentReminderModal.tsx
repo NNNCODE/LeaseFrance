@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
 import { pdf } from '@react-pdf/renderer'
 import {
   AlertCircle,
   CalendarDays,
-  CheckCircle2,
   Info,
   ScrollText,
   Send,
@@ -15,32 +15,28 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { ReminderLetterPDF, type ReminderLetterData } from '@/lib/pdf/reminder'
 import { formatCurrency, formatDate } from '@/lib/utils'
+import { monthLabel } from './paymentPageUtils'
 
 type ReminderStage = 'relance_amiable' | 'mise_en_demeure' | 'proposition_echeancier'
 
-const MONTHS = [
-  'Janvier', 'Fevrier', 'Mars', 'Avril', 'Mai', 'Juin',
-  'Juillet', 'Aout', 'Septembre', 'Octobre', 'Novembre', 'Decembre',
-]
-
 const STAGE_META: Record<ReminderStage, {
-  label: string
-  description: string
+  labelKey: string
+  descriptionKey: string
   badge: 'default' | 'warning' | 'danger' | 'success'
 }> = {
   relance_amiable: {
-    label: 'Relance amiable',
-    description: 'Premier rappel cordial du loyer impaye.',
+    labelKey: 'documents.type.relance_amiable',
+    descriptionKey: 'payments.reminderModal.stage.relance_amiable.description',
     badge: 'warning',
   },
   mise_en_demeure: {
-    label: 'Mise en demeure',
-    description: 'Demande plus formelle de regularisation, toujours en voie amiable.',
+    labelKey: 'documents.type.mise_en_demeure',
+    descriptionKey: 'payments.reminderModal.stage.mise_en_demeure.description',
     badge: 'danger',
   },
   proposition_echeancier: {
-    label: "Proposition d'echeancier",
-    description: "Proposer un plan d'apurement pour regulariser l'impaye.",
+    labelKey: 'documents.type.proposition_echeancier',
+    descriptionKey: 'payments.reminderModal.stage.proposition_echeancier.description',
     badge: 'success',
   },
 }
@@ -55,8 +51,8 @@ function nextStage(reminders: PaymentReminder[]): ReminderStage {
   return 'relance_amiable'
 }
 
-function fileSafeMonth(month: number, year: number) {
-  return `${MONTHS[month - 1]}_${year}`
+function fileSafePeriod(month: number, year: number) {
+  return `${year}-${String(month).padStart(2, '0')}`
 }
 
 export default function PaymentReminderModal({
@@ -70,6 +66,7 @@ export default function PaymentReminderModal({
   onClose: () => void
   onSaved: () => Promise<void> | void
 }) {
+  const { t } = useTranslation()
   const [reminders, setReminders] = useState<PaymentReminder[]>([])
   const [stage, setStage] = useState<ReminderStage>('relance_amiable')
   const [sentAt, setSentAt] = useState(today())
@@ -99,15 +96,15 @@ export default function PaymentReminderModal({
       }
     }
 
-    loadHistory()
+    void loadHistory()
     return () => { cancelled = true }
   }, [payment.id])
 
   const totalAmount = payment.rent_amount + payment.charges_amount
-  const stageMeta = STAGE_META[stage]
+  const currentStatusKey = payment.status === 'late' ? 'late' : 'pending'
 
   const reminderData = useMemo<ReminderLetterData>(() => ({
-    landlordName: profile?.name ?? 'Proprietaire',
+    landlordName: profile?.name ?? t('nav.profile'),
     landlordAddress: profile?.address,
     landlordCity: profile?.city,
     landlordPhone: profile?.phone,
@@ -123,7 +120,7 @@ export default function PaymentReminderModal({
     reminderDate: sentAt,
     stage,
     notes,
-  }), [notes, payment, profile, sentAt, stage, totalAmount])
+  }), [notes, payment, profile, sentAt, stage, t, totalAmount])
 
   async function handleGenerate() {
     setSaving(true)
@@ -132,7 +129,7 @@ export default function PaymentReminderModal({
     try {
       const blob = await pdf(<ReminderLetterPDF data={reminderData} />).toBlob()
       const buffer = new Uint8Array(await blob.arrayBuffer())
-      const fileName = `${stage}_${payment.tenant_last_name}_${fileSafeMonth(payment.period_month, payment.period_year)}.pdf`
+      const fileName = `${stage}_${payment.tenant_last_name}_${fileSafePeriod(payment.period_month, payment.period_year)}.pdf`
       const result = await window.api.documents.savePdf(payment.lease_id, fileName, buffer, stage)
       if (!result.saved) {
         setSaving(false)
@@ -171,55 +168,57 @@ export default function PaymentReminderModal({
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 12 }}
         transition={{ duration: 0.2, ease: 'easeOut' }}
-        className="w-full max-w-4xl bg-surface border border-border rounded-2xl shadow-2xl overflow-hidden max-h-[92vh] flex flex-col"
+        className="w-full max-w-4xl overflow-hidden rounded-2xl border border-border bg-surface shadow-2xl max-h-[92vh] flex flex-col"
       >
-        <div className="flex items-start justify-between gap-4 px-6 py-5 border-b border-border shrink-0">
+        <div className="flex items-start justify-between gap-4 border-b border-border px-6 py-5 shrink-0">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-warning/10 shrink-0">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-warning/10 shrink-0">
                 <ScrollText className="w-5 h-5 text-warning" />
               </div>
               <div>
-                <h2 className="text-base font-semibold text-textPrimary">Relance impaye</h2>
+                <h2 className="text-base font-semibold text-textPrimary">{t('payments.reminderModal.title')}</h2>
                 <p className="text-sm text-textMuted">
-                  {payment.tenant_first_name} {payment.tenant_last_name} · {payment.property_name}
+                  {payment.tenant_first_name} {payment.tenant_last_name} | {payment.property_name}
                 </p>
               </div>
             </div>
-            <div className="flex flex-wrap items-center gap-3 mt-3 text-xs text-textMuted">
+            <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-textMuted">
               <div className="flex items-center gap-1.5">
                 <CalendarDays className="w-3.5 h-3.5" />
-                <span>{MONTHS[payment.period_month - 1]} {payment.period_year}</span>
+                <span>{monthLabel(payment.period_month, payment.period_year)}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <AlertCircle className="w-3.5 h-3.5 text-danger" />
-                <span>Montant impaye : {formatCurrency(totalAmount)}</span>
+                <span>{t('payments.reminderModal.unpaidAmount', { amount: formatCurrency(totalAmount) })}</span>
               </div>
             </div>
           </div>
 
-          <button onClick={onClose} className="text-textMuted hover:text-textPrimary transition-colors shrink-0">
+          <button onClick={onClose} className="shrink-0 text-textMuted transition-colors hover:text-textPrimary">
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="p-6 overflow-y-auto flex flex-col gap-5">
+        <div className="flex flex-col gap-5 overflow-y-auto p-6">
           <div className="grid grid-cols-2 gap-4">
             <Card>
               <CardContent className="pt-4">
-                <p className="text-xs text-textMuted">Paiement suivi</p>
-                <p className="text-base font-semibold text-textPrimary mt-1">{formatCurrency(totalAmount)}</p>
-                <p className="text-xs text-textMuted mt-1">
-                  Statut actuel : {payment.status === 'late' ? 'En retard' : 'En attente'}
+                <p className="text-xs text-textMuted">{t('payments.reminderModal.trackedPayment')}</p>
+                <p className="mt-1 text-base font-semibold text-textPrimary">{formatCurrency(totalAmount)}</p>
+                <p className="mt-1 text-xs text-textMuted">
+                  {t('payments.reminderModal.currentStatus', { status: t(`payments.status.${currentStatusKey}`) })}
                 </p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-4">
-                <p className="text-xs text-textMuted">Historique des relances</p>
-                <p className="text-base font-semibold text-textPrimary mt-1">{reminders.length}</p>
-                <p className="text-xs text-textMuted mt-1">
-                  {reminders[0] ? `Derniere le ${formatDate(reminders[0].sent_at)}` : 'Aucune relance enregistree'}
+                <p className="text-xs text-textMuted">{t('payments.reminderModal.historyTitle')}</p>
+                <p className="mt-1 text-base font-semibold text-textPrimary">{reminders.length}</p>
+                <p className="mt-1 text-xs text-textMuted">
+                  {reminders[0]
+                    ? t('payments.reminderModal.lastSent', { date: formatDate(reminders[0].sent_at) })
+                    : t('payments.reminderModal.noneSent')}
                 </p>
               </CardContent>
             </Card>
@@ -233,15 +232,15 @@ export default function PaymentReminderModal({
                   key={value}
                   type="button"
                   onClick={() => setStage(value)}
-                  className={`text-left rounded-xl border p-4 transition-colors ${
+                  className={`rounded-xl border p-4 text-left transition-colors ${
                     stage === value ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/40'
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm font-semibold text-textPrimary">{meta.label}</p>
-                    <Badge variant={meta.badge}>{meta.label}</Badge>
+                    <p className="text-sm font-semibold text-textPrimary">{t(meta.labelKey)}</p>
+                    <Badge variant={meta.badge}>{t(meta.labelKey)}</Badge>
                   </div>
-                  <p className="text-xs text-textMuted mt-2 leading-5">{meta.description}</p>
+                  <p className="mt-2 text-xs leading-5 text-textMuted">{t(meta.descriptionKey)}</p>
                 </button>
               )
             })}
@@ -249,22 +248,22 @@ export default function PaymentReminderModal({
 
           <div className="grid grid-cols-[220px_1fr] gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-textMuted">Date du courrier</label>
+              <label className="text-xs font-medium text-textMuted">{t('payments.reminderModal.letterDate')}</label>
               <input
                 type="date"
                 value={sentAt}
                 onChange={(event) => setSentAt(event.target.value)}
-                className="w-full bg-surfaceHigh border border-border rounded-lg px-3 py-2 text-sm text-textPrimary focus:outline-none focus:border-primary transition-colors"
+                className="w-full rounded-lg border border-border bg-surfaceHigh px-3 py-2 text-sm text-textPrimary transition-colors focus:border-primary focus:outline-none"
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-textMuted">Message complementaire</label>
+              <label className="text-xs font-medium text-textMuted">{t('payments.reminderModal.additionalMessage')}</label>
               <textarea
                 value={notes}
                 onChange={(event) => setNotes(event.target.value)}
                 rows={4}
-                placeholder="Precisions, proposition d'appel, consignes de regularisation..."
-                className="w-full resize-none bg-surfaceHigh border border-border rounded-lg px-3 py-2 text-sm text-textPrimary focus:outline-none focus:border-primary transition-colors"
+                placeholder={t('payments.reminderModal.messagePlaceholder')}
+                className="w-full resize-none rounded-lg border border-border bg-surfaceHigh px-3 py-2 text-sm text-textPrimary transition-colors focus:border-primary focus:outline-none"
               />
             </div>
           </div>
@@ -272,10 +271,9 @@ export default function PaymentReminderModal({
           <Card className="border-warning/30 bg-warning/5">
             <CardContent className="pt-4">
               <div className="flex items-start gap-2">
-                <Info className="w-4 h-4 text-warning shrink-0 mt-0.5" />
-                <div className="text-xs text-textMuted leading-5">
-                  Le PDF genere ici reste dans un cadre amiable. Il ne remplace pas un commandement de payer delivre par un commissaire de justice.
-                  Si le paiement est encore en attente, l'envoi d'une relance le fera passer automatiquement en statut <span className="text-textPrimary font-medium">late</span>.
+                <Info className="w-4 h-4 shrink-0 text-warning mt-0.5" />
+                <div className="text-xs leading-5 text-textMuted">
+                  {t('payments.reminderModal.help', { status: t('payments.status.late') })}
                 </div>
               </div>
             </CardContent>
@@ -283,8 +281,8 @@ export default function PaymentReminderModal({
 
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-textPrimary">Historique</h3>
-              <Badge variant="muted">{reminders.length} element{reminders.length !== 1 ? 's' : ''}</Badge>
+              <h3 className="text-sm font-semibold text-textPrimary">{t('payments.reminderModal.timeline')}</h3>
+              <Badge variant="muted">{t('payments.reminderModal.itemCount', { count: reminders.length })}</Badge>
             </div>
 
             {error ? (
@@ -299,22 +297,24 @@ export default function PaymentReminderModal({
               </div>
             ) : reminders.length === 0 ? (
               <div className="rounded-xl border border-border bg-surfaceHigh/30 px-4 py-6 text-center">
-                <p className="text-sm font-medium text-textPrimary">Aucune relance enregistree</p>
-                <p className="text-xs text-textMuted mt-1">Le premier PDF genere apparaitra ici avec sa date et ses notes.</p>
+                <p className="text-sm font-medium text-textPrimary">{t('payments.reminderModal.emptyHistoryTitle')}</p>
+                <p className="mt-1 text-xs text-textMuted">{t('payments.reminderModal.emptyHistoryDesc')}</p>
               </div>
             ) : (
               <div className="flex flex-col gap-2">
                 {reminders.map((reminder) => (
-                  <div key={reminder.id} className="rounded-xl border border-border px-4 py-3 bg-surfaceHigh/20">
+                  <div key={reminder.id} className="rounded-xl border border-border bg-surfaceHigh/20 px-4 py-3">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <p className="text-sm font-medium text-textPrimary">{STAGE_META[reminder.stage].label}</p>
-                        <p className="text-xs text-textMuted mt-0.5">Envoyee le {formatDate(reminder.sent_at)}</p>
+                        <p className="text-sm font-medium text-textPrimary">{t(STAGE_META[reminder.stage].labelKey)}</p>
+                        <p className="mt-0.5 text-xs text-textMuted">
+                          {t('payments.reminderModal.sentOn', { date: formatDate(reminder.sent_at) })}
+                        </p>
                       </div>
-                      <Badge variant={STAGE_META[reminder.stage].badge}>{STAGE_META[reminder.stage].label}</Badge>
+                      <Badge variant={STAGE_META[reminder.stage].badge}>{t(STAGE_META[reminder.stage].labelKey)}</Badge>
                     </div>
                     {reminder.notes ? (
-                      <p className="text-xs text-textMuted mt-2 leading-5">{reminder.notes}</p>
+                      <p className="mt-2 text-xs leading-5 text-textMuted">{reminder.notes}</p>
                     ) : null}
                   </div>
                 ))}
@@ -322,15 +322,15 @@ export default function PaymentReminderModal({
             )}
           </div>
 
-          <div className="flex gap-2 justify-end">
-            <Button variant="secondary" onClick={onClose}>Annuler</Button>
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
             <Button onClick={handleGenerate} disabled={saving || loading}>
               {saving ? (
-                <>Enregistrement...</>
+                <>{t('common.saving')}</>
               ) : (
                 <>
                   <Send className="w-3.5 h-3.5" />
-                  Generer le PDF
+                  {t('payments.reminderModal.generatePdf')}
                 </>
               )}
             </Button>

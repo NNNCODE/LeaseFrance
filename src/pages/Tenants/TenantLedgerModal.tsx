@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import {
   AlertCircle,
   Building2,
@@ -40,15 +41,15 @@ interface LedgerSummary {
 }
 
 const LEDGER_STATUS_CONFIG: Record<LedgerStatus, {
-  label: string
+  labelKey: string
   variant: BadgeVariant
   icon: typeof CheckCircle2
 }> = {
-  settled: { label: 'Regle',         variant: 'success', icon: CheckCircle2 },
-  partial: { label: 'Partiel',       variant: 'warning', icon: Clock },
-  late:    { label: 'En retard',     variant: 'danger',  icon: AlertCircle },
-  pending: { label: 'En attente',    variant: 'warning', icon: Clock },
-  review:  { label: 'A regulariser', variant: 'muted',   icon: ScrollText },
+  settled: { labelKey: 'tenants.ledgerModal.status.settled', variant: 'success', icon: CheckCircle2 },
+  partial: { labelKey: 'tenants.ledgerModal.status.partial', variant: 'warning', icon: Clock },
+  late: { labelKey: 'tenants.ledgerModal.status.late', variant: 'danger', icon: AlertCircle },
+  pending: { labelKey: 'tenants.ledgerModal.status.pending', variant: 'warning', icon: Clock },
+  review: { labelKey: 'tenants.ledgerModal.status.review', variant: 'muted', icon: ScrollText },
 }
 
 function startOfMonth(value: Date) {
@@ -150,10 +151,10 @@ function buildLedgerSummary(tenant: Tenant, payments: Payment[]): LedgerSummary 
   }
 }
 
-function balanceLabel(balance: number) {
-  if (balance > 0) return 'Reste du'
-  if (balance < 0) return 'Credit'
-  return 'A jour'
+function balanceLabel(balance: number, t: (key: string) => string) {
+  if (balance > 0) return t('tenants.ledgerModal.balanceDue')
+  if (balance < 0) return t('tenants.ledgerModal.balanceCredit')
+  return t('tenants.ledgerModal.balanceSettled')
 }
 
 function balanceTone(balance: number) {
@@ -169,6 +170,7 @@ export default function TenantLedgerModal({
   tenant: Tenant
   onClose: () => void
 }) {
+  const { t } = useTranslation()
   const [payments, setPayments] = useState<Payment[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -228,7 +230,7 @@ export default function TenantLedgerModal({
                 <ScrollText className="w-5 h-5 text-primary" />
               </div>
               <div className="min-w-0">
-                <h2 className="text-base font-semibold text-textPrimary">Compte locataire</h2>
+                <h2 className="text-base font-semibold text-textPrimary">{t('tenants.ledgerModal.title')}</h2>
                 <p className="text-sm text-textMuted truncate">
                   {tenant.first_name} {tenant.last_name}
                   {tenant.property_name ? ` · ${tenant.property_name}` : ''}
@@ -245,13 +247,13 @@ export default function TenantLedgerModal({
               {tenant.lease_start_date && (
                 <div className="flex items-center gap-1.5">
                   <CalendarDays className="w-3.5 h-3.5" />
-                  <span>Suivi depuis {formatDate(tenant.lease_start_date)}</span>
+                  <span>{t('tenants.ledgerModal.trackedSince', { date: formatDate(tenant.lease_start_date) })}</span>
                 </div>
               )}
               {summary.lastPaymentDate && (
                 <div className="flex items-center gap-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5 text-success" />
-                  <span>Dernier reglement le {formatDate(summary.lastPaymentDate)}</span>
+                  <span>{t('tenants.ledgerModal.lastPayment', { date: formatDate(summary.lastPaymentDate) })}</span>
                 </div>
               )}
             </div>
@@ -266,28 +268,28 @@ export default function TenantLedgerModal({
           <div className="grid grid-cols-4 gap-3">
             <Card>
               <CardContent className="pt-4">
-                <p className="text-xs text-textMuted">Loyer mensuel suivi</p>
+                <p className="text-xs text-textMuted">{t('tenants.ledgerModal.monthlyTrackedRent')}</p>
                 <p className="text-lg font-semibold text-textPrimary mt-1">{formatCurrency(summary.monthlyAmount)}</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-4">
-                <p className="text-xs text-textMuted">Total regle</p>
+                <p className="text-xs text-textMuted">{t('tenants.ledgerModal.totalPaid')}</p>
                 <p className="text-lg font-semibold text-textPrimary mt-1">{formatCurrency(summary.totalPaid)}</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-4">
-                <p className="text-xs text-textMuted">Solde actuel</p>
+                <p className="text-xs text-textMuted">{t('tenants.ledgerModal.currentBalance')}</p>
                 <p className={`text-lg font-semibold mt-1 ${balanceTone(summary.currentBalance)}`}>
                   {formatCurrency(Math.abs(summary.currentBalance))}
                 </p>
-                <p className="text-xs text-textMuted mt-1">{balanceLabel(summary.currentBalance)}</p>
+                <p className="text-xs text-textMuted mt-1">{balanceLabel(summary.currentBalance, t)}</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-4">
-                <p className="text-xs text-textMuted">Periodes a regulariser</p>
+                <p className="text-xs text-textMuted">{t('tenants.ledgerModal.periodsToReview')}</p>
                 <p className="text-lg font-semibold text-textPrimary mt-1">{summary.regularizationCount}</p>
               </CardContent>
             </Card>
@@ -295,7 +297,7 @@ export default function TenantLedgerModal({
 
           {error ? (
             <div className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
-              Impossible de charger le compte locataire : {error}
+              {t('tenants.ledgerModal.loadError', { error })}
             </div>
           ) : loading ? (
             <div className="flex flex-col gap-2">
@@ -305,9 +307,9 @@ export default function TenantLedgerModal({
             </div>
           ) : summary.rows.length === 0 ? (
             <div className="rounded-xl border border-border bg-surfaceHigh/30 px-5 py-10 text-center">
-              <p className="text-sm font-medium text-textPrimary">Aucune ligne de compte disponible</p>
+              <p className="text-sm font-medium text-textPrimary">{t('tenants.ledgerModal.noRows')}</p>
               <p className="text-xs text-textMuted mt-1">
-                Le bail actif doit comporter un loyer mensuel pour reconstruire le compte locataire.
+                {t('tenants.ledgerModal.noRowsDesc')}
               </p>
             </div>
           ) : (
@@ -315,12 +317,12 @@ export default function TenantLedgerModal({
               <div className="overflow-x-auto">
                 <div className="min-w-[980px]">
                   <div className="grid grid-cols-[1.8fr_1fr_1fr_1fr_1.1fr_0.9fr] gap-3 px-4 py-3 bg-surfaceHigh/40 text-[11px] font-medium uppercase tracking-wide text-textMuted">
-                    <span>Periode</span>
-                    <span className="text-right">A payer</span>
-                    <span className="text-right">Regle</span>
-                    <span className="text-right">Ecart</span>
-                    <span className="text-right">Solde cumule</span>
-                    <span className="text-right">Statut</span>
+                    <span>{t('tenants.ledgerModal.table.period')}</span>
+                    <span className="text-right">{t('tenants.ledgerModal.table.due')}</span>
+                    <span className="text-right">{t('tenants.ledgerModal.table.paid')}</span>
+                    <span className="text-right">{t('tenants.ledgerModal.table.delta')}</span>
+                    <span className="text-right">{t('tenants.ledgerModal.table.runningBalance')}</span>
+                    <span className="text-right">{t('tenants.ledgerModal.table.status')}</span>
                   </div>
 
                   {summary.rows.map((row) => {
@@ -334,10 +336,10 @@ export default function TenantLedgerModal({
                           <p className="text-sm font-medium text-textPrimary capitalize">{row.periodLabel}</p>
                           <p className="text-[11px] text-textMuted mt-0.5">
                             {row.paymentDate
-                              ? `Regle le ${formatDate(row.paymentDate)}`
+                              ? t('tenants.ledgerModal.paidOn', { date: formatDate(row.paymentDate) })
                               : row.hasTrackedPayment
-                                ? 'Echeance saisie dans les paiements'
-                                : 'Estime depuis le bail actif'}
+                                ? t('tenants.ledgerModal.recordedDueDate')
+                                : t('tenants.ledgerModal.estimatedFromLease')}
                           </p>
                         </div>
 
@@ -363,11 +365,11 @@ export default function TenantLedgerModal({
                           <p className={`text-sm font-semibold ${balanceTone(row.runningBalance)}`}>
                             {formatCurrency(Math.abs(row.runningBalance))}
                           </p>
-                          <p className="text-[11px] text-textMuted mt-0.5">{balanceLabel(row.runningBalance)}</p>
+                          <p className="text-[11px] text-textMuted mt-0.5">{balanceLabel(row.runningBalance, t)}</p>
                         </div>
 
                         <div className="flex justify-end">
-                          <Badge variant={status.variant}>{status.label}</Badge>
+                          <Badge variant={status.variant}>{t(status.labelKey)}</Badge>
                         </div>
                       </div>
                     )
@@ -379,16 +381,11 @@ export default function TenantLedgerModal({
 
           <div className="flex items-start justify-between gap-4 rounded-xl border border-border bg-surfaceHigh/20 px-4 py-3">
             <div className="text-xs text-textMuted leading-5">
-              <p>
-                Le compte est reconstruit a partir du bail actif et des paiements saisis dans l'application.
-                Les montants ne sont comptabilises comme encaisses que lorsque la ligne est au statut <span className="text-textPrimary font-medium">paid</span>.
-              </p>
-              <p className="mt-1">
-                Les periodes sans ligne de paiement sont marquees <span className="text-textPrimary font-medium">A regulariser</span>.
-              </p>
+              <p>{t('tenants.ledgerModal.helpIntro')}</p>
+              <p className="mt-1">{t('tenants.ledgerModal.helpOutro')}</p>
             </div>
             <Button variant="secondary" onClick={onClose} className="shrink-0">
-              Fermer
+              {t('common.close')}
             </Button>
           </div>
         </div>

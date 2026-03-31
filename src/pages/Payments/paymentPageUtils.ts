@@ -1,39 +1,71 @@
+import i18n from '@/i18n'
 import { AlertCircle, CheckCircle2, Clock } from 'lucide-react'
 
-export const MONTHS = [
-  'Janvier',
-  'Fevrier',
-  'Mars',
-  'Avril',
-  'Mai',
-  'Juin',
-  'Juillet',
-  'Aout',
-  'Septembre',
-  'Octobre',
-  'Novembre',
-  'Decembre',
-]
+export const MONTHS = Array.from({ length: 12 }, (_, i) => `payments.month.${i + 1}`)
+
+function translatedLabel(labelKey: string) {
+  return i18n.t(labelKey) as string
+}
 
 export const METHODS = [
-  { value: 'virement', label: 'Virement bancaire' },
-  { value: 'cheque', label: 'Cheque' },
-  { value: 'especes', label: 'Especes' },
-  { value: 'prelevement', label: 'Prelevement automatique' },
+  {
+    value: 'virement',
+    labelKey: 'payments.method.virement',
+    get label() { return translatedLabel('payments.method.virement') },
+  },
+  {
+    value: 'cheque',
+    labelKey: 'payments.method.cheque',
+    get label() { return translatedLabel('payments.method.cheque') },
+  },
+  {
+    value: 'especes',
+    labelKey: 'payments.method.especes',
+    get label() { return translatedLabel('payments.method.especes') },
+  },
+  {
+    value: 'prelevement',
+    labelKey: 'payments.method.prelevement',
+    get label() { return translatedLabel('payments.method.prelevement') },
+  },
 ]
 
 export const STATUS_CONFIG = {
-  paid: { label: 'Paye', variant: 'success', icon: CheckCircle2 },
-  pending: { label: 'En attente', variant: 'warning', icon: Clock },
-  late: { label: 'En retard', variant: 'danger', icon: AlertCircle },
+  paid: {
+    labelKey: 'payments.status.paid',
+    get label() { return translatedLabel('payments.status.paid') },
+    variant: 'success',
+    icon: CheckCircle2,
+  },
+  pending: {
+    labelKey: 'payments.status.pending',
+    get label() { return translatedLabel('payments.status.pending') },
+    variant: 'warning',
+    icon: Clock,
+  },
+  late: {
+    labelKey: 'payments.status.late',
+    get label() { return translatedLabel('payments.status.late') },
+    variant: 'danger',
+    icon: AlertCircle,
+  },
 } as const
 
-export function monthLabel(month: number, year: number) {
-  return `${MONTHS[month - 1]} ${year}`
+export function monthLabelKey(month: number) {
+  return `payments.month.${month}`
+}
+
+export function monthLabel(month: number, year?: number) {
+  const monthText = translatedLabel(monthLabelKey(month))
+  return year ? `${monthText} ${year}` : monthText
+}
+
+export function methodLabelKey(method: string) {
+  return METHODS.find((entry) => entry.value === method)?.labelKey ?? method
 }
 
 export function methodLabel(method: string) {
-  return METHODS.find((entry) => entry.value === method)?.label ?? method
+  return translatedLabel(methodLabelKey(method))
 }
 
 export function today() {

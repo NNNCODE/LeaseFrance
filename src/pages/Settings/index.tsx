@@ -1,24 +1,29 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   UserCircle2, Lock, Trash2, Eye, EyeOff, AlertTriangle, CheckCircle2,
   ChevronRight, Copy, Download, KeyRound, Upload, FolderOpen, HardDrive, RefreshCw,
-  Clock, ShieldCheck, Search, Timer, Settings2, ChevronDown,
+  Clock, ShieldCheck, Timer, ChevronDown, Globe,
 } from 'lucide-react'
+import { formatDateTime } from '@/lib/utils'
 import { useAuthStore } from '@/stores/useAuthStore'
+import { useLanguageStore } from '@/stores/useLanguageStore'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 
 export default function Settings() {
+  const { t } = useTranslation()
   return (
     <div className="flex flex-col gap-6 max-w-2xl">
       <div>
-        <h1 className="text-2xl font-semibold text-textPrimary">Paramètres</h1>
-        <p className="text-textMuted text-sm mt-1">Gérez votre compte et vos préférences</p>
+        <h1 className="text-2xl font-semibold text-textPrimary">{t('settings.title')}</h1>
+        <p className="text-textMuted text-sm mt-1">{t('settings.subtitle')}</p>
       </div>
       <ProfileLink />
+      <LanguageSection />
       <BackupSection />
       <PasswordSection />
       <RecoveryKeySection />
@@ -30,6 +35,7 @@ export default function Settings() {
 // ── Link to Profile page ──────────────────────────────────────────────────────
 
 function ProfileLink() {
+  const { t } = useTranslation()
   const { profile } = useAuthStore()
   const navigate = useNavigate()
 
@@ -46,13 +52,55 @@ function ProfileLink() {
             </div>
             <div>
               <p className="text-sm font-medium text-textPrimary">
-                {profile?.name || 'Propriétaire'}
+                {profile?.name || t('settings.owner')}
               </p>
-              <p className="text-xs text-textMuted">{profile?.email || 'Voir le profil'}</p>
+              <p className="text-xs text-textMuted">{profile?.email || t('settings.viewProfile')}</p>
             </div>
           </div>
           <ChevronRight className="w-4 h-4 text-textMuted" />
         </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+const LANGUAGE_OPTIONS = [
+  { value: 'fr', labelKey: 'settings.languageFr' },
+  { value: 'en', labelKey: 'settings.languageEn' },
+  { value: 'zh', labelKey: 'settings.languageZh' },
+] as const
+
+function LanguageSection() {
+  const { t } = useTranslation()
+  const { language, setLanguage } = useLanguageStore()
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <Globe className="w-4 h-4 text-primary" />
+          <CardTitle>{t('settings.language')}</CardTitle>
+        </div>
+        <CardDescription>{t('settings.languageDesc')}</CardDescription>
+      </CardHeader>
+      <CardContent className="grid grid-cols-3 gap-3">
+        {LANGUAGE_OPTIONS.map((option) => {
+          const active = language === option.value
+          return (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => setLanguage(option.value)}
+              className={`rounded-xl border px-4 py-3 text-left transition-colors ${
+                active
+                  ? 'border-primary bg-primary/10 text-primary'
+                  : 'border-border bg-surfaceHigh/30 text-textMuted hover:border-primary/30 hover:text-textPrimary'
+              }`}
+            >
+              <p className="text-sm font-medium">{t(option.labelKey)}</p>
+            </button>
+          )
+        })}
       </CardContent>
     </Card>
   )
@@ -63,43 +111,35 @@ function ProfileLink() {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} o`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} Ko`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-function formatDateTimeFr(iso: string): string {
-  try {
-    const d = new Date(iso)
-    return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
-      + ' a '
-      + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-  } catch { return iso }
-}
-
-function relativeNextBackup(settings: BackupSettings): string {
-  if (!settings.lastBackupAt) return 'Prochainement'
+function relativeNextBackup(settings: BackupSettings, t: (key: string, opts?: Record<string, unknown>) => string): string {
+  if (!settings.lastBackupAt) return t('settings.backup.nextSoon')
   const next = new Date(settings.lastBackupAt).getTime() + settings.intervalHours * 3_600_000
   const diff = next - Date.now()
-  if (diff <= 0) return 'En attente...'
+  if (diff <= 0) return t('settings.backup.nextWaiting')
   const h = Math.floor(diff / 3_600_000)
   const m = Math.floor((diff % 3_600_000) / 60_000)
-  if (h > 0) return `dans ${h}h ${m}min`
-  return `dans ${m} min`
+  if (h > 0) return t('settings.backup.nextInHours', { h, m })
+  return t('settings.backup.nextInMinutes', { m })
 }
 
 const INTERVAL_OPTIONS = [
-  { value: 6, label: 'Toutes les 6 heures' },
-  { value: 12, label: 'Toutes les 12 heures' },
-  { value: 24, label: 'Toutes les 24 heures' },
-  { value: 48, label: 'Toutes les 48 heures' },
-  { value: 168, label: 'Toutes les semaines' },
+  { value: 6, labelKey: 'settings.backup.interval6' },
+  { value: 12, labelKey: 'settings.backup.interval12' },
+  { value: 24, labelKey: 'settings.backup.interval24' },
+  { value: 48, labelKey: 'settings.backup.interval48' },
+  { value: 168, labelKey: 'settings.backup.interval168' },
 ]
 const MAX_BACKUPS_OPTIONS = [3, 5, 10, 20]
 
 // ── Backup section ───────────────────────────────────────────────────────────
 
 function BackupSection() {
+  const { t } = useTranslation()
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'restoring' | 'error'>('idle')
   const [message, setMessage] = useState('')
   const [settings, setSettings] = useState<BackupSettings | null>(null)
@@ -134,7 +174,7 @@ function BackupSection() {
       const result = await window.api.backup.create()
       if (result.saved) {
         setStatus('saved')
-        setMessage(`Sauvegarde enregistree : ${result.path}`)
+        setMessage(t('settings.backup.saved', { path: result.path }))
         // Refresh settings to pick up lastBackupAt
         window.api.backup.getSettings().then(setSettings).catch(() => {})
         setTimeout(() => setStatus('idle'), 4000)
@@ -222,10 +262,10 @@ function BackupSection() {
       <CardHeader>
         <div className="flex items-center gap-2">
           <HardDrive className="w-4 h-4 text-primary" />
-          <CardTitle>Sauvegarde et restauration</CardTitle>
+          <CardTitle>{t('settings.backup.title')}</CardTitle>
         </div>
         <CardDescription>
-          Protegez vos donnees en creant des sauvegardes regulieres
+          {t('settings.backup.desc')}
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
@@ -234,14 +274,14 @@ function BackupSection() {
         <div className="p-4 bg-primary/5 border border-primary/15 rounded-xl">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
-              <p className="text-sm font-medium text-textPrimary">Sauvegarder</p>
+              <p className="text-sm font-medium text-textPrimary">{t('settings.backup.save')}</p>
               <p className="text-xs text-textMuted mt-1">
-                Exporte la base de donnees et le profil dans une archive unique.
+                {t('settings.backup.saveDesc')}
               </p>
             </div>
             <Button size="sm" onClick={handleBackup} disabled={busy} className="shrink-0">
               <Download className="w-3.5 h-3.5" />
-              {status === 'saving' ? 'Sauvegarde...' : 'Sauvegarder'}
+              {status === 'saving' ? t('settings.backup.saving') : t('settings.backup.save')}
             </Button>
           </div>
           {/* Last backup info */}
@@ -249,7 +289,7 @@ function BackupSection() {
             <div className="mt-3 flex items-center gap-2 text-xs text-textMuted">
               <Clock className="w-3 h-3 shrink-0" />
               <span>
-                Derniere sauvegarde : {formatDateTimeFr(settings.lastBackupAt)}
+                {t('settings.backup.lastBackup', { date: formatDateTime(settings.lastBackupAt) })}
                 {settings.lastBackupSizeBytes != null && (
                   <span className="ml-1 text-textMuted/70">({formatBytes(settings.lastBackupSizeBytes)})</span>
                 )}
@@ -263,7 +303,7 @@ function BackupSection() {
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-2">
               <Timer className="w-4 h-4 text-primary" />
-              <p className="text-sm font-medium text-textPrimary">Sauvegarde automatique</p>
+              <p className="text-sm font-medium text-textPrimary">{t('settings.backup.autoBackup')}</p>
             </div>
             <button
               onClick={handleToggleAuto}
@@ -290,7 +330,7 @@ function BackupSection() {
                 <div className="mt-3 flex flex-col gap-2.5">
                   {/* Interval */}
                   <div className="flex items-center justify-between gap-3">
-                    <span className="text-xs text-textMuted">Frequence</span>
+                    <span className="text-xs text-textMuted">{t('settings.backup.frequency')}</span>
                     <div className="relative">
                       <select
                         value={settings.intervalHours}
@@ -298,7 +338,7 @@ function BackupSection() {
                         className="appearance-none text-xs bg-surface border border-border rounded-lg px-3 py-1.5 pr-7 text-textPrimary cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary/40"
                       >
                         {INTERVAL_OPTIONS.map((o) => (
-                          <option key={o.value} value={o.value}>{o.label}</option>
+                          <option key={o.value} value={o.value}>{t(o.labelKey)}</option>
                         ))}
                       </select>
                       <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-textMuted pointer-events-none" />
@@ -307,21 +347,21 @@ function BackupSection() {
 
                   {/* Destination */}
                   <div className="flex items-center justify-between gap-3">
-                    <span className="text-xs text-textMuted">Destination</span>
+                    <span className="text-xs text-textMuted">{t('settings.backup.destination')}</span>
                     <button
                       onClick={handlePickFolder}
                       className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors max-w-[280px]"
                     >
                       <FolderOpen className="w-3 h-3 shrink-0" />
                       <span className="truncate">
-                        {settings.destinationFolder || 'Choisir un dossier...'}
+                        {settings.destinationFolder || t('settings.backup.pickFolder')}
                       </span>
                     </button>
                   </div>
 
                   {/* Max backups */}
                   <div className="flex items-center justify-between gap-3">
-                    <span className="text-xs text-textMuted">Conservation</span>
+                    <span className="text-xs text-textMuted">{t('settings.backup.retention')}</span>
                     <div className="relative">
                       <select
                         value={settings.maxBackups}
@@ -329,7 +369,7 @@ function BackupSection() {
                         className="appearance-none text-xs bg-surface border border-border rounded-lg px-3 py-1.5 pr-7 text-textPrimary cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary/40"
                       >
                         {MAX_BACKUPS_OPTIONS.map((n) => (
-                          <option key={n} value={n}>{n} dernieres sauvegardes</option>
+                          <option key={n} value={n}>{t('settings.backup.retentionCount', { count: n })}</option>
                         ))}
                       </select>
                       <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-textMuted pointer-events-none" />
@@ -340,7 +380,7 @@ function BackupSection() {
                   {settings.destinationFolder && (
                     <div className="flex items-center gap-2 text-xs text-textMuted pt-1 border-t border-border/50">
                       <Clock className="w-3 h-3" />
-                      <span>Prochaine sauvegarde : {relativeNextBackup(settings)}</span>
+                      <span>{t('settings.backup.nextBackup', { time: relativeNextBackup(settings, t) })}</span>
                     </div>
                   )}
                 </div>
@@ -353,9 +393,9 @@ function BackupSection() {
         <div className="p-4 bg-warning/5 border border-warning/15 rounded-xl">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-sm font-medium text-textPrimary">Restaurer</p>
+              <p className="text-sm font-medium text-textPrimary">{t('settings.backup.restore')}</p>
               <p className="text-xs text-textMuted mt-1">
-                Un apercu sera affiche avant la restauration.
+                {t('settings.backup.restoreDesc')}
               </p>
             </div>
             <Button
@@ -366,7 +406,7 @@ function BackupSection() {
               className="shrink-0"
             >
               <Upload className="w-3.5 h-3.5" />
-              {previewing ? 'Chargement...' : 'Restaurer'}
+              {previewing ? t('common.loading') : t('settings.backup.restore')}
             </Button>
           </div>
 
@@ -383,12 +423,12 @@ function BackupSection() {
                   {/* File info */}
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-textMuted">
                     {preview.createdAt && (
-                      <span>Creee le {formatDateTimeFr(preview.createdAt)}</span>
+                      <span>{t('settings.backup.createdAt', { date: formatDateTime(preview.createdAt) })}</span>
                     )}
                     <span>{formatBytes(preview.fileSize)}</span>
                     <span className={`flex items-center gap-1 ${preview.valid ? 'text-success' : 'text-danger'}`}>
                       <ShieldCheck className="w-3 h-3" />
-                      {preview.valid ? 'Integre' : 'Erreur'}
+                      {preview.valid ? t('settings.backup.valid') : t('settings.backup.invalid')}
                     </span>
                   </div>
 
@@ -426,7 +466,7 @@ function BackupSection() {
                     <div className="flex items-center gap-2 pt-1 border-t border-border/50">
                       <div className="flex items-center gap-1.5 text-xs text-warning flex-1">
                         <AlertTriangle className="w-3 h-3 shrink-0" />
-                        <span>Cela remplacera toutes les donnees. L'application redemarrera.</span>
+                        <span>{t('settings.backup.restoreWarning')}</span>
                       </div>
                     </div>
                   )}
@@ -436,7 +476,7 @@ function BackupSection() {
                       size="sm"
                       onClick={() => setPreview(null)}
                     >
-                      Annuler
+                      {t('common.cancel')}
                     </Button>
                     {preview.valid && (
                       <Button
@@ -446,7 +486,7 @@ function BackupSection() {
                         disabled={status === 'restoring'}
                       >
                         <Upload className="w-3.5 h-3.5" />
-                        {status === 'restoring' ? 'Restauration...' : 'Confirmer la restauration'}
+                        {status === 'restoring' ? t('settings.backup.restoring') : t('settings.backup.confirmRestore')}
                       </Button>
                     )}
                   </div>
@@ -460,9 +500,9 @@ function BackupSection() {
         <div className="p-4 bg-surfaceHigh/30 border border-border rounded-xl">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-sm font-medium text-textPrimary">Verifier une sauvegarde</p>
+              <p className="text-sm font-medium text-textPrimary">{t('settings.backup.verify')}</p>
               <p className="text-xs text-textMuted mt-1">
-                Controle l'integrite d'un fichier sans le restaurer.
+                {t('settings.backup.verifyDesc')}
               </p>
             </div>
             <Button
@@ -473,7 +513,7 @@ function BackupSection() {
               className="shrink-0"
             >
               <ShieldCheck className="w-3.5 h-3.5" />
-              {verifying ? 'Verification...' : 'Verifier'}
+              {verifying ? t('settings.backup.verifying') : t('settings.backup.verifyBtn')}
             </Button>
           </div>
 
@@ -495,12 +535,12 @@ function BackupSection() {
                       ? <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
                       : <AlertTriangle className="w-3.5 h-3.5 shrink-0" />}
                     <span className="font-medium">
-                      {verifyResult.valid ? 'Sauvegarde valide' : 'Sauvegarde corrompue ou invalide'}
+                      {verifyResult.valid ? t('settings.backup.backupValid') : t('settings.backup.backupCorrupt')}
                     </span>
                   </div>
                   <div className="text-textMuted flex flex-wrap gap-x-3 gap-y-0.5 pl-5">
                     {verifyResult.createdAt && (
-                      <span>Creee le {formatDateTimeFr(verifyResult.createdAt)}</span>
+                      <span>{t('settings.backup.createdAt', { date: formatDateTime(verifyResult.createdAt) })}</span>
                     )}
                     <span>{formatBytes(verifyResult.fileSize)}</span>
                   </div>
@@ -518,14 +558,14 @@ function BackupSection() {
         {/* ── Open data folder ─────────────────────────────────────────── */}
         <div className="flex items-start justify-between gap-4 p-4 bg-surfaceHigh/30 border border-border rounded-xl">
           <div>
-            <p className="text-sm font-medium text-textPrimary">Dossier de donnees</p>
+            <p className="text-sm font-medium text-textPrimary">{t('settings.backup.dataFolder')}</p>
             <p className="text-xs text-textMuted mt-1">
-              Ouvrir le repertoire contenant la base de donnees et le profil.
+              {t('settings.backup.dataFolderDesc')}
             </p>
           </div>
           <Button variant="ghost" size="sm" onClick={handleOpenFolder} className="shrink-0">
             <FolderOpen className="w-3.5 h-3.5" />
-            Ouvrir
+            {t('common.open')}
           </Button>
         </div>
 
@@ -565,7 +605,7 @@ function BackupSection() {
             >
               <div className="flex items-center gap-2 p-3 bg-warning/10 border border-warning/20 rounded-lg text-xs text-warning">
                 <RefreshCw className="w-3.5 h-3.5 shrink-0 animate-spin" />
-                <p>Restauration en cours, l'application va redemarrer...</p>
+                <p>{t('settings.backup.restoring')}</p>
               </div>
             </motion.div>
           )}
@@ -578,29 +618,34 @@ function BackupSection() {
 // ── Mot de passe ──────────────────────────────────────────────────────────────
 
 function PasswordSection() {
+  const { t } = useTranslation()
   const { changePassword } = useAuthStore()
-  const [oldPwd, setOldPwd]   = useState('')
-  const [newPwd, setNewPwd]   = useState('')
+  const [oldPwd, setOldPwd] = useState('')
+  const [newPwd, setNewPwd] = useState('')
   const [confirm, setConfirm] = useState('')
-  const [show, setShow]       = useState(false)
-  const [error, setError]     = useState('')
-  const [status, setStatus]   = useState<'idle' | 'saved' | 'error'>('idle')
+  const [show, setShow] = useState(false)
+  const [error, setError] = useState('')
+  const [status, setStatus] = useState<'idle' | 'saved' | 'error'>('idle')
   const [loading, setLoading] = useState(false)
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault()
     setError('')
-    if (newPwd.length < 8)    return setError('Minimum 8 caractères.')
-    if (newPwd !== confirm)   return setError('Les mots de passe ne correspondent pas.')
+    if (newPwd.length < 8) return setError(t('settings.password.min8'))
+    if (newPwd !== confirm) return setError(t('settings.password.mismatch'))
+
     setLoading(true)
     const ok = await changePassword(oldPwd, newPwd)
     setLoading(false)
+
     if (ok) {
-      setOldPwd(''); setNewPwd(''); setConfirm('')
+      setOldPwd('')
+      setNewPwd('')
+      setConfirm('')
       setStatus('saved')
       setTimeout(() => setStatus('idle'), 2500)
     } else {
-      setError('Mot de passe actuel incorrect.')
+      setError(t('settings.password.incorrect'))
     }
   }
 
@@ -609,23 +654,42 @@ function PasswordSection() {
       <CardHeader>
         <div className="flex items-center gap-2">
           <Lock className="w-4 h-4 text-primary" />
-          <CardTitle>Changer le mot de passe</CardTitle>
+          <CardTitle>{t('settings.password.title')}</CardTitle>
         </div>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-textMuted">Mot de passe actuel</label>
-            <PasswordInput value={oldPwd} onChange={setOldPwd} show={show} onToggle={() => setShow(!show)} placeholder="••••••••" />
+            <label className="text-xs font-medium text-textMuted">{t('settings.password.current')}</label>
+            <PasswordInput
+              value={oldPwd}
+              onChange={setOldPwd}
+              show={show}
+              onToggle={() => setShow(!show)}
+              placeholder={t('settings.password.currentPlaceholder')}
+            />
           </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-textMuted">Nouveau mot de passe</label>
-              <PasswordInput value={newPwd} onChange={setNewPwd} show={show} onToggle={() => setShow(!show)} placeholder="Minimum 8 caractères" />
+              <label className="text-xs font-medium text-textMuted">{t('settings.password.new')}</label>
+              <PasswordInput
+                value={newPwd}
+                onChange={setNewPwd}
+                show={show}
+                onToggle={() => setShow(!show)}
+                placeholder={t('settings.password.newPlaceholder')}
+              />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-textMuted">Confirmer</label>
-              <PasswordInput value={confirm} onChange={setConfirm} show={show} onToggle={() => setShow(!show)} placeholder="Répétez" />
+              <label className="text-xs font-medium text-textMuted">{t('settings.password.confirm')}</label>
+              <PasswordInput
+                value={confirm}
+                onChange={setConfirm}
+                show={show}
+                onToggle={() => setShow(!show)}
+                placeholder={t('settings.password.confirmPlaceholder')}
+              />
             </div>
           </div>
 
@@ -636,7 +700,7 @@ function PasswordSection() {
           <div className="flex items-center gap-3">
             <Button type="submit" size="sm" disabled={loading}>
               <Lock className="w-3.5 h-3.5" />
-              {loading ? 'Modification...' : 'Modifier'}
+              {loading ? t('settings.password.submitting') : t('settings.password.submit')}
             </Button>
             <AnimatePresence>
               {status === 'saved' && (
@@ -646,7 +710,7 @@ function PasswordSection() {
                   exit={{ opacity: 0 }}
                   className="flex items-center gap-1.5 text-xs text-success"
                 >
-                  <CheckCircle2 className="w-3.5 h-3.5" /> Mot de passe mis à jour
+                  <CheckCircle2 className="w-3.5 h-3.5" /> {t('settings.password.success')}
                 </motion.span>
               )}
             </AnimatePresence>
@@ -657,9 +721,8 @@ function PasswordSection() {
   )
 }
 
-// ── Cle de recuperation ───────────────────────────────────────────────────────
-
 function RecoveryKeySection() {
+  const { t } = useTranslation()
   const [pwd, setPwd] = useState('')
   const [show, setShow] = useState(false)
   const [error, setError] = useState('')
@@ -668,18 +731,20 @@ function RecoveryKeySection() {
   const [copied, setCopied] = useState(false)
   const [confirmed, setConfirmed] = useState(false)
 
-  async function handleRegenerate(e: React.FormEvent) {
-    e.preventDefault()
+  async function handleRegenerate(event: React.FormEvent) {
+    event.preventDefault()
     setError('')
-    if (!pwd) return setError('Entrez votre mot de passe pour confirmer.')
+    if (!pwd) return setError(t('settings.recoveryKey.passwordRequired'))
+
     setLoading(true)
     const key = await window.api.auth.regenerateRecoveryKey(pwd)
     setLoading(false)
+
     if (key) {
       setRecoveryKey(key)
       setPwd('')
     } else {
-      setError('Mot de passe incorrect.')
+      setError(t('settings.recoveryKey.incorrect'))
     }
   }
 
@@ -700,11 +765,9 @@ function RecoveryKeySection() {
       <CardHeader>
         <div className="flex items-center gap-2">
           <KeyRound className="w-4 h-4 text-primary" />
-          <CardTitle>Cle de recuperation</CardTitle>
+          <CardTitle>{t('settings.recoveryKey.title')}</CardTitle>
         </div>
-        <CardDescription>
-          Regenerez votre cle pour reinitialiser le mot de passe en cas d'oubli
-        </CardDescription>
+        <CardDescription>{t('settings.recoveryKey.desc')}</CardDescription>
       </CardHeader>
       <CardContent>
         {recoveryKey ? (
@@ -719,42 +782,48 @@ function RecoveryKeySection() {
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surfaceHigh border border-border text-xs font-medium text-textMuted hover:text-textPrimary transition-colors shrink-0"
                 >
                   {copied ? <CheckCircle2 className="w-3.5 h-3.5 text-success" /> : <Copy className="w-3.5 h-3.5" />}
-                  {copied ? 'Copie !' : 'Copier'}
+                  {copied ? t('common.copied') : t('common.copy')}
                 </button>
               </div>
             </div>
 
             <div className="rounded-xl bg-surfaceHigh/40 border border-border p-3 text-xs text-textMuted leading-5">
-              <p>L'ancienne cle n'est plus valide. Notez cette nouvelle cle dans un endroit sur.</p>
-              <p className="mt-1">Elle ne sera plus affichee apres fermeture.</p>
+              <p>{t('settings.recoveryKey.oldInvalid')}</p>
+              <p className="mt-1">{t('settings.recoveryKey.notShownAgain')}</p>
             </div>
 
             <label className="flex items-start gap-2 cursor-pointer">
               <input
                 type="checkbox"
                 checked={confirmed}
-                onChange={(e) => setConfirmed(e.target.checked)}
+                onChange={(event) => setConfirmed(event.target.checked)}
                 className="mt-0.5 rounded border-border"
               />
-              <span className="text-xs text-textMuted">J'ai note ma nouvelle cle de recuperation en lieu sur.</span>
+              <span className="text-xs text-textMuted">{t('settings.recoveryKey.confirmSaved')}</span>
             </label>
 
             <div className="flex justify-end">
               <Button size="sm" disabled={!confirmed} onClick={handleDone}>
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                Fermer
+                {t('common.close')}
               </Button>
             </div>
           </div>
         ) : (
           <form onSubmit={handleRegenerate} className="flex flex-col gap-4">
             <div className="rounded-xl bg-surfaceHigh/40 border border-border p-3 text-xs text-textMuted leading-5">
-              <p>La regeneration invalide l'ancienne cle. Seule la derniere cle generee permet de reinitialiser votre mot de passe.</p>
+              <p>{t('settings.recoveryKey.regenWarning')}</p>
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-textMuted">Mot de passe actuel</label>
-              <PasswordInput value={pwd} onChange={setPwd} show={show} onToggle={() => setShow(!show)} placeholder="Confirmez votre mot de passe" />
+              <label className="text-xs font-medium text-textMuted">{t('settings.recoveryKey.confirmPassword')}</label>
+              <PasswordInput
+                value={pwd}
+                onChange={setPwd}
+                show={show}
+                onToggle={() => setShow(!show)}
+                placeholder={t('settings.recoveryKey.confirmPassword')}
+              />
             </div>
 
             {error && (
@@ -764,7 +833,7 @@ function RecoveryKeySection() {
             <div className="flex items-center gap-3">
               <Button type="submit" size="sm" disabled={loading}>
                 <KeyRound className="w-3.5 h-3.5" />
-                {loading ? 'Generation...' : 'Regenerer la cle'}
+                {loading ? t('settings.recoveryKey.regenerating') : t('settings.recoveryKey.regenerate')}
               </Button>
             </div>
           </form>
@@ -774,25 +843,25 @@ function RecoveryKeySection() {
   )
 }
 
-// ── Zone de danger : suppression de compte ────────────────────────────────────
-
 function DangerZone() {
+  const { t } = useTranslation()
   const { deleteAccount } = useAuthStore()
-  const [open, setOpen]     = useState(false)
-  const [pwd, setPwd]       = useState('')
-  const [show, setShow]     = useState(false)
-  const [error, setError]   = useState('')
+  const [open, setOpen] = useState(false)
+  const [pwd, setPwd] = useState('')
+  const [show, setShow] = useState(false)
+  const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  async function handleDelete(e: React.FormEvent) {
-    e.preventDefault()
+  async function handleDelete(event: React.FormEvent) {
+    event.preventDefault()
     setError('')
-    if (!pwd) return setError('Entrez votre mot de passe pour confirmer.')
+    if (!pwd) return setError(t('settings.danger.passwordRequired'))
+
     setLoading(true)
     const ok = await deleteAccount(pwd)
     setLoading(false)
-    if (!ok) setError('Mot de passe incorrect.')
-    // Si ok → le store passe en status 'setup', App.tsx affiche Setup automatiquement
+
+    if (!ok) setError(t('settings.danger.incorrect'))
   }
 
   return (
@@ -800,26 +869,22 @@ function DangerZone() {
       <CardHeader>
         <div className="flex items-center gap-2">
           <Trash2 className="w-4 h-4 text-danger" />
-          <CardTitle className="text-danger">Zone de danger</CardTitle>
+          <CardTitle className="text-danger">{t('settings.danger.title')}</CardTitle>
         </div>
-        <CardDescription>Actions irréversibles — procédez avec prudence</CardDescription>
+        <CardDescription>{t('settings.danger.desc')}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <div className="flex items-start justify-between gap-4 p-4 bg-danger/5 border border-danger/20 rounded-xl">
           <div>
-            <p className="text-sm font-medium text-textPrimary">Supprimer le compte</p>
-            <p className="text-xs text-textMuted mt-1">
-              Supprime votre compte et réinitialise l'application.
-              Vos données locatives ne seront pas effacées.
-            </p>
+            <p className="text-sm font-medium text-textPrimary">{t('settings.danger.deleteAccount')}</p>
+            <p className="text-xs text-textMuted mt-1">{t('settings.danger.deleteAccountDesc')}</p>
           </div>
           <Button variant="danger" size="sm" onClick={() => setOpen(true)} className="shrink-0">
             <Trash2 className="w-3.5 h-3.5" />
-            Supprimer
+            {t('common.delete')}
           </Button>
         </div>
 
-        {/* Confirmation dialog inline */}
         <AnimatePresence>
           {open && (
             <motion.div
@@ -834,19 +899,20 @@ function DangerZone() {
               >
                 <div className="flex items-center gap-2 text-danger">
                   <AlertTriangle className="w-4 h-4 shrink-0" />
-                  <p className="text-sm font-medium">Confirmez la suppression</p>
+                  <p className="text-sm font-medium">{t('settings.danger.confirmDelete')}</p>
                 </div>
-                <p className="text-xs text-textMuted">
-                  Cette action est <strong className="text-textPrimary">irréversible</strong>.
-                  Entrez votre mot de passe pour confirmer.
-                </p>
+
+                <p
+                  className="text-xs text-textMuted"
+                  dangerouslySetInnerHTML={{ __html: t('settings.danger.irreversible') }}
+                />
 
                 <PasswordInput
                   value={pwd}
                   onChange={setPwd}
                   show={show}
                   onToggle={() => setShow(!show)}
-                  placeholder="Votre mot de passe"
+                  placeholder={t('settings.danger.passwordPlaceholder')}
                 />
 
                 {error && (
@@ -860,11 +926,11 @@ function DangerZone() {
                     size="sm"
                     onClick={() => { setOpen(false); setPwd(''); setError('') }}
                   >
-                    Annuler
+                    {t('common.cancel')}
                   </Button>
                   <Button type="submit" variant="danger" size="sm" disabled={loading}>
                     <Trash2 className="w-3.5 h-3.5" />
-                    {loading ? 'Suppression...' : 'Supprimer définitivement'}
+                    {loading ? t('common.deleting') : t('settings.danger.deleteForever')}
                   </Button>
                 </div>
               </form>
@@ -875,8 +941,6 @@ function DangerZone() {
     </Card>
   )
 }
-
-// ── Shared ─────────────────────────────────────────────────────────────────────
 
 function PasswordInput({
   value, onChange, show, onToggle, placeholder,

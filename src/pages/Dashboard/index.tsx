@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
 import {
   TrendingUp, Users, FileText, AlertTriangle,
@@ -19,9 +20,6 @@ import {
 } from 'recharts'
 
 // ── Types locaux ───────────────────────────────────────────────────────────────
-
-
-const MONTHS_SHORT = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc']
 
 // ── Onboarding ────────────────────────────────────────────────────────────────
 
@@ -56,14 +54,15 @@ const EMPTY_SNAPSHOT: DashboardSnapshot = {
 }
 
 const STEPS = [
-  { key: 'properties', icon: Building2, label: 'Ajouter un bien',      description: 'Enregistrez votre premier logement.', route: '/properties', color: 'text-primary', bg: 'bg-primary/10', border: 'border-primary/20' },
-  { key: 'tenants',    icon: UserPlus,  label: 'Ajouter un locataire',  description: 'Créez le profil de votre locataire.', route: '/tenants',    color: 'text-success', bg: 'bg-success/10', border: 'border-success/20' },
-  { key: 'leases',     icon: ScrollText,label: 'Créer un bail',         description: 'Associez bien et locataire.',         route: '/leases',     color: 'text-warning', bg: 'bg-warning/10', border: 'border-warning/20' },
-  { key: 'payments',   icon: CreditCard,label: 'Enregistrer un loyer',  description: 'Saisissez votre premier paiement.',   route: '/payments',   color: 'text-accent',  bg: 'bg-accent/10',  border: 'border-accent/20'  },
+  { key: 'properties', icon: Building2, labelKey: 'dashboard.onboarding.addProperty', descKey: 'dashboard.onboarding.addPropertyDesc', route: '/properties', color: 'text-primary', bg: 'bg-primary/10', border: 'border-primary/20' },
+  { key: 'tenants',    icon: UserPlus,  labelKey: 'dashboard.onboarding.addTenant',   descKey: 'dashboard.onboarding.addTenantDesc',  route: '/tenants',    color: 'text-success', bg: 'bg-success/10', border: 'border-success/20' },
+  { key: 'leases',     icon: ScrollText,labelKey: 'dashboard.onboarding.createLease',  descKey: 'dashboard.onboarding.createLeaseDesc', route: '/leases',     color: 'text-warning', bg: 'bg-warning/10', border: 'border-warning/20' },
+  { key: 'payments',   icon: CreditCard,labelKey: 'dashboard.onboarding.recordPayment', descKey: 'dashboard.onboarding.recordPaymentDesc', route: '/payments',   color: 'text-accent',  bg: 'bg-accent/10',  border: 'border-accent/20'  },
 ]
 
 function OnboardingGuide({ counts }: { counts: Record<string, number> }) {
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const completedCount = STEPS.filter((s) => counts[s.key] > 0).length
   if (completedCount === STEPS.length) return null
 
@@ -73,10 +72,10 @@ function OnboardingGuide({ counts }: { counts: Record<string, number> }) {
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-primary" />
-            <CardTitle className="text-base">Démarrer avec RentFlow</CardTitle>
+            <CardTitle className="text-base">{t('dashboard.onboarding.title')}</CardTitle>
           </div>
           <CardDescription>
-            {completedCount} / {STEPS.length} étapes complétées
+            {t('dashboard.onboarding.stepsCompleted', { completed: completedCount, total: STEPS.length })}
           </CardDescription>
           <div className="flex gap-1 mt-2">
             {STEPS.map((s) => (
@@ -104,8 +103,8 @@ function OnboardingGuide({ counts }: { counts: Record<string, number> }) {
                   {done ? <CheckCircle2 className="w-4 h-4 text-success" /> : <Icon className={`w-4 h-4 ${step.color}`} />}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className={`text-xs font-semibold ${done ? 'text-success line-through' : 'text-textPrimary'}`}>{step.label}</p>
-                  <p className="text-xs text-textMuted truncate">{step.description}</p>
+                  <p className={`text-xs font-semibold ${done ? 'text-success line-through' : 'text-textPrimary'}`}>{t(step.labelKey)}</p>
+                  <p className="text-xs text-textMuted truncate">{t(step.descKey)}</p>
                 </div>
                 {!done && !locked && <ChevronRight className="w-3.5 h-3.5 text-textMuted shrink-0" />}
               </button>
@@ -120,9 +119,9 @@ function OnboardingGuide({ counts }: { counts: Record<string, number> }) {
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 const statusConfig = {
-  paid:    { label: 'Payé',       variant: 'success', icon: CheckCircle2 },
-  late:    { label: 'En retard',  variant: 'danger',  icon: XCircle      },
-  pending: { label: 'En attente', variant: 'warning', icon: Clock        },
+  paid:    { labelKey: 'dashboard.statusPaid',    variant: 'success', icon: CheckCircle2 },
+  late:    { labelKey: 'dashboard.statusLate',    variant: 'danger',  icon: XCircle      },
+  pending: { labelKey: 'dashboard.statusPending', variant: 'warning', icon: Clock        },
 } as const
 
 function EmptyState({ message }: { message: string }) {
@@ -141,6 +140,7 @@ const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transiti
 
 export default function Dashboard() {
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const [snapshot, setSnapshot] = useState<DashboardSnapshot>(EMPTY_SNAPSHOT)
   const [loading, setLoading] = useState(true)
 
@@ -197,21 +197,25 @@ export default function Dashboard() {
   // ── Onboarding counts ──
   const totalActions = snapshot.totalActions
 
-  const today = new Date().toLocaleDateString('fr-FR', {
+  const lang = localStorage.getItem('lf_language') || 'fr'
+  const localeMap: Record<string, string> = { fr: 'fr-FR', en: 'en-US', zh: 'zh-CN' }
+  const today = new Date().toLocaleDateString(localeMap[lang] || 'fr-FR', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   })
+
+  const monthsShort = t('dashboard.monthsShort', { returnObjects: true }) as string[]
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="flex flex-col gap-6">
       {/* Header */}
       <motion.div variants={item} className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-textPrimary">Tableau de bord</h1>
+          <h1 className="text-2xl font-semibold text-textPrimary">{t('dashboard.title')}</h1>
           <p className="text-textMuted text-sm mt-1 capitalize">{today}</p>
         </div>
         <Button onClick={() => navigate('/payments')}>
           <Plus className="w-4 h-4" />
-          Nouveau paiement
+          {t('dashboard.newPayment')}
         </Button>
       </motion.div>
 
@@ -225,33 +229,33 @@ export default function Dashboard() {
       {/* KPI Cards */}
       <motion.div variants={item} className="grid grid-cols-4 gap-4">
         <KpiCard
-          title="Revenus du mois"
+          title={t('dashboard.monthRevenue')}
           value={formatCurrency(monthRevenue)}
-          delta={monthPaymentsTotal > 0 ? `${monthPaymentsPaid}/${monthPaymentsTotal} payés` : 'Aucun paiement'}
+          delta={monthPaymentsTotal > 0 ? t('dashboard.paidOf', { paid: monthPaymentsPaid, total: monthPaymentsTotal }) : t('dashboard.noPayment')}
           icon={TrendingUp}
           color="primary"
           positive={monthRevenue > 0}
         />
         <KpiCard
-          title="Locataires actifs"
+          title={t('dashboard.activeTenants')}
           value={String(counts.tenants)}
-          delta={counts.tenants > 0 ? `${counts.leases} bail${counts.leases !== 1 ? 's' : ''} actif${counts.leases !== 1 ? 's' : ''}` : 'Aucun locataire'}
+          delta={counts.tenants > 0 ? t('dashboard.activeLeaseCount', { count: counts.leases }) : t('dashboard.noTenant')}
           icon={Users}
           color="success"
           positive={counts.tenants > 0}
         />
         <KpiCard
-          title="Baux en cours"
+          title={t('dashboard.activeLeases')}
           value={String(counts.leases)}
-          delta={counts.leases > 0 ? `${counts.properties} bien${counts.properties !== 1 ? 's' : ''}` : 'Aucun bail'}
+          delta={counts.leases > 0 ? t('dashboard.propertyCount', { count: counts.properties }) : t('dashboard.noLease')}
           icon={FileText}
           color="warning"
           positive={counts.leases > 0}
         />
         <KpiCard
-          title="Impayés"
+          title={t('dashboard.unpaid')}
           value={formatCurrency(lateAmount)}
-          delta={lateCount > 0 ? `${lateCount} loyer${lateCount > 1 ? 's' : ''} en retard` : 'Aucun impayé'}
+          delta={lateCount > 0 ? t('dashboard.lateRentCount', { count: lateCount }) : t('dashboard.noUnpaid')}
           icon={AlertTriangle}
           color="danger"
           positive={lateCount === 0}
@@ -263,12 +267,12 @@ export default function Dashboard() {
         <motion.div variants={item} className="col-span-2">
           <Card className="h-full">
             <CardHeader>
-              <CardTitle>Revenus locatifs</CardTitle>
-              <CardDescription>6 derniers mois — loyers encaissés</CardDescription>
+              <CardTitle>{t('dashboard.rentalIncome')}</CardTitle>
+              <CardDescription>{t('dashboard.rentalIncomeDesc')}</CardDescription>
             </CardHeader>
             <CardContent>
               {!hasChartData ? (
-                <EmptyState message="Aucune donnée de revenus disponible" />
+                <EmptyState message={t('dashboard.noRevenueData')} />
               ) : (
                 <ResponsiveContainer width="100%" height={200}>
                   <AreaChart data={revenueData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
@@ -283,7 +287,7 @@ export default function Dashboard() {
                     <YAxis tick={{ fill: '#64748B', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}€`} />
                     <Tooltip
                       contentStyle={{ background: '#1A1A24', border: '1px solid #2A2A3A', borderRadius: '8px', color: '#E2E8F0', fontSize: '12px' }}
-                      formatter={(v: number) => [`${v} €`, 'Revenus']}
+                      formatter={(v: number) => [`${v} €`, t('dashboard.revenue')]}
                     />
                     <Area type="monotone" dataKey="revenus" stroke="#6366F1" strokeWidth={2} fill="url(#colorRev)" />
                   </AreaChart>
@@ -298,8 +302,8 @@ export default function Dashboard() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Actions requises</CardTitle>
-                  <CardDescription>Vue d'ensemble</CardDescription>
+                  <CardTitle>{t('dashboard.actionsRequired')}</CardTitle>
+                  <CardDescription>{t('dashboard.overview')}</CardDescription>
                 </div>
                 {totalActions > 0 && (
                   <Badge variant="danger" className="text-xs">{totalActions}</Badge>
@@ -308,42 +312,42 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent className="flex flex-col gap-2">
               {totalActions === 0 ? (
-                <EmptyState message="Aucune action requise" />
+                <EmptyState message={t('dashboard.noActionRequired')} />
               ) : (
                 <>
                   {lateCount > 0 && (
                     <AlertRow icon={AlertTriangle} color="danger" onClick={() => navigate('/payments')}>
-                      {lateCount} impayé{lateCount > 1 ? 's' : ''} — {formatCurrency(lateAmount)}
+                      {t('dashboard.unpaidCount', { count: lateCount })} — {formatCurrency(lateAmount)}
                     </AlertRow>
                   )}
                   {expiringLeasesCount > 0 && (
                     <AlertRow icon={CalendarDays} color="warning" onClick={() => navigate('/leases')}>
-                      {expiringLeasesCount} bail{expiringLeasesCount > 1 ? 'x' : ''} à échéance
+                      {t('dashboard.leaseExpiring', { count: expiringLeasesCount })}
                     </AlertRow>
                   )}
                   {depositsToReturnCount > 0 && (
                     <AlertRow icon={Wallet} color="warning" onClick={() => navigate('/leases')}>
-                      {depositsToReturnCount} dépôt{depositsToReturnCount > 1 ? 's' : ''} à restituer
+                      {t('dashboard.depositToReturn', { count: depositsToReturnCount })}
                     </AlertRow>
                   )}
                   {depositsAwaitingCount > 0 && (
                     <AlertRow icon={Wallet} color="primary" onClick={() => navigate('/leases')}>
-                      {depositsAwaitingCount} dépôt{depositsAwaitingCount > 1 ? 's' : ''} à encaisser
+                      {t('dashboard.depositToCollect', { count: depositsAwaitingCount })}
                     </AlertRow>
                   )}
                   {incompleteDossiersCount > 0 && (
                     <AlertRow icon={FolderOpen} color="warning" onClick={() => navigate('/tenants')}>
-                      {incompleteDossiersCount} dossier{incompleteDossiersCount > 1 ? 's' : ''} incomplet{incompleteDossiersCount > 1 ? 's' : ''}
+                      {t('dashboard.incompleteDossier', { count: incompleteDossiersCount })}
                     </AlertRow>
                   )}
                   {pendingRemindersCount > 0 && (
                     <AlertRow icon={Bell} color="primary" onClick={() => navigate('/reminders')}>
-                      {pendingRemindersCount} rappel{pendingRemindersCount > 1 ? 's' : ''} en attente
+                      {t('dashboard.pendingReminder', { count: pendingRemindersCount })}
                     </AlertRow>
                   )}
                   {irlRevisionLeasesCount > 0 && (
                     <AlertRow icon={TrendingUp} color="primary" onClick={() => navigate('/leases')}>
-                      {irlRevisionLeasesCount} révision{irlRevisionLeasesCount > 1 ? 's' : ''} IRL éligible{irlRevisionLeasesCount > 1 ? 's' : ''}
+                      {t('dashboard.irlRevision', { count: irlRevisionLeasesCount })}
                     </AlertRow>
                   )}
                 </>
@@ -366,10 +370,10 @@ export default function Dashboard() {
                     <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-danger/10">
                       <AlertTriangle className="w-3.5 h-3.5 text-danger" />
                     </div>
-                    <CardTitle className="text-sm">Loyers impayés</CardTitle>
+                    <CardTitle className="text-sm">{t('dashboard.unpaidRent')}</CardTitle>
                   </div>
                   <Button variant="ghost" size="sm" onClick={() => navigate('/payments')} className="text-xs text-primary gap-1">
-                    Voir <ArrowUpRight className="w-3 h-3" />
+                    {t('common.view')} <ArrowUpRight className="w-3 h-3" />
                   </Button>
                 </div>
               </CardHeader>
@@ -378,13 +382,13 @@ export default function Dashboard() {
                   <div key={p.id} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-danger/5 border border-danger/10">
                     <div className="min-w-0">
                       <p className="text-xs font-medium text-textPrimary truncate">{p.tenant_first_name} {p.tenant_last_name}</p>
-                      <p className="text-[11px] text-textMuted">{p.property_name} · {MONTHS_SHORT[p.period_month - 1]} {p.period_year}</p>
+                      <p className="text-[11px] text-textMuted">{p.property_name} · {monthsShort[p.period_month - 1]} {p.period_year}</p>
                     </div>
                     <p className="text-xs font-semibold text-danger shrink-0">{formatCurrency(p.rent_amount + p.charges_amount)}</p>
                   </div>
                 ))}
                 {lateCount > 4 && (
-                  <p className="text-[11px] text-textMuted text-center mt-1">+ {lateCount - 4} autre{lateCount - 4 > 1 ? 's' : ''}</p>
+                  <p className="text-[11px] text-textMuted text-center mt-1">{t('common.andMore', { count: lateCount - 4 })}</p>
                 )}
               </CardContent>
             </Card>
@@ -399,10 +403,10 @@ export default function Dashboard() {
                     <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-warning/10">
                       <CalendarDays className="w-3.5 h-3.5 text-warning" />
                     </div>
-                    <CardTitle className="text-sm">Baux à échéance</CardTitle>
+                    <CardTitle className="text-sm">{t('dashboard.expiringLeases')}</CardTitle>
                   </div>
                   <Button variant="ghost" size="sm" onClick={() => navigate('/leases')} className="text-xs text-primary gap-1">
-                    Voir <ArrowUpRight className="w-3 h-3" />
+                    {t('common.view')} <ArrowUpRight className="w-3 h-3" />
                   </Button>
                 </div>
               </CardHeader>
@@ -416,13 +420,13 @@ export default function Dashboard() {
                         <p className="text-[11px] text-textMuted">{l.property_name}</p>
                       </div>
                       <Badge variant={overdue ? 'danger' : 'warning'} className="text-[10px] shrink-0">
-                        {overdue ? `Expiré ${Math.abs(l.days_until_end)}j` : `${l.days_until_end}j`}
+                        {overdue ? t('dashboard.expired', { days: Math.abs(l.days_until_end) }) : t('dashboard.daysLeft', { days: l.days_until_end })}
                       </Badge>
                     </div>
                   )
                 })}
                 {expiringLeasesCount > 4 && (
-                  <p className="text-[11px] text-textMuted text-center mt-1">+ {expiringLeasesCount - 4} autre{expiringLeasesCount - 4 > 1 ? 's' : ''}</p>
+                  <p className="text-[11px] text-textMuted text-center mt-1">{t('common.andMore', { count: expiringLeasesCount - 4 })}</p>
                 )}
               </CardContent>
             </Card>
@@ -437,10 +441,10 @@ export default function Dashboard() {
                     <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-warning/10">
                       <Shield className="w-3.5 h-3.5 text-warning" />
                     </div>
-                    <CardTitle className="text-sm">Dépôts de garantie</CardTitle>
+                    <CardTitle className="text-sm">{t('dashboard.securityDeposits')}</CardTitle>
                   </div>
                   <Button variant="ghost" size="sm" onClick={() => navigate('/leases')} className="text-xs text-primary gap-1">
-                    Voir <ArrowUpRight className="w-3 h-3" />
+                    {t('common.view')} <ArrowUpRight className="w-3 h-3" />
                   </Button>
                 </div>
               </CardHeader>
@@ -453,7 +457,7 @@ export default function Dashboard() {
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
                       <p className="text-xs font-semibold text-warning">{formatCurrency(l.deposit_amount)}</p>
-                      <Badge variant="warning" className="text-[10px]">A restituer</Badge>
+                      <Badge variant="warning" className="text-[10px]">{t('dashboard.toReturn')}</Badge>
                     </div>
                   </div>
                 ))}
@@ -465,12 +469,12 @@ export default function Dashboard() {
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
                       <p className="text-xs font-semibold text-primary">{formatCurrency(l.deposit_amount)}</p>
-                      <Badge variant="default" className="text-[10px]">A encaisser</Badge>
+                      <Badge variant="default" className="text-[10px]">{t('dashboard.toCollect')}</Badge>
                     </div>
                   </div>
                 ))}
                 {depositsToReturnCount + depositsAwaitingCount > 3 && (
-                  <p className="text-[11px] text-textMuted text-center mt-1">+ {depositsToReturnCount + depositsAwaitingCount - 3} autre{depositsToReturnCount + depositsAwaitingCount - 3 > 1 ? 's' : ''}</p>
+                  <p className="text-[11px] text-textMuted text-center mt-1">{t('common.andMore', { count: depositsToReturnCount + depositsAwaitingCount - 3 })}</p>
                 )}
               </CardContent>
             </Card>
@@ -485,27 +489,27 @@ export default function Dashboard() {
                     <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-warning/10">
                       <FolderOpen className="w-3.5 h-3.5 text-warning" />
                     </div>
-                    <CardTitle className="text-sm">Dossiers locatifs incomplets</CardTitle>
+                    <CardTitle className="text-sm">{t('dashboard.incompleteDossiers')}</CardTitle>
                   </div>
                   <Button variant="ghost" size="sm" onClick={() => navigate('/tenants')} className="text-xs text-primary gap-1">
-                    Voir <ArrowUpRight className="w-3 h-3" />
+                    {t('common.view')} <ArrowUpRight className="w-3 h-3" />
                   </Button>
                 </div>
               </CardHeader>
               <CardContent className="flex flex-col gap-1.5">
-                {incompleteDossiers.slice(0, 4).map((t) => (
-                  <div key={t.id} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-warning/5 border border-warning/10">
+                {incompleteDossiers.slice(0, 4).map((t_) => (
+                  <div key={t_.id} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-warning/5 border border-warning/10">
                     <div className="min-w-0">
-                      <p className="text-xs font-medium text-textPrimary truncate">{t.first_name} {t.last_name}</p>
-                      <p className="text-[11px] text-textMuted">{t.property_name ?? 'Aucun bien'}{t.attachment_count > 0 ? ` · ${t.attachment_count} fichier${t.attachment_count > 1 ? 's' : ''}` : ' · 0 fichier'}</p>
+                      <p className="text-xs font-medium text-textPrimary truncate">{t_.first_name} {t_.last_name}</p>
+                      <p className="text-[11px] text-textMuted">{t_.property_name ?? 'Aucun bien'}{t_.attachment_count > 0 ? ` · ${t_.attachment_count} fichier${t_.attachment_count > 1 ? 's' : ''}` : ' · 0 fichier'}</p>
                     </div>
-                    <Badge variant={t.completed_dossier_count === 0 ? 'danger' : 'warning'} className="text-[10px] shrink-0">
-                      {t.completed_dossier_count}/{DOSSIER_ITEMS.length}
+                    <Badge variant={t_.completed_dossier_count === 0 ? 'danger' : 'warning'} className="text-[10px] shrink-0">
+                      {t_.completed_dossier_count}/{DOSSIER_ITEMS.length}
                     </Badge>
                   </div>
                 ))}
                 {incompleteDossiersCount > 4 && (
-                  <p className="text-[11px] text-textMuted text-center mt-1">+ {incompleteDossiersCount - 4} autre{incompleteDossiersCount - 4 > 1 ? 's' : ''}</p>
+                  <p className="text-[11px] text-textMuted text-center mt-1">{t('common.andMore', { count: incompleteDossiersCount - 4 })}</p>
                 )}
               </CardContent>
             </Card>
@@ -520,10 +524,10 @@ export default function Dashboard() {
                     <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-primary/10">
                       <Bell className="w-3.5 h-3.5 text-primary" />
                     </div>
-                    <CardTitle className="text-sm">Rappels en attente</CardTitle>
+                    <CardTitle className="text-sm">{t('dashboard.pendingReminders')}</CardTitle>
                   </div>
                   <Button variant="ghost" size="sm" onClick={() => navigate('/reminders')} className="text-xs text-primary gap-1">
-                    Voir <ArrowUpRight className="w-3 h-3" />
+                    {t('common.view')} <ArrowUpRight className="w-3 h-3" />
                   </Button>
                 </div>
               </CardHeader>
@@ -537,13 +541,13 @@ export default function Dashboard() {
                         <p className="text-[11px] text-textMuted">{formatDate(r.due_date)}{r.property_name ? ` · ${r.property_name}` : ''}</p>
                       </div>
                       <Badge variant={overdue ? 'danger' : 'default'} className="text-[10px] shrink-0">
-                        {overdue ? `En retard ${Math.abs(r.days_until_due)}j` : r.days_until_due === 0 ? "Aujourd'hui" : `${r.days_until_due}j`}
+                        {overdue ? t('dashboard.overdue', { days: Math.abs(r.days_until_due) }) : r.days_until_due === 0 ? t('dashboard.dueToday') : t('dashboard.dueInDays', { days: r.days_until_due })}
                       </Badge>
                     </div>
                   )
                 })}
                 {pendingRemindersCount > 4 && (
-                  <p className="text-[11px] text-textMuted text-center mt-1">+ {pendingRemindersCount - 4} autre{pendingRemindersCount - 4 > 1 ? 's' : ''}</p>
+                  <p className="text-[11px] text-textMuted text-center mt-1">{t('common.andMore', { count: pendingRemindersCount - 4 })}</p>
                 )}
               </CardContent>
             </Card>
@@ -558,10 +562,10 @@ export default function Dashboard() {
                     <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-primary/10">
                       <TrendingUp className="w-3.5 h-3.5 text-primary" />
                     </div>
-                    <CardTitle className="text-sm">Révisions IRL éligibles</CardTitle>
+                    <CardTitle className="text-sm">{t('dashboard.irlRevisions')}</CardTitle>
                   </div>
                   <Button variant="ghost" size="sm" onClick={() => navigate('/leases')} className="text-xs text-primary gap-1">
-                    Voir <ArrowUpRight className="w-3 h-3" />
+                    {t('common.view')} <ArrowUpRight className="w-3 h-3" />
                   </Button>
                 </div>
               </CardHeader>
@@ -587,26 +591,25 @@ export default function Dashboard() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>Paiements récents</CardTitle>
-                <CardDescription>Derniers mouvements</CardDescription>
+                <CardTitle>{t('dashboard.recentPayments')}</CardTitle>
               </div>
               <Button variant="ghost" onClick={() => navigate('/payments')} className="gap-1 text-primary text-xs">
-                Voir tout <ArrowUpRight className="w-3.5 h-3.5" />
+                {t('common.view')} <ArrowUpRight className="w-3.5 h-3.5" />
               </Button>
             </div>
           </CardHeader>
           <CardContent className="p-0">
             {recentPayments.length === 0 ? (
-              <div className="px-5 pb-5"><EmptyState message="Aucun paiement enregistré" /></div>
+              <div className="px-5 pb-5"><EmptyState message={t('dashboard.noRecentPayment')} /></div>
             ) : (
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-border">
-                    <th className="text-left text-xs text-textMuted font-medium px-5 py-2.5">Locataire</th>
-                    <th className="text-left text-xs text-textMuted font-medium px-5 py-2.5">Bien</th>
-                    <th className="text-left text-xs text-textMuted font-medium px-5 py-2.5">Période</th>
-                    <th className="text-right text-xs text-textMuted font-medium px-5 py-2.5">Montant</th>
-                    <th className="text-right text-xs text-textMuted font-medium px-5 py-2.5">Statut</th>
+                    <th className="text-left text-xs text-textMuted font-medium px-5 py-2.5">{t('leases.tenant')}</th>
+                    <th className="text-left text-xs text-textMuted font-medium px-5 py-2.5">{t('leases.property')}</th>
+                    <th className="text-left text-xs text-textMuted font-medium px-5 py-2.5">{t('payments.period')}</th>
+                    <th className="text-right text-xs text-textMuted font-medium px-5 py-2.5">{t('fiscal.amount')}</th>
+                    <th className="text-right text-xs text-textMuted font-medium px-5 py-2.5">{t('payments.statusLabel')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -618,7 +621,7 @@ export default function Dashboard() {
                         <td className="px-5 py-3 text-sm font-medium text-textPrimary">{p.tenant_first_name} {p.tenant_last_name}</td>
                         <td className="px-5 py-3 text-sm text-textMuted">{p.property_name}</td>
                         <td className="px-5 py-3 text-sm text-textMuted">
-                          {MONTHS_SHORT[p.period_month - 1]} {p.period_year}
+                          {monthsShort[p.period_month - 1]} {p.period_year}
                           {p.payment_date && <span className="ml-1 opacity-60">· {formatDate(p.payment_date)}</span>}
                         </td>
                         <td className="px-5 py-3 text-sm font-semibold text-textPrimary text-right">
@@ -627,7 +630,7 @@ export default function Dashboard() {
                         <td className="px-5 py-3 text-right">
                           <Badge variant={cfg.variant} className="ml-auto inline-flex items-center gap-1">
                             <Icon className="w-3 h-3" />
-                            {cfg.label}
+                            {t(cfg.labelKey)}
                           </Badge>
                         </td>
                       </tr>

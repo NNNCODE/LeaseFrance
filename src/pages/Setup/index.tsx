@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Eye, EyeOff, Lock, Mail, ShieldCheck, User, Copy, CheckCircle2, KeyRound } from 'lucide-react'
 import { useAuthStore } from '@/stores/useAuthStore'
@@ -12,6 +13,7 @@ interface SetupProps {
 }
 
 export default function Setup({ onBack, onComplete }: SetupProps) {
+  const { t } = useTranslation()
   const { setup, completeSetup } = useAuthStore()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -22,16 +24,16 @@ export default function Setup({ onBack, onComplete }: SetupProps) {
   const [loading, setLoading] = useState(false)
   const [recoveryKey, setRecoveryKey] = useState<string | null>(null)
 
-  const strength = getStrength(password)
+  const strength = getStrength(password, t)
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
     setError('')
 
-    if (!name.trim()) return setError('Le nom est requis.')
-    if (!isValidEmail(email)) return setError('Adresse e-mail invalide.')
-    if (password.length < 8) return setError('Le mot de passe doit contenir au moins 8 caracteres.')
-    if (password !== confirm) return setError('Les mots de passe ne correspondent pas.')
+    if (!name.trim()) return setError(t('auth.setup.nameRequired'))
+    if (!isValidEmail(email)) return setError(t('auth.setup.invalidEmail'))
+    if (password.length < 8) return setError(t('auth.setup.passwordMin'))
+    if (password !== confirm) return setError(t('auth.setup.passwordMismatch'))
 
     setLoading(true)
     const normalizedEmail = normalizeEmail(email)
@@ -41,21 +43,21 @@ export default function Setup({ onBack, onComplete }: SetupProps) {
     if (key) {
       setRecoveryKey(key)
     } else {
-      setError("Cette adresse e-mail est deja utilisee par un autre compte. La casse n'a pas d'importance.")
+      setError(t('auth.setup.emailTaken'))
     }
   }
 
   return (
     <>
       <AuthShell
-        eyebrow="Initialisation"
-        title="Configurez votre espace proprietaire."
-        description="Creez votre compte local pour demarrer avec une interface plus complete et des controles de fenetre coherents."
+        eyebrow={t('auth.setup.eyebrow')}
+        title={t('auth.setup.title')}
+        description={t('auth.setup.description')}
         footer={(
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2 text-xs text-textMuted">
               <ShieldCheck className="w-3.5 h-3.5 text-success" />
-              Aucun serveur externe. Toutes les donnees restent sur la machine.
+              {t('auth.setup.noServer')}
             </div>
             {onBack ? (
               <button
@@ -63,7 +65,7 @@ export default function Setup({ onBack, onComplete }: SetupProps) {
                 onClick={onBack}
                 className="text-xs font-medium text-textMuted transition-colors hover:text-primary"
               >
-                Retour a la connexion
+                {t('auth.setup.backToLogin')}
               </button>
             ) : null}
           </div>
@@ -71,21 +73,21 @@ export default function Setup({ onBack, onComplete }: SetupProps) {
       >
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-textMuted">Nom complet</label>
+            <label className="text-xs font-medium text-textMuted">{t('auth.setup.fullName')}</label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-textMuted" />
               <Input
                 className="pl-10"
                 value={name}
                 onChange={(event) => setName(event.target.value)}
-                placeholder="Jean Dupont"
+                placeholder={t('auth.setup.namePlaceholder')}
                 autoFocus
               />
             </div>
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-textMuted">Adresse e-mail</label>
+            <label className="text-xs font-medium text-textMuted">{t('auth.setup.email')}</label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-textMuted" />
               <Input
@@ -93,19 +95,19 @@ export default function Setup({ onBack, onComplete }: SetupProps) {
                 type="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                placeholder="jean.dupont@email.fr"
+                placeholder={t('auth.setup.emailPlaceholder')}
               />
             </div>
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-textMuted">Mot de passe</label>
+            <label className="text-xs font-medium text-textMuted">{t('auth.setup.password')}</label>
             <div className="relative">
               <Input
                 type={showPwd ? 'text' : 'password'}
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                placeholder="Minimum 8 caracteres"
+                placeholder={t('auth.setup.passwordPlaceholder')}
               />
               <button
                 type="button"
@@ -119,12 +121,12 @@ export default function Setup({ onBack, onComplete }: SetupProps) {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-textMuted">Confirmer le mot de passe</label>
+            <label className="text-xs font-medium text-textMuted">{t('auth.setup.confirmPassword')}</label>
             <Input
               type={showPwd ? 'text' : 'password'}
               value={confirm}
               onChange={(event) => setConfirm(event.target.value)}
-              placeholder="Repetez le mot de passe"
+              placeholder={t('auth.setup.confirmPlaceholder')}
             />
           </div>
 
@@ -140,7 +142,7 @@ export default function Setup({ onBack, onComplete }: SetupProps) {
 
           <Button type="submit" disabled={loading} className="mt-1">
             <Lock className="w-4 h-4" />
-            {loading ? 'Creation...' : 'Creer le compte'}
+            {loading ? t('auth.setup.creating') : t('auth.setup.submit')}
           </Button>
         </form>
       </AuthShell>
@@ -161,8 +163,6 @@ export default function Setup({ onBack, onComplete }: SetupProps) {
   )
 }
 
-// ── Recovery Key Modal (shown once after setup) ──────────────────────────────
-
 function RecoveryKeyModal({
   recoveryKey,
   onDone,
@@ -170,6 +170,7 @@ function RecoveryKeyModal({
   recoveryKey: string
   onDone: () => void
 }) {
+  const { t } = useTranslation()
   const [copied, setCopied] = useState(false)
   const [confirmed, setConfirmed] = useState(false)
 
@@ -198,9 +199,9 @@ function RecoveryKeyModal({
             <KeyRound className="h-5 w-5 text-warning" />
           </div>
           <div>
-            <p className="text-base font-semibold text-textPrimary">Cle de recuperation</p>
+            <p className="text-base font-semibold text-textPrimary">{t('auth.recovery.recoveryKeyTitle')}</p>
             <p className="mt-1 text-sm text-textMuted leading-relaxed">
-              Notez cette cle dans un endroit sur. Elle est le seul moyen de reinitialiser votre mot de passe si vous l'oubliez.
+              {t('auth.recovery.recoveryKeyDesc')}
             </p>
           </div>
         </div>
@@ -215,14 +216,14 @@ function RecoveryKeyModal({
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surfaceHigh border border-border text-xs font-medium text-textMuted hover:text-textPrimary transition-colors shrink-0"
             >
               {copied ? <CheckCircle2 className="w-3.5 h-3.5 text-success" /> : <Copy className="w-3.5 h-3.5" />}
-              {copied ? 'Copie !' : 'Copier'}
+              {copied ? t('common.copied') : t('common.copy')}
             </button>
           </div>
         </div>
 
         <div className="mt-4 rounded-xl bg-surfaceHigh/40 border border-border p-3 text-xs text-textMuted leading-5">
-          <p>Cette cle ne sera plus affichee apres fermeture de cette fenetre.</p>
-          <p className="mt-1">Vous pourrez en regenerer une nouvelle depuis Parametres, mais il vous faudra votre mot de passe actuel.</p>
+          <p>{t('auth.recovery.keyNotShownAgain')}</p>
+          <p className="mt-1">{t('auth.recovery.regenNote')}</p>
         </div>
 
         <label className="mt-4 flex items-start gap-2 cursor-pointer">
@@ -232,21 +233,19 @@ function RecoveryKeyModal({
             onChange={(e) => setConfirmed(e.target.checked)}
             className="mt-0.5 rounded border-border"
           />
-          <span className="text-xs text-textMuted">J'ai note ma cle de recuperation en lieu sur.</span>
+          <span className="text-xs text-textMuted">{t('auth.recovery.confirmSavedSetup')}</span>
         </label>
 
         <div className="mt-5 flex justify-end">
           <Button disabled={!confirmed} onClick={onDone}>
             <CheckCircle2 className="w-4 h-4" />
-            Continuer
+            {t('common.continue')}
           </Button>
         </div>
       </motion.div>
     </motion.div>
   )
 }
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function StrengthBar({ strength }: { strength: ReturnType<typeof getStrength> }) {
   return (
@@ -266,7 +265,7 @@ function StrengthBar({ strength }: { strength: ReturnType<typeof getStrength> })
   )
 }
 
-function getStrength(password: string) {
+function getStrength(password: string, t: (key: string) => string) {
   let score = 0
 
   if (password.length >= 8) score += 1
@@ -275,11 +274,11 @@ function getStrength(password: string) {
   if (/[0-9]/.test(password) || /[^A-Za-z0-9]/.test(password)) score += 1
 
   const levels = [
-    { label: 'Tres faible', color: 'bg-danger', textColor: 'text-danger' },
-    { label: 'Faible', color: 'bg-warning', textColor: 'text-warning' },
-    { label: 'Moyen', color: 'bg-warning', textColor: 'text-warning' },
-    { label: 'Fort', color: 'bg-success', textColor: 'text-success' },
-    { label: 'Tres fort', color: 'bg-success', textColor: 'text-success' },
+    { label: t('auth.setup.strengthVeryWeak'), color: 'bg-danger', textColor: 'text-danger' },
+    { label: t('auth.setup.strengthWeak'), color: 'bg-warning', textColor: 'text-warning' },
+    { label: t('auth.setup.strengthMedium'), color: 'bg-warning', textColor: 'text-warning' },
+    { label: t('auth.setup.strengthStrong'), color: 'bg-success', textColor: 'text-success' },
+    { label: t('auth.setup.strengthVeryStrong'), color: 'bg-success', textColor: 'text-success' },
   ]
 
   return { score, ...levels[score] }

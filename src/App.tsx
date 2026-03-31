@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/useAuthStore'
 import Layout from '@/components/layout/Layout'
@@ -17,6 +18,7 @@ import Fiscal from '@/pages/Fiscal'
 import Profile from '@/pages/Profile'
 
 export default function App() {
+  const { t } = useTranslation()
   const { status, init } = useAuthStore()
   const [showRegister, setShowRegister] = useState(false)
   const [authNotice, setAuthNotice] = useState<string | null>(null)
@@ -36,7 +38,7 @@ export default function App() {
       <Setup
         onComplete={(email) => {
           setPrefilledEmail(email)
-          setAuthNotice('Compte cree avec succes. Connectez-vous pour ouvrir votre espace proprietaire.')
+          setAuthNotice(t('auth.setup.accountCreated'))
           setShowRegister(false)
         }}
       />
@@ -50,7 +52,7 @@ export default function App() {
           onBack={() => setShowRegister(false)}
           onComplete={(email) => {
             setPrefilledEmail(email)
-            setAuthNotice('Compte cree avec succes. Connectez-vous pour ouvrir votre espace proprietaire.')
+            setAuthNotice(t('auth.setup.accountCreated'))
             setShowRegister(false)
           }}
         />
@@ -81,11 +83,12 @@ export default function App() {
 }
 
 function Splash() {
+  const { t } = useTranslation()
   return (
     <div className="flex h-screen w-screen bg-background items-center justify-center">
       <div className="flex flex-col items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-primary/20 animate-pulse" />
-        <p className="text-sm text-textMuted">Chargement...</p>
+        <p className="text-sm text-textMuted">{t('splash.loading')}</p>
       </div>
     </div>
   )

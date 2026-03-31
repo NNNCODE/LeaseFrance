@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
 import { ChevronDown, Save, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -24,6 +25,7 @@ export default function PaymentFormModal({
   onSave,
   onClose,
 }: PaymentFormModalProps) {
+  const { t } = useTranslation()
   const [form, setForm] = useState<PaymentInput>(() => {
     if (initial) {
       return {
@@ -62,8 +64,8 @@ export default function PaymentFormModal({
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
     setError('')
-    if (!form.lease_id) return setError('Selectionnez un bail.')
-    if (form.rent_amount <= 0) return setError('Le loyer doit etre superieur a 0.')
+    if (!form.lease_id) return setError(t('payments.form.errors.leaseRequired'))
+    if (form.rent_amount <= 0) return setError(t('payments.form.errors.rentRequired'))
 
     const nextForm =
       form.status === 'paid' && !form.payment_date
@@ -78,7 +80,7 @@ export default function PaymentFormModal({
     try {
       await onSave(nextForm)
     } catch (err) {
-      setError(`Erreur : ${err instanceof Error ? err.message : String(err)}`)
+      setError(t('payments.form.errors.save', { error: err instanceof Error ? err.message : String(err) }))
       setSaving(false)
     }
   }
@@ -103,7 +105,7 @@ export default function PaymentFormModal({
       >
         <div className="flex shrink-0 items-center justify-between border-b border-border px-6 py-4">
           <h2 className="text-base font-semibold text-textPrimary">
-            {initial ? 'Modifier le paiement' : 'Nouveau paiement'}
+            {initial ? t('payments.editTitle') : t('payments.addTitle')}
           </h2>
           <button onClick={onClose} className="text-textMuted transition-colors hover:text-textPrimary">
             <X className="h-4 w-4" />
@@ -112,21 +114,21 @@ export default function PaymentFormModal({
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 overflow-y-auto p-6">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-textMuted">Bail</label>
+            <label className="text-xs font-medium text-textMuted">{t('payments.lease')}</label>
             <div className="relative">
               <select
-                aria-label="Bail"
+                aria-label={t('payments.lease')}
                 value={form.lease_id}
                 onChange={(event) => setField('lease_id', Number(event.target.value))}
                 disabled={Boolean(initial)}
                 className="w-full appearance-none rounded-lg border border-border bg-surfaceHigh px-3 py-2 pr-8 text-sm text-textPrimary transition-colors focus:border-primary focus:outline-none disabled:opacity-50"
               >
                 <option value={0} disabled>
-                  Selectionnez un bail...
+                  {t('payments.form.leasePlaceholder')}
                 </option>
                 {leases.map((lease) => (
                   <option key={lease.id} value={lease.id}>
-                    {lease.property_name} · {lease.tenant_first_name} {lease.tenant_last_name}
+                    {lease.property_name} | {lease.tenant_first_name} {lease.tenant_last_name}
                   </option>
                 ))}
               </select>
@@ -136,17 +138,17 @@ export default function PaymentFormModal({
 
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-textMuted">Mois</label>
+              <label className="text-xs font-medium text-textMuted">{t('payments.form.month')}</label>
               <div className="relative">
                 <select
-                  aria-label="Mois"
+                  aria-label={t('payments.form.month')}
                   value={form.period_month}
                   onChange={(event) => setField('period_month', Number(event.target.value))}
                   className="w-full appearance-none rounded-lg border border-border bg-surfaceHigh px-3 py-2 pr-8 text-sm text-textPrimary transition-colors focus:border-primary focus:outline-none"
                 >
                   {MONTHS.map((month, index) => (
                     <option key={month} value={index + 1}>
-                      {month}
+                      {t(month)}
                     </option>
                   ))}
                 </select>
@@ -154,10 +156,10 @@ export default function PaymentFormModal({
               </div>
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-textMuted">Annee</label>
+              <label className="text-xs font-medium text-textMuted">{t('payments.form.year')}</label>
               <div className="relative">
                 <select
-                  aria-label="Annee"
+                  aria-label={t('payments.form.year')}
                   value={form.period_year}
                   onChange={(event) => setField('period_year', Number(event.target.value))}
                   className="w-full appearance-none rounded-lg border border-border bg-surfaceHigh px-3 py-2 pr-8 text-sm text-textPrimary transition-colors focus:border-primary focus:outline-none"
@@ -175,9 +177,9 @@ export default function PaymentFormModal({
 
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-textMuted">Loyer HC (EUR)</label>
+              <label className="text-xs font-medium text-textMuted">{t('payments.form.rentExclCharges')}</label>
               <Input
-                aria-label="Loyer HC"
+                aria-label={t('payments.form.rentExclCharges')}
                 type="number"
                 min={0}
                 step={0.01}
@@ -187,9 +189,9 @@ export default function PaymentFormModal({
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-textMuted">Charges (EUR)</label>
+              <label className="text-xs font-medium text-textMuted">{t('payments.form.charges')}</label>
               <Input
-                aria-label="Charges"
+                aria-label={t('payments.form.charges')}
                 type="number"
                 min={0}
                 step={0.01}
@@ -201,7 +203,7 @@ export default function PaymentFormModal({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-textMuted">Statut</label>
+            <label className="text-xs font-medium text-textMuted">{t('payments.statusLabel')}</label>
             <div className="grid grid-cols-3 gap-2">
               {(['pending', 'paid', 'late'] as const).map((statusKey) => {
                 const status = STATUS_CONFIG[statusKey]
@@ -248,20 +250,20 @@ export default function PaymentFormModal({
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-textMuted">
-                Date de paiement {form.status !== 'paid' && <span className="opacity-50">(optionnel)</span>}
+                {t('payments.paymentDate')} {form.status !== 'paid' && <span className="opacity-50">({t('common.optional')})</span>}
               </label>
               <Input
-                aria-label="Date de paiement"
+                aria-label={t('payments.paymentDate')}
                 type="date"
                 value={form.payment_date ?? ''}
                 onChange={(event) => setField('payment_date', event.target.value || null)}
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-textMuted">Mode de paiement</label>
+              <label className="text-xs font-medium text-textMuted">{t('payments.paymentMethod')}</label>
               <div className="relative">
                 <select
-                  aria-label="Mode de paiement"
+                  aria-label={t('payments.paymentMethod')}
                   value={form.payment_method ?? 'virement'}
                   onChange={(event) => setField('payment_method', event.target.value)}
                   className="w-full appearance-none rounded-lg border border-border bg-surfaceHigh px-3 py-2 pr-8 text-sm text-textPrimary transition-colors focus:border-primary focus:outline-none"
@@ -278,12 +280,14 @@ export default function PaymentFormModal({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-textMuted">Notes - optionnel</label>
+            <label className="text-xs font-medium text-textMuted">
+              {t('payments.notes')} ({t('common.optional')})
+            </label>
             <textarea
-              aria-label="Notes"
+              aria-label={t('payments.notes')}
               value={form.notes ?? ''}
               onChange={(event) => setField('notes', event.target.value || null)}
-              placeholder="Ex : paiement partiel, virement recu en deux fois..."
+              placeholder={t('payments.form.notesPlaceholder')}
               rows={2}
               className="w-full resize-none rounded-lg border border-border bg-surfaceHigh px-3 py-2 text-sm text-textPrimary transition-colors placeholder:text-textMuted focus:border-primary focus:outline-none"
             />
@@ -293,11 +297,11 @@ export default function PaymentFormModal({
 
           <div className="flex gap-2 pt-1">
             <Button type="button" variant="secondary" onClick={onClose} className="flex-1">
-              Annuler
+              {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={saving} className="flex-1">
               <Save className="h-3.5 w-3.5" />
-              {saving ? 'Enregistrement...' : initial ? 'Modifier' : 'Creer'}
+              {saving ? t('common.saving') : initial ? t('payments.form.submitEdit') : t('payments.form.submitCreate')}
             </Button>
           </div>
         </form>

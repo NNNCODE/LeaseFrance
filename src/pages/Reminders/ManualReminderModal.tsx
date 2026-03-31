@@ -1,14 +1,15 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
 import { BellRing, Save, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
 const CATEGORY_OPTIONS = [
-  { value: 'insurance', label: 'Assurance' },
-  { value: 'diagnostic', label: 'Diagnostic' },
-  { value: 'tax', label: 'Taxe / impots' },
-  { value: 'custom', label: 'Libre' },
+  { value: 'insurance', labelKey: 'reminders.category.insurance' },
+  { value: 'diagnostic', labelKey: 'reminders.category.diagnostic' },
+  { value: 'tax', labelKey: 'reminders.category.tax' },
+  { value: 'custom', labelKey: 'reminders.category.custom' },
 ] as const
 
 function today() {
@@ -26,6 +27,7 @@ export default function ManualReminderModal({
   onSave: (data: ManualReminderInput) => Promise<void>
   onClose: () => void
 }) {
+  const { t } = useTranslation()
   const [form, setForm] = useState<ManualReminderInput>({
     lease_id: initial?.lease_id ?? null,
     title: initial?.title ?? '',
@@ -45,8 +47,8 @@ export default function ManualReminderModal({
     event.preventDefault()
     setError('')
 
-    if (!form.title.trim()) return setError('Renseignez un titre.')
-    if (!form.due_date) return setError("Renseignez une date d'echeance.")
+    if (!form.title.trim()) return setError(t('reminders.manualForm.errors.titleRequired'))
+    if (!form.due_date) return setError(t('reminders.manualForm.errors.dueDateRequired'))
 
     setSaving(true)
     try {
@@ -77,32 +79,32 @@ export default function ManualReminderModal({
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 12 }}
         transition={{ duration: 0.2, ease: 'easeOut' }}
-        className="w-full max-w-2xl bg-surface border border-border rounded-2xl shadow-2xl overflow-hidden"
+        className="w-full max-w-2xl overflow-hidden rounded-2xl border border-border bg-surface shadow-2xl"
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+        <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <div className="flex items-center gap-2">
             <BellRing className="w-4 h-4 text-primary" />
             <h2 className="text-base font-semibold text-textPrimary">
-              {initial ? 'Modifier le rappel' : 'Nouveau rappel'}
+              {initial ? t('reminders.editTitle') : t('reminders.addTitle')}
             </h2>
           </div>
-          <button onClick={onClose} className="text-textMuted hover:text-textPrimary transition-colors">
+          <button onClick={onClose} className="text-textMuted transition-colors hover:text-textPrimary">
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-6">
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-textMuted">Titre</label>
+              <label className="text-xs font-medium text-textMuted">{t('reminders.manualForm.title')}</label>
               <Input
                 value={form.title}
                 onChange={(event) => set('title', event.target.value)}
-                placeholder="Demander attestation d'assurance"
+                placeholder={t('reminders.manualForm.titlePlaceholder')}
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-textMuted">Date d'echeance</label>
+              <label className="text-xs font-medium text-textMuted">{t('reminders.manualForm.dueDate')}</label>
               <Input
                 type="date"
                 value={form.due_date}
@@ -113,29 +115,31 @@ export default function ManualReminderModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-textMuted">Categorie</label>
+              <label className="text-xs font-medium text-textMuted">{t('reminders.manualForm.category')}</label>
               <select
                 value={form.category}
                 onChange={(event) => set('category', event.target.value)}
-                className="h-10 rounded-lg border border-border bg-surfaceHigh px-3 py-2 text-sm text-textPrimary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="h-10 rounded-lg border border-border bg-surfaceHigh px-3 py-2 text-sm text-textPrimary focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary"
               >
                 {CATEGORY_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
+                  <option key={option.value} value={option.value}>{t(option.labelKey)}</option>
                 ))}
               </select>
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-textMuted">Bail lie <span className="opacity-60">(optionnel)</span></label>
+              <label className="text-xs font-medium text-textMuted">
+                {t('reminders.manualForm.linkedLease')} <span className="opacity-60">({t('common.optional')})</span>
+              </label>
               <select
                 value={form.lease_id ?? 0}
                 onChange={(event) => set('lease_id', Number(event.target.value) || null)}
-                className="h-10 rounded-lg border border-border bg-surfaceHigh px-3 py-2 text-sm text-textPrimary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="h-10 rounded-lg border border-border bg-surfaceHigh px-3 py-2 text-sm text-textPrimary focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary"
               >
-                <option value={0}>Aucun bail</option>
+                <option value={0}>{t('reminders.manualForm.noLease')}</option>
                 {leases.map((lease) => (
                   <option key={lease.id} value={lease.id}>
-                    {lease.tenant_first_name} {lease.tenant_last_name} · {lease.property_name}
+                    {lease.tenant_first_name} {lease.tenant_last_name} | {lease.property_name}
                   </option>
                 ))}
               </select>
@@ -143,13 +147,13 @@ export default function ManualReminderModal({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-textMuted">Notes</label>
+            <label className="text-xs font-medium text-textMuted">{t('reminders.manualForm.notes')}</label>
             <textarea
               value={form.notes ?? ''}
               onChange={(event) => set('notes', event.target.value)}
               rows={5}
-              placeholder="Precisons, contact a relancer, document attendu..."
-              className="w-full resize-none rounded-lg border border-border bg-surfaceHigh px-3 py-2 text-sm text-textPrimary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder={t('reminders.manualForm.notesPlaceholder')}
+              className="w-full resize-none rounded-lg border border-border bg-surfaceHigh px-3 py-2 text-sm text-textPrimary focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
 
@@ -159,11 +163,11 @@ export default function ManualReminderModal({
             </div>
           ) : null}
 
-          <div className="flex gap-2 justify-end">
-            <Button type="button" variant="secondary" onClick={onClose}>Annuler</Button>
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
             <Button type="submit" disabled={saving}>
               <Save className="w-3.5 h-3.5" />
-              {saving ? 'Enregistrement...' : initial ? 'Mettre a jour' : 'Creer le rappel'}
+              {saving ? t('common.saving') : initial ? t('reminders.manualForm.submitEdit') : t('reminders.manualForm.submitCreate')}
             </Button>
           </div>
         </form>

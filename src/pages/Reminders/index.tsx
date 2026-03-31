@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import type { TFunction } from 'i18next'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
@@ -14,7 +16,6 @@ import {
   ShieldCheck,
   Trash2,
   TrendingUp,
-  X,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -22,11 +23,11 @@ import { Card, CardContent } from '@/components/ui/card'
 import { formatDate } from '@/lib/utils'
 import ManualReminderModal from './ManualReminderModal'
 
-const MANUAL_CATEGORY_META: Record<string, { label: string; icon: React.ElementType }> = {
-  insurance: { label: 'Assurance', icon: ShieldCheck },
-  diagnostic: { label: 'Diagnostic', icon: FileText },
-  tax: { label: 'Taxe / impots', icon: FileText },
-  custom: { label: 'Libre', icon: BellRing },
+const MANUAL_CATEGORY_META: Record<string, { labelKey: string; icon: React.ElementType }> = {
+  insurance: { labelKey: 'reminders.category.insurance', icon: ShieldCheck },
+  diagnostic: { labelKey: 'reminders.category.diagnostic', icon: FileText },
+  tax: { labelKey: 'reminders.category.tax', icon: FileText },
+  custom: { labelKey: 'reminders.category.custom', icon: BellRing },
 }
 
 const EMPTY_FEED: ReminderFeed = {
@@ -49,26 +50,27 @@ function daysUntil(date: string) {
   return Math.floor((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
 }
 
-function timingMeta(dueDate: string) {
+function timingMeta(dueDate: string, t: TFunction) {
   const days = daysUntil(dueDate)
-  if (days < 0) return { label: `En retard de ${Math.abs(days)} j`, variant: 'danger' as const }
-  if (days === 0) return { label: "Aujourd'hui", variant: 'warning' as const }
-  if (days <= 7) return { label: `Dans ${days} j`, variant: 'warning' as const }
-  if (days <= 30) return { label: `Dans ${days} j`, variant: 'default' as const }
-  return { label: `Dans ${days} j`, variant: 'muted' as const }
+  if (days < 0) return { label: t('reminders.overdue', { days: Math.abs(days) }), variant: 'danger' as const }
+  if (days === 0) return { label: t('reminders.dueToday'), variant: 'warning' as const }
+  if (days <= 7) return { label: t('reminders.dueInDays', { days }), variant: 'warning' as const }
+  if (days <= 30) return { label: t('reminders.dueInDays', { days }), variant: 'default' as const }
+  return { label: t('reminders.dueInDays', { days }), variant: 'muted' as const }
 }
 
 function categoryMeta(item: ReminderFeedItem) {
   if (item.source === 'derived') {
     return item.derived_kind === 'irl_revision'
-      ? { label: 'IRL', icon: TrendingUp }
-      : { label: 'Bail', icon: CalendarClock }
+      ? { labelKey: 'reminders.category.irl', icon: TrendingUp }
+      : { labelKey: 'reminders.category.lease', icon: CalendarClock }
   }
 
   return MANUAL_CATEGORY_META[item.category] ?? MANUAL_CATEGORY_META.custom
 }
 
 export default function Reminders() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [leases, setLeases] = useState<Lease[]>([])
   const [leasesLoaded, setLeasesLoaded] = useState(false)
@@ -93,7 +95,9 @@ export default function Reminders() {
     }
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    void load()
+  }, [])
 
   async function ensureLeases() {
     if (leasesLoaded) return true
@@ -164,14 +168,12 @@ export default function Reminders() {
     <div className="flex flex-col gap-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-textPrimary">Echeances & rappels</h1>
-          <p className="text-sm text-textMuted mt-1">
-            Centralisez les rappels derives des baux et vos rappels manuels.
-          </p>
+          <h1 className="text-2xl font-semibold text-textPrimary">{t('reminders.title')}</h1>
+          <p className="mt-1 text-sm text-textMuted">{t('reminders.subtitle')}</p>
         </div>
         <Button onClick={() => { void openCreate() }} disabled={formLoading}>
           <Plus className="w-4 h-4" />
-          {formLoading ? 'Chargement...' : 'Nouveau rappel'}
+          {formLoading ? t('common.loading') : t('reminders.add')}
         </Button>
       </div>
 
@@ -182,20 +184,20 @@ export default function Reminders() {
       ) : null}
 
       <div className="grid grid-cols-4 gap-4">
-        <StatCard label="En retard" value={feed.stats.overdue} icon={AlertTriangle} tone="danger" />
-        <StatCard label="Dans 30 jours" value={feed.stats.upcoming30} icon={CalendarClock} tone="warning" />
-        <StatCard label="Manuels ouverts" value={feed.stats.manualPending} icon={BellRing} tone="primary" />
-        <StatCard label="Termines" value={feed.stats.completed} icon={CheckCircle2} tone="success" />
+        <StatCard label={t('reminders.stats.overdue')} value={feed.stats.overdue} icon={AlertTriangle} tone="danger" />
+        <StatCard label={t('reminders.stats.upcoming')} value={feed.stats.upcoming30} icon={CalendarClock} tone="warning" />
+        <StatCard label={t('reminders.stats.pending')} value={feed.stats.manualPending} icon={BellRing} tone="primary" />
+        <StatCard label={t('reminders.stats.done')} value={feed.stats.completed} icon={CheckCircle2} tone="success" />
       </div>
 
       <Card>
         <CardContent className="pt-5">
-          <div className="flex items-center justify-between gap-3 mb-4">
+          <div className="mb-4 flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-base font-semibold text-textPrimary">A traiter</h2>
-              <p className="text-sm text-textMuted mt-1">Rappels derives automatiquement et rappels manuels encore ouverts.</p>
+              <h2 className="text-base font-semibold text-textPrimary">{t('reminders.pendingTitle')}</h2>
+              <p className="mt-1 text-sm text-textMuted">{t('reminders.pendingDesc')}</p>
             </div>
-            <Badge variant="muted">{feed.pendingItems.length} element{feed.pendingItems.length !== 1 ? 's' : ''}</Badge>
+            <Badge variant="muted">{t('reminders.itemCount', { count: feed.pendingItems.length })}</Badge>
           </div>
 
           {loading ? (
@@ -206,8 +208,8 @@ export default function Reminders() {
             </div>
           ) : feed.pendingItems.length === 0 ? (
             <EmptyState
-              title='Aucune echeance imminente'
-              description='Ajoutez un rappel manuel ou laissez l application vous signaler les fins de bail et revisions IRL.'
+              title={t('reminders.noPendingTitle')}
+              description={t('reminders.noPendingDesc')}
             />
           ) : (
             <motion.div
@@ -245,18 +247,18 @@ export default function Reminders() {
 
       <Card>
         <CardContent className="pt-5">
-          <div className="flex items-center justify-between gap-3 mb-4">
+          <div className="mb-4 flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-base font-semibold text-textPrimary">Rappels manuels termines</h2>
-              <p className="text-sm text-textMuted mt-1">Historique des rappels clos ou deja traites.</p>
+              <h2 className="text-base font-semibold text-textPrimary">{t('reminders.completedManualTitle')}</h2>
+              <p className="mt-1 text-sm text-textMuted">{t('reminders.completedManualDesc')}</p>
             </div>
-            <Badge variant="muted">{feed.completedManual.length}</Badge>
+            <Badge variant="muted">{t('reminders.itemCount', { count: feed.completedManual.length })}</Badge>
           </div>
 
           {feed.completedManual.length === 0 ? (
             <EmptyState
-              title='Aucun rappel termine'
-              description='Les rappels que vous marquez comme faits apparaitront ici.'
+              title={t('reminders.noCompletedTitle')}
+              description={t('reminders.noCompletedDesc')}
             />
           ) : (
             <div className="flex flex-col gap-3">
@@ -319,7 +321,8 @@ function ReminderRow({
   onToggleDone: () => void
   onDelete: () => void
 }) {
-  const timing = timingMeta(item.due_date)
+  const { t } = useTranslation()
+  const timing = timingMeta(item.due_date, t)
   const category = categoryMeta(item)
   const CategoryIcon = category.icon
 
@@ -337,14 +340,14 @@ function ReminderRow({
               <p className="text-sm font-semibold text-textPrimary">{item.title}</p>
               <Badge variant={timing.variant}>{timing.label}</Badge>
               <Badge variant={item.source === 'derived' ? 'muted' : 'default'}>
-                {item.source === 'derived' ? 'Automatique' : 'Manuel'}
+                {item.source === 'derived' ? t('reminders.sourceAutomatic') : t('reminders.sourceManual')}
               </Badge>
             </div>
 
-            <div className="flex flex-wrap items-center gap-4 mt-2 text-xs text-textMuted">
+            <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-textMuted">
               <div className="flex items-center gap-1.5">
                 <CategoryIcon className="w-3.5 h-3.5" />
-                <span>{category.label}</span>
+                <span>{t(category.labelKey)}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <Clock3 className="w-3.5 h-3.5" />
@@ -365,7 +368,7 @@ function ReminderRow({
             </div>
 
             {item.notes ? (
-              <p className="text-xs text-textMuted mt-3 leading-5">{item.notes}</p>
+              <p className="mt-3 text-xs leading-5 text-textMuted">{item.notes}</p>
             ) : null}
           </div>
 
@@ -373,8 +376,8 @@ function ReminderRow({
             {item.lease_id ? (
               <button
                 onClick={onOpenLease}
-                title="Ouvrir le bail"
-                className="p-1.5 rounded-lg hover:bg-primary/10 text-textMuted hover:text-primary transition-colors"
+                title={t('reminders.openLease')}
+                className="rounded-lg p-1.5 text-textMuted transition-colors hover:bg-primary/10 hover:text-primary"
               >
                 <CalendarClock className="w-4 h-4" />
               </button>
@@ -383,22 +386,22 @@ function ReminderRow({
               <>
                 <button
                   onClick={onToggleDone}
-                  title={item.status === 'done' ? 'Reouvrir' : 'Marquer comme fait'}
-                  className="p-1.5 rounded-lg hover:bg-success/10 text-textMuted hover:text-success transition-colors"
+                  title={item.status === 'done' ? t('reminders.reopen') : t('reminders.markDone')}
+                  className="rounded-lg p-1.5 text-textMuted transition-colors hover:bg-success/10 hover:text-success"
                 >
                   {item.status === 'done' ? <RotateCcw className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
                 </button>
                 <button
                   onClick={onEdit}
-                  title="Modifier"
-                  className="p-1.5 rounded-lg hover:bg-surfaceHigh text-textMuted hover:text-textPrimary transition-colors"
+                  title={t('common.edit')}
+                  className="rounded-lg p-1.5 text-textMuted transition-colors hover:bg-surfaceHigh hover:text-textPrimary"
                 >
                   <Pencil className="w-4 h-4" />
                 </button>
                 <button
                   onClick={onDelete}
-                  title="Supprimer"
-                  className="p-1.5 rounded-lg hover:bg-danger/10 text-textMuted hover:text-danger transition-colors"
+                  title={t('common.delete')}
+                  className="rounded-lg p-1.5 text-textMuted transition-colors hover:bg-danger/10 hover:text-danger"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -450,9 +453,9 @@ function StatCard({
 function EmptyState({ title, description }: { title: string; description: string }) {
   return (
     <div className="rounded-2xl border border-dashed border-border bg-surfaceHigh/10 py-12 text-center">
-      <BellRing className="w-7 h-7 text-textMuted mx-auto" />
-      <p className="text-sm font-semibold text-textPrimary mt-3">{title}</p>
-      <p className="text-xs text-textMuted mt-1">{description}</p>
+      <BellRing className="w-7 h-7 mx-auto text-textMuted" />
+      <p className="mt-3 text-sm font-semibold text-textPrimary">{title}</p>
+      <p className="mt-1 text-xs text-textMuted">{description}</p>
     </div>
   )
 }
@@ -466,6 +469,8 @@ function DeleteModal({
   onConfirm: () => void
   onClose: () => void
 }) {
+  const { t } = useTranslation()
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -479,22 +484,22 @@ function DeleteModal({
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.96 }}
         transition={{ duration: 0.2 }}
-        className="w-full max-w-sm bg-surface border border-danger/30 rounded-2xl shadow-2xl p-6 flex flex-col gap-4"
+        className="w-full max-w-sm rounded-2xl border border-danger/30 bg-surface p-6 shadow-2xl flex flex-col gap-4"
       >
         <div className="flex items-start gap-3">
-          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-danger/10 shrink-0">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-danger/10 shrink-0">
             <Trash2 className="w-5 h-5 text-danger" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-textPrimary">Supprimer ce rappel ?</p>
-            <p className="text-xs text-textMuted mt-1">{reminder.title} · {formatDate(reminder.due_date)}</p>
+            <p className="text-sm font-semibold text-textPrimary">{t('reminders.deleteTitle')}</p>
+            <p className="mt-1 text-xs text-textMuted">{reminder.title} | {formatDate(reminder.due_date)}</p>
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="secondary" onClick={onClose} className="flex-1">Annuler</Button>
+          <Button variant="secondary" onClick={onClose} className="flex-1">{t('common.cancel')}</Button>
           <Button variant="danger" onClick={onConfirm} className="flex-1">
             <Trash2 className="w-3.5 h-3.5" />
-            Supprimer
+            {t('common.delete')}
           </Button>
         </div>
       </motion.div>

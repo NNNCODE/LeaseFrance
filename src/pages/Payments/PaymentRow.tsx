@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import {
   Building2,
   CalendarDays,
@@ -33,6 +34,7 @@ export default function PaymentRow({
   onDelete,
   onGenerateDocument,
 }: PaymentRowProps) {
+  const { t } = useTranslation()
   const status = STATUS_CONFIG[payment.status]
   const StatusIcon = status.icon
   const total = payment.rent_amount + payment.charges_amount
@@ -115,7 +117,7 @@ export default function PaymentRow({
             {payment.status !== 'paid' && (
               <button
                 onClick={onReminder}
-                title="Relancer cet impaye"
+                title={t('payments.actions.sendReminder')}
                 className="rounded-lg p-1.5 text-textMuted transition-colors hover:bg-warning/10 hover:text-warning"
               >
                 <ScrollText className="h-3.5 w-3.5" />
@@ -124,7 +126,7 @@ export default function PaymentRow({
             {payment.status !== 'paid' && (
               <button
                 onClick={onMarkPaid}
-                title="Marquer comme paye"
+                title={t('payments.actions.markPaid')}
                 className="rounded-lg p-1.5 text-textMuted transition-colors hover:bg-success/10 hover:text-success"
               >
                 <CheckCircle2 className="h-3.5 w-3.5" />
@@ -133,7 +135,7 @@ export default function PaymentRow({
             {payment.status === 'paid' && (
               <button
                 onClick={onGenerateDocument}
-                title="Generer quittance ou recu"
+                title={t('payments.actions.generateDocument')}
                 className="rounded-lg p-1.5 text-textMuted transition-colors hover:bg-accent/10 hover:text-accent"
               >
                 <Receipt className="h-3.5 w-3.5" />
@@ -141,12 +143,14 @@ export default function PaymentRow({
             )}
             <button
               onClick={onEdit}
+              title={t('common.edit')}
               className="rounded-lg p-1.5 text-textMuted transition-colors hover:bg-surfaceHigh hover:text-textPrimary"
             >
               <Pencil className="h-3.5 w-3.5" />
             </button>
             <button
               onClick={onDelete}
+              title={t('common.delete')}
               className="rounded-lg p-1.5 text-textMuted transition-colors hover:bg-danger/10 hover:text-danger"
             >
               <Trash2 className="h-3.5 w-3.5" />

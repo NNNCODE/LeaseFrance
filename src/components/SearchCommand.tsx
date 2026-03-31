@@ -1,28 +1,29 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Search, X, Building2, Users, FileText, CreditCard,
   ChevronRight, CalendarClock, ScrollText,
 } from 'lucide-react'
 
-const CATEGORY_META: Record<SearchCategory, { label: string; icon: React.ElementType }> = {
-  properties:  { label: 'Biens',           icon: Building2     },
-  tenants:     { label: 'Locataires',      icon: Users         },
-  leases:      { label: 'Baux',            icon: FileText      },
-  payments:    { label: 'Paiements',       icon: CreditCard    },
-  reminders:   { label: 'Echeances',       icon: CalendarClock },
-  inspections: { label: 'Etats des lieux', icon: ScrollText    },
+const CATEGORY_META: Record<SearchCategory, { labelKey: string; icon: React.ElementType }> = {
+  properties:  { labelKey: 'search.category.properties',  icon: Building2     },
+  tenants:     { labelKey: 'search.category.tenants',      icon: Users         },
+  leases:      { labelKey: 'search.category.leases',       icon: FileText      },
+  payments:    { labelKey: 'search.category.payments',     icon: CreditCard    },
+  reminders:   { labelKey: 'search.category.reminders',    icon: CalendarClock },
+  inspections: { labelKey: 'search.category.inspections',  icon: ScrollText    },
 }
 
-const FILTERS: { key: SearchFilterKey; label: string }[] = [
-  { key: 'all',          label: 'Tout'            },
-  { key: 'properties',   label: 'Biens'           },
-  { key: 'tenants',      label: 'Locataires'      },
-  { key: 'leases',       label: 'Baux'            },
-  { key: 'payments',     label: 'Paiements'       },
-  { key: 'reminders',    label: 'Echeances'       },
-  { key: 'inspections',  label: 'Etats des lieux' },
+const FILTERS: { key: SearchFilterKey; labelKey: string }[] = [
+  { key: 'all',          labelKey: 'search.category.all'          },
+  { key: 'properties',   labelKey: 'search.category.properties'   },
+  { key: 'tenants',      labelKey: 'search.category.tenants'      },
+  { key: 'leases',       labelKey: 'search.category.leases'       },
+  { key: 'payments',     labelKey: 'search.category.payments'     },
+  { key: 'reminders',    labelKey: 'search.category.reminders'    },
+  { key: 'inspections',  labelKey: 'search.category.inspections'  },
 ]
 
 export default function SearchCommand({
@@ -32,6 +33,7 @@ export default function SearchCommand({
   open: boolean
   onClose: () => void
 }) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
@@ -149,7 +151,7 @@ export default function SearchCommand({
                 type="text"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Rechercher un bien, locataire, bail, paiement..."
+                placeholder={t('search.placeholder')}
                 className="flex-1 bg-transparent text-sm text-textPrimary placeholder:text-textMuted outline-none"
               />
               {query && (
@@ -173,7 +175,7 @@ export default function SearchCommand({
                       : 'text-textMuted hover:text-textPrimary hover:bg-surfaceHigh'
                   }`}
                 >
-                  {item.label}
+                  {t(item.labelKey)}
                 </button>
               ))}
             </div>
@@ -187,7 +189,7 @@ export default function SearchCommand({
                 <div className="flex flex-col items-center justify-center gap-2 py-12 text-textMuted">
                   <Search className="w-8 h-8 opacity-20" />
                   <p className="text-xs">
-                    {query ? 'Aucun resultat' : 'Commencez a taper pour rechercher'}
+                    {query ? t('search.noResults') : t('search.startTyping')}
                   </p>
                 </div>
               ) : (
@@ -200,7 +202,7 @@ export default function SearchCommand({
                       <div key={category}>
                         <div className="flex items-center gap-2 px-4 py-1.5">
                           <Icon className="w-3 h-3 text-textMuted" />
-                          <p className="text-[11px] uppercase tracking-wider text-textMuted font-medium">{meta.label}</p>
+                          <p className="text-[11px] uppercase tracking-wider text-textMuted font-medium">{t(meta.labelKey)}</p>
                           <span className="text-[10px] text-textMuted/60">{items.length}</span>
                         </div>
                         {items.map((result) => {

@@ -1,8 +1,10 @@
+import { useTranslation } from 'react-i18next'
 import { Bell, Home, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import WindowControls from './WindowControls'
 
 export default function Topbar({ onSearchClick }: { onSearchClick?: () => void }) {
+  const { t } = useTranslation()
   return (
     <header className="flex items-center justify-between h-14 px-6 border-b border-border bg-background/95 drag shrink-0">
       <div className="flex items-center gap-3">
@@ -11,12 +13,12 @@ export default function Topbar({ onSearchClick }: { onSearchClick?: () => void }
         </div>
         <div>
           <p className="text-sm font-semibold text-textPrimary">RentFlow</p>
-          <p className="text-[11px] uppercase tracking-[0.22em] text-textMuted">Espace proprietaire</p>
+          <p className="text-[11px] uppercase tracking-[0.22em] text-textMuted">{t('topbar.ownerSpace')}</p>
         </div>
       </div>
 
       <div className="flex items-center gap-2 no-drag">
-        <Button variant="ghost" size="icon" onClick={onSearchClick} title="Rechercher (Ctrl+K)">
+        <Button variant="ghost" size="icon" onClick={onSearchClick} title={t('topbar.searchTooltip')}>
           <Search className="w-4 h-4" />
         </Button>
 

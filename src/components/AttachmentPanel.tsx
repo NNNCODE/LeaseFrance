@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import {
   AlertTriangle,
   Eye,
@@ -48,9 +49,10 @@ export default function AttachmentPanel({
   entityType,
   entityId,
   slots,
-  title = 'Pieces jointes',
+  title,
   compact = false,
 }: AttachmentPanelProps) {
+  const { t } = useTranslation()
   const [attachments, setAttachments] = useState<Attachment[]>([])
   const [loading, setLoading] = useState(true)
   const [previewAttachment, setPreviewAttachment] = useState<Attachment | null>(null)
@@ -84,6 +86,7 @@ export default function AttachmentPanel({
     : null
 
   const generalFiles = attachments.filter((a) => !a.slot)
+  const resolvedTitle = title ?? t('attachments.title')
 
   return (
     <div className={compact ? '' : 'rounded-2xl border border-border'}>
@@ -91,20 +94,20 @@ export default function AttachmentPanel({
       <div className={`flex items-center justify-between gap-3 ${compact ? 'mb-3' : 'px-4 py-3 border-b border-border'}`}>
         <div className="flex items-center gap-2">
           <Paperclip className="w-4 h-4 text-primary" />
-          <p className="text-sm font-semibold text-textPrimary">{title}</p>
+          <p className="text-sm font-semibold text-textPrimary">{resolvedTitle}</p>
           {attachments.length > 0 && (
             <Badge variant="muted">{attachments.length}</Badge>
           )}
         </div>
         <Button size="sm" variant="secondary" onClick={() => handleUpload(null)}>
           <Plus className="w-3 h-3" />
-          Ajouter
+          {t('common.add')}
         </Button>
       </div>
 
       <div className={compact ? '' : 'px-4 pb-4 pt-2'}>
         {loading ? (
-          <div className="py-4 text-xs text-textMuted text-center animate-pulse">Chargement...</div>
+          <div className="py-4 text-xs text-textMuted text-center animate-pulse">{t('common.loading')}</div>
         ) : (
           <div className="flex flex-col gap-3">
             {/* ── Slot sections ───────────────────────────── */}
@@ -114,9 +117,11 @@ export default function AttachmentPanel({
                   <div className="flex items-center gap-2">
                     <p className="text-xs font-medium text-textPrimary">{slotDef.label}</p>
                     {slotDef.files.length > 0 ? (
-                      <Badge variant="success" className="text-[10px]">{slotDef.files.length} fichier{slotDef.files.length > 1 ? 's' : ''}</Badge>
+                      <Badge variant="success" className="text-[10px]">
+                        {t('attachments.fileCount', { count: slotDef.files.length })}
+                      </Badge>
                     ) : (
-                      <Badge variant="warning" className="text-[10px]">Manquant</Badge>
+                      <Badge variant="warning" className="text-[10px]">{t('attachments.missing')}</Badge>
                     )}
                   </div>
                   <button
@@ -124,7 +129,7 @@ export default function AttachmentPanel({
                     className="text-xs text-primary hover:text-primary/80 transition-colors flex items-center gap-1"
                   >
                     <Plus className="w-3 h-3" />
-                    Ajouter
+                    {t('common.add')}
                   </button>
                 </div>
 
@@ -148,7 +153,7 @@ export default function AttachmentPanel({
             {generalFiles.length > 0 && (
               <div className="flex flex-col gap-1">
                 {slotted && (
-                  <p className="text-xs font-medium text-textMuted mb-1">Autres pieces jointes</p>
+                  <p className="text-xs font-medium text-textMuted mb-1">{t('attachments.otherFiles')}</p>
                 )}
                 {generalFiles.map((file) => (
                   <AttachmentRow
@@ -166,8 +171,8 @@ export default function AttachmentPanel({
             {attachments.length === 0 && !slotted && (
               <div className="py-6 text-center">
                 <Paperclip className="w-5 h-5 text-textMuted mx-auto" />
-                <p className="text-xs text-textMuted mt-2">Aucune piece jointe</p>
-                <p className="text-xs text-textMuted mt-0.5">Cliquez sur Ajouter pour joindre un fichier PDF ou une image.</p>
+                <p className="text-xs text-textMuted mt-2">{t('attachments.emptyTitle')}</p>
+                <p className="text-xs text-textMuted mt-0.5">{t('attachments.emptyDesc')}</p>
               </div>
             )}
           </div>
@@ -200,6 +205,7 @@ function AttachmentRow({
   onOpen: () => void
   onDelete: () => void
 }) {
+  const { t } = useTranslation()
   const FileIcon = getFileIcon(attachment.mime_type)
 
   return (
@@ -212,21 +218,21 @@ function AttachmentRow({
       <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
         <button
           onClick={onPreview}
-          title="Apercu"
+          title={t('attachments.preview')}
           className="p-1 rounded-md text-textMuted hover:text-primary hover:bg-primary/10 transition-colors"
         >
           <Eye className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={onOpen}
-          title="Ouvrir"
+          title={t('common.open')}
           className="p-1 rounded-md text-textMuted hover:text-primary hover:bg-primary/10 transition-colors"
         >
           <FolderOpen className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={onDelete}
-          title="Supprimer"
+          title={t('common.delete')}
           className="p-1 rounded-md text-textMuted hover:text-danger hover:bg-danger/10 transition-colors"
         >
           <Trash2 className="w-3.5 h-3.5" />
@@ -245,6 +251,7 @@ function AttachmentPreviewModal({
   attachment: Attachment
   onClose: () => void
 }) {
+  const { t } = useTranslation()
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
@@ -261,7 +268,7 @@ function AttachmentPreviewModal({
       if (cancelled) return
 
       if (result.error || !result.data) {
-        setError(result.error || 'Impossible de lire le fichier.')
+        setError(result.error || t('attachments.readError'))
       } else if (result.mimeType) {
         const nextUrl = URL.createObjectURL(new Blob([result.data], { type: result.mimeType }))
         if (cancelled) {
@@ -315,7 +322,7 @@ function AttachmentPreviewModal({
               onClick={() => window.api.attachments.open(attachment.id)}
             >
               <FolderOpen className="w-3.5 h-3.5" />
-              Ouvrir
+              {t('common.open')}
             </Button>
             <button
               onClick={onClose}
@@ -329,7 +336,7 @@ function AttachmentPreviewModal({
         {/* Content */}
         <div className="flex-1 overflow-auto flex items-center justify-center p-4">
           {loading ? (
-            <p className="text-sm text-textMuted animate-pulse">Chargement...</p>
+            <p className="text-sm text-textMuted animate-pulse">{t('common.loading')}</p>
           ) : error ? (
             <div className="flex flex-col items-center gap-3">
               <AlertTriangle className="w-8 h-8 text-warning" />
@@ -345,12 +352,12 @@ function AttachmentPreviewModal({
             <iframe
               src={previewUrl}
               className="w-full h-full border-0"
-              title="PDF Preview"
+              title={t('attachments.preview')}
             />
           ) : (
             <div className="flex flex-col items-center gap-3">
               <File className="w-8 h-8 text-textMuted" />
-              <p className="text-sm text-textMuted">Apercu non disponible pour ce type de fichier.</p>
+              <p className="text-sm text-textMuted">{t('attachments.previewUnavailable')}</p>
             </div>
           )}
         </div>

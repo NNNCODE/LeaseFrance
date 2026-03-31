@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Plus, Building2, MapPin, Ruler, Pencil, Trash2,
@@ -12,16 +13,14 @@ import { Badge } from '@/components/ui/badge'
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 const PROPERTY_TYPES = [
-  { value: 'appartement', label: 'Appartement', icon: Building2 },
-  { value: 'maison',      label: 'Maison',       icon: Home      },
-  { value: 'studio',      label: 'Studio',       icon: Building2 },
-  { value: 'parking',     label: 'Parking',      icon: Car       },
-  { value: 'autre',       label: 'Autre',        icon: Warehouse },
+  { value: 'appartement', labelKey: 'properties.typeAppartement', icon: Building2 },
+  { value: 'maison',      labelKey: 'properties.typeMaison',      icon: Home      },
+  { value: 'studio',      labelKey: 'properties.typeStudio',      icon: Building2 },
+  { value: 'parking',     labelKey: 'properties.typeParking',     icon: Car       },
+  { value: 'autre',       labelKey: 'properties.typeAutre',       icon: Warehouse },
 ] as const
 
 type PropertyType = typeof PROPERTY_TYPES[number]['value']
-
-const typeLabel = (t: string) => PROPERTY_TYPES.find((p) => p.value === t)?.label ?? t
 
 const emptyForm: PropertyInput = {
   name: '', address: '', city: '', zip: '', type: 'appartement', area_m2: null,
@@ -30,6 +29,7 @@ const emptyForm: PropertyInput = {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function Properties() {
+  const { t } = useTranslation()
   const [properties, setProperties] = useState<Property[]>([])
   const [loading, setLoading]       = useState(true)
   const [showForm, setShowForm]     = useState(false)
@@ -82,21 +82,19 @@ export default function Properties() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-textPrimary">Biens immobiliers</h1>
+          <h1 className="text-2xl font-semibold text-textPrimary">{t('properties.title')}</h1>
           <p className="text-textMuted text-sm mt-1">
-            {properties.length} bien{properties.length !== 1 ? 's' : ''} enregistré{properties.length !== 1 ? 's' : ''}
+            {t('properties.count', { count: properties.length })}
           </p>
         </div>
         <Button onClick={openAdd}>
           <Plus className="w-4 h-4" />
-          Ajouter un bien
+          {t('properties.add')}
         </Button>
       </div>
 
-      {/* Grid */}
       {loading ? (
         <div className="grid grid-cols-3 gap-4">
           {[1, 2, 3].map((i) => (
@@ -123,7 +121,6 @@ export default function Properties() {
         </motion.div>
       )}
 
-      {/* Form modal */}
       <AnimatePresence>
         {showForm && (
           <PropertyFormModal
@@ -134,7 +131,6 @@ export default function Properties() {
         )}
       </AnimatePresence>
 
-      {/* Delete confirm modal */}
       <AnimatePresence>
         {deleting && (
           <DeleteModal
@@ -150,27 +146,24 @@ export default function Properties() {
   )
 }
 
-// ── Empty state ────────────────────────────────────────────────────────────────
-
 function EmptyState({ onAdd }: { onAdd: () => void }) {
+  const { t } = useTranslation()
   return (
     <div className="flex flex-col items-center justify-center gap-4 py-24 text-center">
       <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10">
         <Building2 className="w-8 h-8 text-primary" />
       </div>
       <div>
-        <p className="text-lg font-semibold text-textPrimary">Aucun bien enregistré</p>
-        <p className="text-sm text-textMuted mt-1">Ajoutez votre premier bien pour commencer.</p>
+        <p className="text-lg font-semibold text-textPrimary">{t('properties.empty')}</p>
+        <p className="text-sm text-textMuted mt-1">{t('properties.emptyDesc')}</p>
       </div>
       <Button onClick={onAdd}>
         <Plus className="w-4 h-4" />
-        Ajouter un bien
+        {t('properties.add')}
       </Button>
     </div>
   )
 }
-
-// ── Property card ──────────────────────────────────────────────────────────────
 
 function PropertyCard({
   property, onEdit, onDelete,
@@ -179,7 +172,9 @@ function PropertyCard({
   onEdit: () => void
   onDelete: () => void
 }) {
-  const TypeIcon = PROPERTY_TYPES.find((t) => t.value === property.type)?.icon ?? Building2
+  const { t } = useTranslation()
+  const TypeIcon = PROPERTY_TYPES.find((pt) => pt.value === property.type)?.icon ?? Building2
+  const typeLabelKey = PROPERTY_TYPES.find((pt) => pt.value === property.type)?.labelKey
 
   return (
     <motion.div
@@ -190,7 +185,6 @@ function PropertyCard({
     >
       <Card className="group hover:border-primary/40 transition-colors duration-200">
         <CardContent className="pt-5 flex flex-col gap-3">
-          {/* Top */}
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-center gap-2.5">
               <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-primary/10 shrink-0">
@@ -198,10 +192,9 @@ function PropertyCard({
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-textPrimary truncate">{property.name}</p>
-                <Badge variant="muted" className="mt-0.5 text-[10px]">{typeLabel(property.type)}</Badge>
+                <Badge variant="muted" className="mt-0.5 text-[10px]">{typeLabelKey ? t(typeLabelKey) : property.type}</Badge>
               </div>
             </div>
-            {/* Actions — visible on hover */}
             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <button
                 onClick={onEdit}
@@ -218,7 +211,6 @@ function PropertyCard({
             </div>
           </div>
 
-          {/* Info */}
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center gap-1.5 text-xs text-textMuted">
               <MapPin className="w-3.5 h-3.5 shrink-0" />
@@ -241,8 +233,6 @@ function PropertyCard({
   )
 }
 
-// ── Form modal ─────────────────────────────────────────────────────────────────
-
 function PropertyFormModal({
   initial, onSave, onClose,
 }: {
@@ -250,6 +240,7 @@ function PropertyFormModal({
   onSave: (data: PropertyInput) => Promise<void>
   onClose: () => void
 }) {
+  const { t } = useTranslation()
   const [form, setForm] = useState<PropertyInput>(
     initial
       ? { name: initial.name, address: initial.address, city: initial.city, zip: initial.zip, type: initial.type, area_m2: initial.area_m2 }
@@ -265,15 +256,15 @@ function PropertyFormModal({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
-    if (!form.name.trim())    return setError('Le nom est requis.')
-    if (!form.address.trim()) return setError("L'adresse est requise.")
-    if (!form.city.trim())    return setError('La ville est requise.')
-    if (!form.zip.trim())     return setError('Le code postal est requis.')
+    if (!form.name.trim())    return setError(t('properties.nameRequired'))
+    if (!form.address.trim()) return setError(t('properties.addressRequired'))
+    if (!form.city.trim())    return setError(t('properties.cityRequired'))
+    if (!form.zip.trim())     return setError(t('properties.zipRequired'))
     setSaving(true)
     try {
       await onSave(form)
     } catch (err) {
-      setError(`Erreur : ${err instanceof Error ? err.message : String(err)}`)
+      setError(`${t('common.error')} : ${err instanceof Error ? err.message : String(err)}`)
       setSaving(false)
     }
   }
@@ -293,29 +284,25 @@ function PropertyFormModal({
         transition={{ duration: 0.2, ease: 'easeOut' }}
         className="w-full max-w-md bg-surface border border-border rounded-2xl shadow-2xl overflow-hidden"
       >
-        {/* Modal header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <h2 className="text-base font-semibold text-textPrimary">
-            {initial ? 'Modifier le bien' : 'Ajouter un bien'}
+            {initial ? t('properties.editTitle') : t('properties.addTitle')}
           </h2>
           <button onClick={onClose} className="text-textMuted hover:text-textPrimary transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-6">
-          {/* Nom */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-textMuted">Nom du bien</label>
-            <Input value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="Apt. Marais 3P" autoFocus />
+            <label className="text-xs font-medium text-textMuted">{t('properties.name')}</label>
+            <Input value={form.name} onChange={(e) => set('name', e.target.value)} placeholder={t('properties.namePlaceholder')} autoFocus />
           </div>
 
-          {/* Type */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-textMuted">Type</label>
+            <label className="text-xs font-medium text-textMuted">{t('properties.type')}</label>
             <div className="grid grid-cols-5 gap-1.5">
-              {PROPERTY_TYPES.map(({ value, label, icon: Icon }) => (
+              {PROPERTY_TYPES.map(({ value, labelKey, icon: Icon }) => (
                 <button
                   key={value}
                   type="button"
@@ -327,39 +314,36 @@ function PropertyFormModal({
                   }`}
                 >
                   <Icon className="w-3.5 h-3.5" />
-                  {label}
+                  {t(labelKey)}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Adresse */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-textMuted">Adresse</label>
-            <Input value={form.address} onChange={(e) => set('address', e.target.value)} placeholder="12 rue de Rivoli" />
+            <label className="text-xs font-medium text-textMuted">{t('properties.address')}</label>
+            <Input value={form.address} onChange={(e) => set('address', e.target.value)} placeholder={t('properties.addressPlaceholder')} />
           </div>
 
-          {/* Ville + CP */}
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-textMuted">Code postal</label>
-              <Input value={form.zip} onChange={(e) => set('zip', e.target.value)} placeholder="75004" maxLength={5} />
+              <label className="text-xs font-medium text-textMuted">{t('properties.zip')}</label>
+              <Input value={form.zip} onChange={(e) => set('zip', e.target.value)} placeholder={t('properties.zipPlaceholder')} maxLength={5} />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-textMuted">Ville</label>
-              <Input value={form.city} onChange={(e) => set('city', e.target.value)} placeholder="Paris" />
+              <label className="text-xs font-medium text-textMuted">{t('properties.city')}</label>
+              <Input value={form.city} onChange={(e) => set('city', e.target.value)} placeholder={t('properties.cityPlaceholder')} />
             </div>
           </div>
 
-          {/* Surface */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-textMuted">Surface (m²) — optionnel</label>
+            <label className="text-xs font-medium text-textMuted">{t('properties.areaLabel')}</label>
             <Input
               type="number"
               min={1}
               value={form.area_m2 ?? ''}
               onChange={(e) => set('area_m2', e.target.value ? parseFloat(e.target.value) : null)}
-              placeholder="45"
+              placeholder={t('properties.areaPlaceholder')}
             />
           </div>
 
@@ -369,11 +353,11 @@ function PropertyFormModal({
 
           <div className="flex gap-2 pt-1">
             <Button type="button" variant="secondary" onClick={onClose} className="flex-1">
-              Annuler
+              {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={saving} className="flex-1">
               <Save className="w-3.5 h-3.5" />
-              {saving ? 'Enregistrement...' : initial ? 'Modifier' : 'Ajouter'}
+              {saving ? t('common.saving') : initial ? t('common.edit') : t('common.add')}
             </Button>
           </div>
         </form>
@@ -381,8 +365,6 @@ function PropertyFormModal({
     </motion.div>
   )
 }
-
-// ── Delete modal ───────────────────────────────────────────────────────────────
 
 function DeleteModal({
   property, onConfirm, onClose, error, loading,
@@ -393,6 +375,7 @@ function DeleteModal({
   error: string
   loading: boolean
 }) {
+  const { t } = useTranslation()
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -413,18 +396,18 @@ function DeleteModal({
             <AlertTriangle className="w-5 h-5 text-danger" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-textPrimary">Supprimer ce bien ?</p>
-            <p className="text-xs text-textMuted mt-0.5">« {property.name} » sera supprimé définitivement.</p>
+            <p className="text-sm font-semibold text-textPrimary">{t('properties.deleteTitle')}</p>
+            <p className="text-xs text-textMuted mt-0.5">{t('properties.deleteDesc', { name: property.name })}</p>
           </div>
         </div>
         {error ? (
           <p className="text-xs text-danger bg-danger/10 rounded-lg px-3 py-2">{error}</p>
         ) : null}
         <div className="flex gap-2">
-          <Button variant="secondary" onClick={onClose} className="flex-1" disabled={loading}>Annuler</Button>
+          <Button variant="secondary" onClick={onClose} className="flex-1" disabled={loading}>{t('common.cancel')}</Button>
           <Button variant="danger" onClick={onConfirm} className="flex-1" disabled={loading}>
             <Trash2 className="w-3.5 h-3.5" />
-            {loading ? 'Suppression...' : 'Supprimer'}
+            {loading ? t('common.deleting') : t('common.delete')}
           </Button>
         </div>
       </motion.div>

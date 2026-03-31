@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import { AlertTriangle, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { monthLabel } from './paymentPageUtils'
@@ -14,6 +15,8 @@ export default function PaymentDeleteModal({
   onConfirm,
   onClose,
 }: PaymentDeleteModalProps) {
+  const { t } = useTranslation()
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -34,19 +37,19 @@ export default function PaymentDeleteModal({
             <AlertTriangle className="h-5 w-5 text-danger" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-textPrimary">Supprimer ce paiement ?</p>
+            <p className="text-sm font-semibold text-textPrimary">{t('payments.deleteTitle')}</p>
             <p className="mt-0.5 text-xs text-textMuted">
-              {monthLabel(payment.period_month, payment.period_year)} · {payment.property_name}
+              {monthLabel(payment.period_month, payment.period_year)} | {payment.property_name}
             </p>
           </div>
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" onClick={onClose} className="flex-1">
-            Annuler
+            {t('common.cancel')}
           </Button>
           <Button variant="danger" onClick={onConfirm} className="flex-1">
             <Trash2 className="h-3.5 w-3.5" />
-            Supprimer
+            {t('common.delete')}
           </Button>
         </div>
       </motion.div>

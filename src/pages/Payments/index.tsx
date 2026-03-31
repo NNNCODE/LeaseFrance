@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { pdf } from '@react-pdf/renderer'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowRightLeft, CheckCircle2, CreditCard, Plus, RefreshCw, X } from 'lucide-react'
@@ -13,9 +14,10 @@ import PaymentEmptyState from './PaymentEmptyState'
 import PaymentFormModal from './PaymentFormModal'
 import PaymentReminderModal from './PaymentReminderModal'
 import PaymentRow from './PaymentRow'
-import { monthLabel, MONTHS, today } from './paymentPageUtils'
+import { monthLabel, today } from './paymentPageUtils'
 
 export default function Payments() {
+  const { t } = useTranslation()
   const { profile } = useAuthStore()
   const [payments, setPayments] = useState<Payment[]>([])
   const [leases, setLeases] = useState<Lease[]>([])
@@ -129,7 +131,7 @@ export default function Payments() {
       && payment.charges_amount >= payment.lease_charges_amount
 
     const baseData = {
-      landlordName: profile?.name ?? 'Proprietaire',
+      landlordName: profile?.name ?? t('nav.profile'),
       landlordAddress: profile?.address,
       landlordCity: profile?.city,
       landlordPhone: profile?.phone,
@@ -149,18 +151,18 @@ export default function Payments() {
       leaseType: lease.type,
     }
 
-    const month = MONTHS[payment.period_month - 1]
+    const periodToken = `${payment.period_year}-${String(payment.period_month).padStart(2, '0')}`
     let blob: Blob
     let fileName: string
     let docType: string
 
     if (isFullPayment) {
       blob = await pdf(<QuittancePDF data={baseData as QuittanceData} />).toBlob()
-      fileName = `Quittance_${payment.tenant_last_name}_${month}_${payment.period_year}.pdf`
+      fileName = `quittance_${payment.tenant_last_name}_${periodToken}.pdf`
       docType = 'quittance'
     } else {
       blob = await pdf(<RecuPDF data={baseData as RecuData} />).toBlob()
-      fileName = `Recu_${payment.tenant_last_name}_${month}_${payment.period_year}.pdf`
+      fileName = `recu_${payment.tenant_last_name}_${periodToken}.pdf`
       docType = 'recu'
     }
 
@@ -172,18 +174,27 @@ export default function Payments() {
   const canImport =
     leases.some((lease) => lease.status === 'active')
     || payments.some((payment) => payment.status !== 'paid')
+  const summaryParts = [
+    t('payments.summary.paid', { count: summary.paid }),
+    summary.pending > 0 ? t('payments.summary.pending', { count: summary.pending }) : null,
+    summary.late > 0 ? t('payments.summary.late', { count: summary.late }) : null,
+    summary.totalPaid > 0
+      ? t('payments.summary.collectedAmount', { amount: formatCurrency(summary.totalPaid) })
+      : null,
+  ].filter(Boolean) as string[]
+  const syncParts = syncResult
+    ? [
+        syncResult.created > 0 ? t('payments.syncCreated', { count: syncResult.created }) : null,
+        syncResult.markedLate > 0 ? t('payments.syncLate', { count: syncResult.markedLate }) : null,
+      ].filter(Boolean) as string[]
+    : []
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-textPrimary">Paiements</h1>
-          <p className="mt-1 text-sm text-textMuted">
-            {summary.paid} paye{summary.paid !== 1 ? 's' : ''}
-            {summary.pending > 0 && ` · ${summary.pending} en attente`}
-            {summary.late > 0 && <span className="text-danger"> · {summary.late} en retard</span>}
-            {summary.totalPaid > 0 && ` · ${formatCurrency(summary.totalPaid)} encaisses`}
-          </p>
+          <h1 className="text-2xl font-semibold text-textPrimary">{t('payments.title')}</h1>
+          <p className="mt-1 text-sm text-textMuted">{summaryParts.join(' | ')}</p>
         </div>
         <div className="flex gap-2">
           <Button
@@ -192,13 +203,13 @@ export default function Payments() {
               void syncAndLoad()
             }}
             disabled={syncing}
-            title="Synchroniser les paiements"
+            title={t('payments.actions.syncPayments')}
           >
             <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
           </Button>
           <Button variant="secondary" onClick={() => setShowImport(true)} disabled={!canImport}>
             <ArrowRightLeft className="h-4 w-4" />
-            Import banque CSV
+            {t('payments.importCsv')}
           </Button>
           <Button
             onClick={() => {
@@ -208,7 +219,7 @@ export default function Payments() {
             disabled={noLeases}
           >
             <Plus className="h-4 w-4" />
-            Nouveau paiement
+            {t('payments.add')}
           </Button>
         </div>
       </div>
@@ -222,13 +233,7 @@ export default function Payments() {
             className="flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-4 py-2 text-sm text-primary"
           >
             <CheckCircle2 className="h-4 w-4 shrink-0" />
-            <span>
-              {syncResult.created > 0
-                && `${syncResult.created} paiement${syncResult.created > 1 ? 's' : ''} genere${syncResult.created > 1 ? 's' : ''}`}
-              {syncResult.created > 0 && syncResult.markedLate > 0 && ' · '}
-              {syncResult.markedLate > 0
-                && `${syncResult.markedLate} marque${syncResult.markedLate > 1 ? 's' : ''} en retard`}
-            </span>
+            <span>{syncParts.join(' | ')}</span>
             <button onClick={() => setSyncResult(null)} className="ml-auto rounded p-0.5 hover:bg-primary/10">
               <X className="h-3 w-3" />
             </button>
@@ -241,31 +246,28 @@ export default function Payments() {
       ) : (
         <>
           <div className="flex gap-2">
-            {(['all', 'paid', 'pending', 'late'] as const).map((status) => {
-              const labels = { all: 'Tous', paid: 'Payes', pending: 'En attente', late: 'En retard' }
-              return (
-                <button
-                  key={status}
-                  onClick={() => setFilter(status)}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                    filter === status
-                      ? 'bg-primary text-white'
-                      : 'border border-border bg-surface text-textMuted hover:text-textPrimary'
-                  }`}
-                >
-                  {labels[status]}
-                  {status !== 'all' && (
-                    <span className="ml-1.5 opacity-70">
-                      {status === 'paid'
-                        ? summary.paid
-                        : status === 'pending'
-                          ? summary.pending
-                          : summary.late}
-                    </span>
-                  )}
-                </button>
-              )
-            })}
+            {(['all', 'paid', 'pending', 'late'] as const).map((status) => (
+              <button
+                key={status}
+                onClick={() => setFilter(status)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                  filter === status
+                    ? 'bg-primary text-white'
+                    : 'border border-border bg-surface text-textMuted hover:text-textPrimary'
+                }`}
+              >
+                {t(`payments.filter.${status}`)}
+                {status !== 'all' && (
+                  <span className="ml-1.5 opacity-70">
+                    {status === 'paid'
+                      ? summary.paid
+                      : status === 'pending'
+                        ? summary.pending
+                        : summary.late}
+                  </span>
+                )}
+              </button>
+            ))}
           </div>
 
           {loading ? (
@@ -277,7 +279,7 @@ export default function Payments() {
           ) : grouped.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-16 text-textMuted">
               <CreditCard className="h-8 w-8 opacity-30" />
-              <p className="text-sm">Aucun paiement dans cette categorie</p>
+              <p className="text-sm">{t('payments.emptyFiltered')}</p>
             </div>
           ) : (
             <div className="flex flex-col gap-6">

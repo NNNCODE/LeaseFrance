@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import {
   AlertCircle,
   CheckCircle2,
@@ -64,6 +65,7 @@ function createInitialForm(tenant: Tenant): TenantFileForm {
 }
 
 export default function TenantFileModal({ tenant, onSave, onClose }: TenantFileModalProps) {
+  const { t } = useTranslation()
   const [form, setForm] = useState<TenantFileForm>(() => createInitialForm(tenant))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -100,7 +102,7 @@ export default function TenantFileModal({ tenant, onSave, onClose }: TenantFileM
       })
       onClose()
     } catch (err) {
-      setError(`Erreur : ${err instanceof Error ? err.message : String(err)}`)
+      setError(`${t('common.error')}: ${err instanceof Error ? err.message : String(err)}`)
       setSaving(false)
     }
   }
@@ -124,7 +126,7 @@ export default function TenantFileModal({ tenant, onSave, onClose }: TenantFileM
           <div className="flex items-center gap-2">
             <FileText className="w-4 h-4 text-primary" />
             <div>
-              <h2 className="text-base font-semibold text-textPrimary">Dossier locatif</h2>
+              <h2 className="text-base font-semibold text-textPrimary">{t('tenants.dossier.title')}</h2>
               <p className="text-xs text-textMuted mt-0.5">
                 {tenant.first_name} {tenant.last_name}
               </p>
@@ -139,21 +141,21 @@ export default function TenantFileModal({ tenant, onSave, onClose }: TenantFileM
           <div className="grid grid-cols-3 gap-3">
             <SummaryCard
               icon={FileText}
-              title="Pieces recues"
+              title={t('tenants.fileModal.receivedDocuments')}
               value={`${completedCount}/${DOSSIER_ITEMS.length}`}
-              badge={<Badge variant={dossierVariant}>{completedCount === DOSSIER_ITEMS.length ? 'Complet' : 'A completer'}</Badge>}
+              badge={<Badge variant={dossierVariant}>{completedCount === DOSSIER_ITEMS.length ? t('tenants.dossier.complete') : t('tenants.fileModal.toComplete')}</Badge>}
             />
             <SummaryCard
               icon={ShieldCheck}
-              title="Garant"
-              value={guarantorPresent ? 'Renseigne' : 'Non renseigne'}
-              badge={<Badge variant={guarantorPresent ? 'success' : 'muted'}>{guarantorPresent ? 'Present' : 'Absent'}</Badge>}
+              title={t('tenants.guarantor')}
+              value={guarantorPresent ? t('tenants.fileModal.filled') : t('profile.notProvided')}
+              badge={<Badge variant={guarantorPresent ? 'success' : 'muted'}>{guarantorPresent ? t('tenants.fileModal.present') : t('tenants.fileModal.absent')}</Badge>}
             />
             <SummaryCard
               icon={Phone}
-              title="Contact urgence"
-              value={emergencyPresent ? 'Disponible' : 'Non renseigne'}
-              badge={<Badge variant={emergencyPresent ? 'success' : 'muted'}>{emergencyPresent ? 'Present' : 'Absent'}</Badge>}
+              title={t('tenants.emergencyContact')}
+              value={emergencyPresent ? t('tenants.fileModal.available') : t('profile.notProvided')}
+              badge={<Badge variant={emergencyPresent ? 'success' : 'muted'}>{emergencyPresent ? t('tenants.fileModal.present') : t('tenants.fileModal.absent')}</Badge>}
             />
           </div>
 
@@ -161,20 +163,20 @@ export default function TenantFileModal({ tenant, onSave, onClose }: TenantFileM
             <div className="flex items-center gap-2 mb-4">
               <ShieldCheck className="w-4 h-4 text-primary" />
               <div>
-                <p className="text-sm font-semibold text-textPrimary">Garant</p>
-                <p className="text-xs text-textMuted">Informations du garant ou de la caution.</p>
+                <p className="text-sm font-semibold text-textPrimary">{t('tenants.guarantor')}</p>
+                <p className="text-xs text-textMuted">{t('tenants.fileModal.guarantorDesc')}</p>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Nom du garant">
+              <Field label={t('tenants.fileModal.guarantorName')}>
                 <Input
                   value={form.guarantor_name ?? ''}
                   onChange={(event) => setField('guarantor_name', event.target.value)}
-                  placeholder="Nom et prenom"
+                  placeholder={t('tenants.fileModal.fullNamePlaceholder')}
                 />
               </Field>
-              <Field label="Email du garant">
+              <Field label={t('tenants.fileModal.guarantorEmail')}>
                 <Input
                   type="email"
                   value={form.guarantor_email ?? ''}
@@ -182,18 +184,18 @@ export default function TenantFileModal({ tenant, onSave, onClose }: TenantFileM
                   placeholder="garant@email.fr"
                 />
               </Field>
-              <Field label="Telephone du garant">
+              <Field label={t('tenants.fileModal.guarantorPhone')}>
                 <Input
                   value={form.guarantor_phone ?? ''}
                   onChange={(event) => setField('guarantor_phone', event.target.value)}
-                  placeholder="06 12 34 56 78"
+                  placeholder={t('profile.phonePlaceholder')}
                 />
               </Field>
-              <Field label="Adresse du garant">
+              <Field label={t('tenants.fileModal.guarantorAddress')}>
                 <Input
                   value={form.guarantor_address ?? ''}
                   onChange={(event) => setField('guarantor_address', event.target.value)}
-                  placeholder="Adresse complete"
+                  placeholder={t('tenants.fileModal.fullAddressPlaceholder')}
                 />
               </Field>
             </div>
@@ -203,31 +205,31 @@ export default function TenantFileModal({ tenant, onSave, onClose }: TenantFileM
             <div className="flex items-center gap-2 mb-4">
               <UserRound className="w-4 h-4 text-primary" />
               <div>
-                <p className="text-sm font-semibold text-textPrimary">Contact d'urgence</p>
-                <p className="text-xs text-textMuted">Personne a prevenir ou a recontacter si besoin.</p>
+                <p className="text-sm font-semibold text-textPrimary">{t('tenants.emergencyContact')}</p>
+                <p className="text-xs text-textMuted">{t('tenants.fileModal.emergencyContactDesc')}</p>
               </div>
             </div>
 
             <div className="grid grid-cols-3 gap-3">
-              <Field label="Nom">
+              <Field label={t('tenants.fileModal.contactName')}>
                 <Input
                   value={form.emergency_contact_name ?? ''}
                   onChange={(event) => setField('emergency_contact_name', event.target.value)}
-                  placeholder="Nom du contact"
+                  placeholder={t('tenants.fileModal.contactNamePlaceholder')}
                 />
               </Field>
-              <Field label="Lien">
+              <Field label={t('tenants.fileModal.relationship')}>
                 <Input
                   value={form.emergency_contact_relation ?? ''}
                   onChange={(event) => setField('emergency_contact_relation', event.target.value)}
-                  placeholder="Parent, ami, collegue..."
+                  placeholder={t('tenants.fileModal.relationshipPlaceholder')}
                 />
               </Field>
-              <Field label="Telephone">
+              <Field label={t('tenants.phone')}>
                 <Input
                   value={form.emergency_contact_phone ?? ''}
                   onChange={(event) => setField('emergency_contact_phone', event.target.value)}
-                  placeholder="06 12 34 56 78"
+                  placeholder={t('profile.phonePlaceholder')}
                 />
               </Field>
             </div>
@@ -237,8 +239,8 @@ export default function TenantFileModal({ tenant, onSave, onClose }: TenantFileM
             <div className="flex items-center gap-2 mb-4">
               <FileText className="w-4 h-4 text-primary" />
               <div>
-                <p className="text-sm font-semibold text-textPrimary">Pieces justificatives</p>
-                <p className="text-xs text-textMuted">Cochez les pieces deja recues dans le dossier.</p>
+                <p className="text-sm font-semibold text-textPrimary">{t('tenants.fileModal.supportingDocuments')}</p>
+                <p className="text-xs text-textMuted">{t('tenants.fileModal.supportingDocumentsDesc')}</p>
               </div>
             </div>
 
@@ -262,9 +264,9 @@ export default function TenantFileModal({ tenant, onSave, onClose }: TenantFileM
                       <AlertCircle className="w-4 h-4 mt-0.5 text-textMuted shrink-0" />
                     )}
                     <div>
-                      <p className="text-sm font-medium text-textPrimary">{item.label}</p>
+                      <p className="text-sm font-medium text-textPrimary">{t(item.labelKey)}</p>
                       <p className="text-xs text-textMuted mt-1">
-                        {checked ? 'Piece deja recue.' : 'Piece encore manquante.'}
+                        {checked ? t('tenants.fileModal.documentReceived') : t('tenants.fileModal.documentMissing')}
                       </p>
                     </div>
                   </button>
@@ -277,16 +279,16 @@ export default function TenantFileModal({ tenant, onSave, onClose }: TenantFileM
           <AttachmentPanel
             entityType="tenant"
             entityId={tenant.id}
-            title="Fichiers joints au dossier"
-            slots={DOSSIER_ITEMS.map((item) => ({ key: item.key, label: item.label }))}
+            title={t('tenants.fileModal.attachments')}
+            slots={DOSSIER_ITEMS.map((item) => ({ key: item.key, label: t(item.labelKey) }))}
           />
 
           <section className="rounded-2xl border border-border bg-surfaceHigh/40 p-4">
             <div className="flex items-center gap-2 mb-4">
               <FileText className="w-4 h-4 text-primary" />
               <div>
-                <p className="text-sm font-semibold text-textPrimary">Notes</p>
-                <p className="text-xs text-textMuted">Points a suivre, pieces attendues, commentaires libres.</p>
+                <p className="text-sm font-semibold text-textPrimary">{t('payments.notes')}</p>
+                <p className="text-xs text-textMuted">{t('tenants.fileModal.notesDesc')}</p>
               </div>
             </div>
 
@@ -294,7 +296,7 @@ export default function TenantFileModal({ tenant, onSave, onClose }: TenantFileM
               value={form.dossier_notes ?? ''}
               onChange={(event) => setField('dossier_notes', event.target.value)}
               rows={4}
-              placeholder="Precisions sur le dossier, documents a relancer, observations..."
+              placeholder={t('tenants.fileModal.notesPlaceholder')}
               className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-textPrimary placeholder:text-textMuted transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </section>
@@ -302,10 +304,10 @@ export default function TenantFileModal({ tenant, onSave, onClose }: TenantFileM
           {error && <p className="text-xs text-danger bg-danger/10 rounded-lg px-3 py-2">{error}</p>}
 
           <div className="flex gap-2 pt-1">
-            <Button type="button" variant="secondary" onClick={onClose} className="flex-1">Annuler</Button>
+            <Button type="button" variant="secondary" onClick={onClose} className="flex-1">{t('common.cancel')}</Button>
             <Button type="submit" disabled={saving} className="flex-1">
               <Save className="w-3.5 h-3.5" />
-              {saving ? 'Enregistrement...' : 'Enregistrer le dossier'}
+              {saving ? t('common.saving') : t('tenants.fileModal.save')}
             </Button>
           </div>
         </form>

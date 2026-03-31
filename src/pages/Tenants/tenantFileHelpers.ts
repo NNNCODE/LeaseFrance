@@ -1,9 +1,9 @@
 export const DOSSIER_ITEMS = [
-  { key: 'dossier_id_document', label: "Piece d'identite" },
-  { key: 'dossier_income_proof', label: 'Justificatifs de revenus' },
-  { key: 'dossier_employment_proof', label: "Justificatif d'activite" },
-  { key: 'dossier_tax_notice', label: "Dernier avis d'imposition" },
-  { key: 'dossier_bank_details', label: 'RIB' },
+  { key: 'dossier_id_document', labelKey: 'tenants.dossier.idDocument' },
+  { key: 'dossier_income_proof', labelKey: 'tenants.dossier.incomeProof' },
+  { key: 'dossier_employment_proof', labelKey: 'tenants.dossier.employmentProof' },
+  { key: 'dossier_tax_notice', labelKey: 'tenants.dossier.taxNotice' },
+  { key: 'dossier_bank_details', labelKey: 'tenants.dossier.bankDetails' },
 ] as const
 
 type DossierKey = (typeof DOSSIER_ITEMS)[number]['key']

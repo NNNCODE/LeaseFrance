@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { AnimatePresence, motion } from 'framer-motion'
 import { AlertTriangle, CheckCircle2, Copy, Eye, EyeOff, KeyRound, Lock, LogIn, Mail, ShieldCheck, UserPlus, X } from 'lucide-react'
 import { useAuthStore } from '@/stores/useAuthStore'
@@ -16,6 +17,7 @@ interface LoginProps {
 }
 
 export default function Login({ onRegister, initialEmail = '', notice = null }: LoginProps) {
+  const { t } = useTranslation()
   const { login, profile, error } = useAuthStore()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -55,7 +57,7 @@ export default function Login({ onRegister, initialEmail = '', notice = null }: 
     if (isLocked || !password) return
 
     if (!email.trim()) {
-      setLocalError('Veuillez entrer votre adresse e-mail.')
+      setLocalError(t('auth.login.emailRequired'))
       return
     }
 
@@ -80,9 +82,9 @@ export default function Login({ onRegister, initialEmail = '', notice = null }: 
   return (
     <>
       <AuthShell
-        eyebrow="Connexion"
-        title="Retrouvez votre poste de pilotage."
-        description="Connectez-vous a votre espace proprietaire avec les memes controles de fenetre que dans le reste de l application."
+        eyebrow={t('auth.login.eyebrow')}
+        title={t('auth.login.title')}
+        description={t('auth.login.description')}
         footer={(
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div className="flex flex-wrap items-center gap-3">
@@ -92,11 +94,11 @@ export default function Login({ onRegister, initialEmail = '', notice = null }: 
                 className="inline-flex items-center gap-1.5 text-xs font-medium text-textMuted transition-colors hover:text-primary"
               >
                 <KeyRound className="w-3.5 h-3.5" />
-                Mot de passe oublie
+                {t('auth.login.forgotPassword')}
               </button>
               <div className="flex items-center gap-2 text-xs text-textMuted">
                 <ShieldCheck className="w-3.5 h-3.5 text-success" />
-                Donnees locales et chiffrees sur ce poste.
+                {t('auth.login.localData')}
               </div>
             </div>
             {onRegister ? (
@@ -106,7 +108,7 @@ export default function Login({ onRegister, initialEmail = '', notice = null }: 
                 className="inline-flex items-center gap-1.5 text-xs font-medium text-textMuted transition-colors hover:text-primary"
               >
                 <UserPlus className="w-3.5 h-3.5" />
-                Creer un compte
+                {t('auth.login.createAccount')}
               </button>
             ) : <div />}
           </div>
@@ -124,7 +126,7 @@ export default function Login({ onRegister, initialEmail = '', notice = null }: 
 
         {profile ? (
           <div className="rounded-2xl border border-border/70 bg-surfaceHigh/50 px-4 py-3">
-            <p className="text-xs uppercase tracking-[0.18em] text-textMuted">Dernier compte utilise</p>
+            <p className="text-xs uppercase tracking-[0.18em] text-textMuted">{t('auth.login.lastAccount')}</p>
             <p className="mt-2 text-sm font-semibold text-textPrimary">{profile.name}</p>
             <p className="mt-1 text-xs text-textMuted">{profile.email}</p>
           </div>
@@ -132,7 +134,7 @@ export default function Login({ onRegister, initialEmail = '', notice = null }: 
 
         <form onSubmit={handleSubmit} className="mt-5 flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-textMuted">Adresse e-mail</label>
+            <label className="text-xs font-medium text-textMuted">{t('auth.login.email')}</label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-textMuted" />
               <Input
@@ -141,20 +143,20 @@ export default function Login({ onRegister, initialEmail = '', notice = null }: 
                 type="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                placeholder="jean.dupont@email.fr"
+                placeholder={t('auth.login.emailPlaceholder')}
                 disabled={isLocked || loading}
               />
             </div>
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-textMuted">Mot de passe</label>
+            <label className="text-xs font-medium text-textMuted">{t('auth.login.password')}</label>
             <div className="relative">
               <Input
                 type={showPwd ? 'text' : 'password'}
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                placeholder="Votre mot de passe"
+                placeholder={t('auth.login.passwordPlaceholder')}
                 disabled={isLocked || loading}
               />
               <button
@@ -177,7 +179,7 @@ export default function Login({ onRegister, initialEmail = '', notice = null }: 
               className="mt-0.5 h-4 w-4 rounded border-border bg-surface text-primary"
             />
             <span>
-              Se souvenir de moi sur cet appareil
+              {t('auth.login.rememberMe')}
             </span>
           </label>
 
@@ -190,7 +192,7 @@ export default function Login({ onRegister, initialEmail = '', notice = null }: 
                 exit={{ opacity: 0 }}
                 className="rounded-xl border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning"
               >
-                Trop de tentatives. Reessayez dans {lockout}s.
+                {t('auth.login.lockout', { seconds: lockout })}
               </motion.div>
             ) : displayError ? (
               <motion.div
@@ -203,7 +205,7 @@ export default function Login({ onRegister, initialEmail = '', notice = null }: 
                 {displayError}
                 {attempts > 0 ? (
                   <span className="ml-1 opacity-70">
-                    ({MAX_ATTEMPTS - attempts} tentative{MAX_ATTEMPTS - attempts > 1 ? 's' : ''} restante{MAX_ATTEMPTS - attempts > 1 ? 's' : ''})
+                    {t('auth.login.attemptsLeft', { count: MAX_ATTEMPTS - attempts })}
                   </span>
                 ) : null}
               </motion.div>
@@ -212,7 +214,7 @@ export default function Login({ onRegister, initialEmail = '', notice = null }: 
 
           <Button type="submit" disabled={isLocked || loading || !email.trim() || !password}>
             <LogIn className="w-4 h-4" />
-            {loading ? 'Verification...' : 'Se connecter'}
+            {loading ? t('auth.login.verifying') : t('auth.login.submit')}
           </Button>
         </form>
       </AuthShell>
@@ -233,6 +235,7 @@ function normalizeEmail(value: string) {
 type RecoveryStep = 'key' | 'password' | 'done'
 
 function RecoveryModal({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation()
   const [step, setStep] = useState<RecoveryStep>('key')
   const [recoveryKey, setRecoveryKey] = useState('')
   const [newPwd, setNewPwd] = useState('')
@@ -248,22 +251,22 @@ function RecoveryModal({ onClose }: { onClose: () => void }) {
     e.preventDefault()
     setError('')
     const cleaned = recoveryKey.trim().toUpperCase()
-    if (!cleaned) return setError('Veuillez entrer votre cle de recuperation.')
+    if (!cleaned) return setError(t('auth.recovery.keyRequired'))
     setLoading(true)
     const valid = await window.api.auth.verifyRecoveryKey(cleaned)
     setLoading(false)
     if (valid) {
       setStep('password')
     } else {
-      setError('Cle de recuperation invalide.')
+      setError(t('auth.recovery.keyInvalid'))
     }
   }
 
   async function handleReset(e: React.FormEvent) {
     e.preventDefault()
     setError('')
-    if (newPwd.length < 8) return setError('Minimum 8 caracteres.')
-    if (newPwd !== confirm) return setError('Les mots de passe ne correspondent pas.')
+    if (newPwd.length < 8) return setError(t('auth.recovery.min8'))
+    if (newPwd !== confirm) return setError(t('auth.recovery.mismatch'))
     setLoading(true)
     const cleaned = recoveryKey.trim().toUpperCase()
     const key = await window.api.auth.resetWithRecoveryKey(cleaned, newPwd)
@@ -272,7 +275,7 @@ function RecoveryModal({ onClose }: { onClose: () => void }) {
       setNewRecoveryKey(key)
       setStep('done')
     } else {
-      setError('Echec de la reinitialisation. Verifiez votre cle.')
+      setError(t('auth.recovery.resetFailed'))
     }
   }
 
@@ -286,7 +289,6 @@ function RecoveryModal({ onClose }: { onClose: () => void }) {
     window.location.reload()
   }
 
-  // Prevent closing during the "done" step to force user to save the new key
   function handleBackdropClick(event: React.MouseEvent) {
     if (step === 'done') return
     if (event.target === event.currentTarget) onClose()
@@ -307,7 +309,6 @@ function RecoveryModal({ onClose }: { onClose: () => void }) {
         transition={{ duration: 0.2, ease: 'easeOut' }}
         className="w-full max-w-lg rounded-2xl border border-border bg-surface p-6 shadow-2xl no-drag"
       >
-        {/* Header */}
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3">
             <div className={`flex h-11 w-11 items-center justify-center rounded-2xl shrink-0 ${step === 'done' ? 'bg-success/10' : 'bg-warning/10'}`}>
@@ -317,14 +318,14 @@ function RecoveryModal({ onClose }: { onClose: () => void }) {
             </div>
             <div>
               <p className="text-base font-semibold text-textPrimary">
-                {step === 'key' && 'Reinitialiser le mot de passe'}
-                {step === 'password' && 'Nouveau mot de passe'}
-                {step === 'done' && 'Mot de passe reinitialise'}
+                {step === 'key' && t('auth.recovery.title')}
+                {step === 'password' && t('auth.recovery.titleNewPassword')}
+                {step === 'done' && t('auth.recovery.titleDone')}
               </p>
               <p className="mt-1 text-sm text-textMuted leading-relaxed">
-                {step === 'key' && 'Entrez la cle de recuperation fournie lors de la creation de votre compte.'}
-                {step === 'password' && 'Choisissez un nouveau mot de passe pour votre compte.'}
-                {step === 'done' && 'Votre mot de passe a ete reinitialise. Notez votre nouvelle cle de recuperation.'}
+                {step === 'key' && t('auth.recovery.descKey')}
+                {step === 'password' && t('auth.recovery.descNewPassword')}
+                {step === 'done' && t('auth.recovery.descDone')}
               </p>
             </div>
           </div>
@@ -339,15 +340,14 @@ function RecoveryModal({ onClose }: { onClose: () => void }) {
           )}
         </div>
 
-        {/* Step 1: Recovery key input */}
         {step === 'key' && (
           <form onSubmit={handleVerifyKey} className="mt-5 flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-textMuted">Cle de recuperation</label>
+              <label className="text-xs font-medium text-textMuted">{t('auth.recovery.keyLabel')}</label>
               <Input
                 value={recoveryKey}
                 onChange={(e) => setRecoveryKey(e.target.value)}
-                placeholder="XXXX-XXXX-XXXX-XXXX-XXXX"
+                placeholder={t('auth.recovery.keyPlaceholder')}
                 className="font-mono tracking-wider"
                 autoFocus
               />
@@ -365,27 +365,26 @@ function RecoveryModal({ onClose }: { onClose: () => void }) {
 
             <div className="flex gap-2 justify-end">
               <Button type="button" variant="secondary" onClick={onClose}>
-                Annuler
+                {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={loading}>
                 <KeyRound className="w-4 h-4" />
-                {loading ? 'Verification...' : 'Verifier'}
+                {loading ? t('auth.recovery.verifying') : t('auth.recovery.verify')}
               </Button>
             </div>
           </form>
         )}
 
-        {/* Step 2: New password */}
         {step === 'password' && (
           <form onSubmit={handleReset} className="mt-5 flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-textMuted">Nouveau mot de passe</label>
+              <label className="text-xs font-medium text-textMuted">{t('auth.recovery.newPassword')}</label>
               <div className="relative">
                 <Input
                   type={showPwd ? 'text' : 'password'}
                   value={newPwd}
                   onChange={(e) => setNewPwd(e.target.value)}
-                  placeholder="Minimum 8 caracteres"
+                  placeholder={t('auth.recovery.newPasswordPlaceholder')}
                   autoFocus
                 />
                 <button
@@ -400,12 +399,12 @@ function RecoveryModal({ onClose }: { onClose: () => void }) {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-textMuted">Confirmer le mot de passe</label>
+              <label className="text-xs font-medium text-textMuted">{t('auth.recovery.confirmPassword')}</label>
               <Input
                 type={showPwd ? 'text' : 'password'}
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
-                placeholder="Repetez le mot de passe"
+                placeholder={t('auth.recovery.confirmPlaceholder')}
               />
             </div>
 
@@ -421,17 +420,16 @@ function RecoveryModal({ onClose }: { onClose: () => void }) {
 
             <div className="flex gap-2 justify-end">
               <Button type="button" variant="secondary" onClick={() => { setStep('key'); setError('') }}>
-                Retour
+                {t('common.back')}
               </Button>
               <Button type="submit" disabled={loading}>
                 <Lock className="w-4 h-4" />
-                {loading ? 'Reinitialisation...' : 'Reinitialiser'}
+                {loading ? t('auth.recovery.resetting') : t('auth.recovery.reset')}
               </Button>
             </div>
           </form>
         )}
 
-        {/* Step 3: New recovery key */}
         {step === 'done' && (
           <div className="mt-5 flex flex-col gap-4">
             <div className="rounded-xl border border-warning/20 bg-warning/5 p-4">
@@ -444,14 +442,14 @@ function RecoveryModal({ onClose }: { onClose: () => void }) {
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surfaceHigh border border-border text-xs font-medium text-textMuted hover:text-textPrimary transition-colors shrink-0"
                 >
                   {copied ? <CheckCircle2 className="w-3.5 h-3.5 text-success" /> : <Copy className="w-3.5 h-3.5" />}
-                  {copied ? 'Copie !' : 'Copier'}
+                  {copied ? t('common.copied') : t('common.copy')}
                 </button>
               </div>
             </div>
 
             <div className="rounded-xl bg-surfaceHigh/40 border border-border p-3 text-xs text-textMuted leading-5">
-              <p>Cette cle ne sera plus affichee apres fermeture de cette fenetre.</p>
-              <p className="mt-1">Conservez-la dans un endroit sur pour pouvoir reinitialiser votre mot de passe a l'avenir.</p>
+              <p>{t('auth.recovery.keyNotShownAgain')}</p>
+              <p className="mt-1">{t('auth.recovery.keepKeySafe')}</p>
             </div>
 
             <label className="flex items-start gap-2 cursor-pointer">
@@ -461,13 +459,13 @@ function RecoveryModal({ onClose }: { onClose: () => void }) {
                 onChange={(e) => setConfirmed(e.target.checked)}
                 className="mt-0.5 rounded border-border"
               />
-              <span className="text-xs text-textMuted">J'ai note ma nouvelle cle de recuperation en lieu sur.</span>
+              <span className="text-xs text-textMuted">{t('auth.recovery.confirmSaved')}</span>
             </label>
 
             <div className="flex justify-end">
               <Button disabled={!confirmed} onClick={handleFinish}>
                 <CheckCircle2 className="w-4 h-4" />
-                Se connecter
+                {t('auth.login.submit')}
               </Button>
             </div>
           </div>

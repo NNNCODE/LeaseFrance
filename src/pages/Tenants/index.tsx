@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import {
   AlertCircle,
   AlertTriangle,
@@ -55,9 +56,9 @@ const AVATAR_COLORS = [
 ]
 
 const LEASE_TYPE_LABELS: Record<string, string> = {
-  vide: 'Bail vide',
-  meuble: 'Bail meuble',
-  mobilite: 'Bail mobilite',
+  vide: 'tenants.leaseType.vide',
+  meuble: 'tenants.leaseType.meuble',
+  mobilite: 'tenants.leaseType.mobilite',
 }
 
 function avatarColor(id: number) {
@@ -65,6 +66,7 @@ function avatarColor(id: number) {
 }
 
 export default function Tenants() {
+  const { t } = useTranslation()
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -99,6 +101,12 @@ export default function Tenants() {
   const withLease = tenants.filter((tenant) => tenant.lease_id).length
   const withUnpaid = tenants.filter((tenant) => tenant.unpaid_count > 0).length
   const withIncompleteFile = tenants.filter((tenant) => getCompletedDossierCount(tenant) < DOSSIER_ITEMS.length).length
+  const summaryParts = [
+    t('tenants.count', { active: tenants.length }),
+    withLease > 0 ? t('tenants.withLease', { count: withLease }) : null,
+    withUnpaid > 0 ? t('tenants.withUnpaid', { count: withUnpaid }) : null,
+    withIncompleteFile > 0 ? t('tenants.withIncompleteFile', { count: withIncompleteFile }) : null,
+  ].filter(Boolean)
 
   function openAdd() {
     setEditing(null)
@@ -165,18 +173,12 @@ export default function Tenants() {
     <div className="flex flex-col gap-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-textPrimary">Locataires</h1>
-          <p className="text-textMuted text-sm mt-1">
-            {tenants.length} locataire{tenants.length !== 1 ? 's' : ''}
-            {withLease > 0 && ` · ${withLease} avec bail actif`}
-            {withUnpaid > 0 && ' · '}
-            {withUnpaid > 0 && <span className="text-danger">{withUnpaid} impaye{withUnpaid !== 1 ? 's' : ''}</span>}
-            {withIncompleteFile > 0 && ` · ${withIncompleteFile} dossier${withIncompleteFile !== 1 ? 's' : ''} a completer`}
-          </p>
+          <h1 className="text-2xl font-semibold text-textPrimary">{t('tenants.title')}</h1>
+          <p className="text-textMuted text-sm mt-1">{summaryParts.join(' | ')}</p>
         </div>
         <Button onClick={openAdd}>
           <Plus className="w-4 h-4" />
-          Ajouter un locataire
+          {t('tenants.add')}
         </Button>
       </div>
 
@@ -185,7 +187,7 @@ export default function Tenants() {
           <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-textMuted" />
           <Input
             className="pl-9"
-            placeholder="Nom, garant, email, bien..."
+            placeholder={t('tenants.searchPlaceholder')}
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
@@ -203,7 +205,7 @@ export default function Tenants() {
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center gap-2 py-16 text-textMuted">
           <User className="w-8 h-8 opacity-30" />
-          <p className="text-sm">Aucun resultat pour "{search}"</p>
+          <p className="text-sm">{t('tenants.noResults', { query: search })}</p>
         </div>
       ) : (
         <motion.div
@@ -263,20 +265,19 @@ export default function Tenants() {
 }
 
 function EmptyState({ onAdd }: { onAdd: () => void }) {
+  const { t } = useTranslation()
   return (
     <div className="flex flex-col items-center justify-center gap-4 py-24 text-center">
       <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-success/10">
         <Users className="w-8 h-8 text-success" />
       </div>
       <div>
-        <p className="text-lg font-semibold text-textPrimary">Aucun locataire enregistre</p>
-        <p className="text-sm text-textMuted mt-1">
-          Ajoutez un locataire, puis completez son dossier avec garant, contact d'urgence et pieces justificatives.
-        </p>
+        <p className="text-lg font-semibold text-textPrimary">{t('tenants.empty')}</p>
+        <p className="text-sm text-textMuted mt-1">{t('tenants.emptyDesc')}</p>
       </div>
       <Button onClick={onAdd}>
         <Plus className="w-4 h-4" />
-        Ajouter un locataire
+        {t('tenants.add')}
       </Button>
     </div>
   )
@@ -295,6 +296,7 @@ function TenantCard({
   onOpenLedger: () => void
   onOpenDossier: () => void
 }) {
+  const { t } = useTranslation()
   const hasLease = Boolean(tenant.lease_id)
   const hasUnpaid = tenant.unpaid_count > 0
   const totalRent = (tenant.rent_amount ?? 0) + (tenant.charges_amount ?? 0)
@@ -324,7 +326,7 @@ function TenantCard({
                   {tenant.first_name} {tenant.last_name}
                 </p>
                 <p className="text-xs text-textMuted mt-0.5">
-                  Depuis le {formatDate(tenant.created_at)}
+                  {t('tenants.createdAt', { date: formatDate(tenant.created_at) })}
                 </p>
               </div>
             </div>
@@ -347,18 +349,18 @@ function TenantCard({
           <div className="flex flex-wrap gap-2">
             <Badge variant={dossierVariant}>
               <FileText className="w-3 h-3" />
-              Dossier {dossierCompleted}/{DOSSIER_ITEMS.length}
+              {t('tenants.dossier.title')} {dossierCompleted}/{DOSSIER_ITEMS.length}
             </Badge>
             {guarantorPresent && (
               <Badge variant="default">
                 <ShieldCheck className="w-3 h-3" />
-                Garant
+                {t('tenants.guarantor')}
               </Badge>
             )}
             {hasUnpaid && (
               <Badge variant="danger">
                 <AlertCircle className="w-3 h-3" />
-                {tenant.unpaid_count} impaye{tenant.unpaid_count > 1 ? 's' : ''}
+                {t('tenants.unpaidBadge', { count: tenant.unpaid_count })}
               </Badge>
             )}
           </div>
@@ -377,21 +379,23 @@ function TenantCard({
               </div>
             ) : null}
             {!tenant.email && !tenant.phone && (
-              <p className="text-xs text-textMuted italic opacity-60">Aucun contact direct renseigne</p>
+              <p className="text-xs text-textMuted italic opacity-60">{t('tenants.noDirectContact')}</p>
             )}
           </div>
 
           <div className="rounded-xl border border-border bg-surfaceHigh/40 px-3 py-2.5">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-xs font-medium text-textPrimary">Suivi du dossier</p>
+              <p className="text-xs font-medium text-textPrimary">{t('tenants.fileOverviewTitle')}</p>
               <span className="text-[11px] text-textMuted">
-                {missingItems.length === 0 ? 'Complet' : `${missingItems.length} piece${missingItems.length > 1 ? 's' : ''} manquante${missingItems.length > 1 ? 's' : ''}`}
+                {missingItems.length === 0 ? t('tenants.dossier.complete') : t('tenants.missingDocuments', { count: missingItems.length })}
               </span>
             </div>
             <p className="text-xs text-textMuted mt-1.5 line-clamp-2">
               {missingItems.length === 0
-                ? 'Toutes les pieces principales sont marquees comme recues.'
-                : `Manque: ${missingItems.slice(0, 3).map((item) => item.label).join(', ')}${missingItems.length > 3 ? '...' : ''}`}
+                ? t('tenants.allDocumentsReceived')
+                : t('tenants.missingSummary', {
+                    items: missingItems.slice(0, 3).map((item) => t(item.labelKey)).join(', '),
+                  })}
             </p>
           </div>
 
@@ -408,22 +412,22 @@ function TenantCard({
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5 text-xs text-textMuted">
                   <CalendarDays className="w-3.5 h-3.5 shrink-0" />
-                  <span>Depuis {formatDate(tenant.lease_start_date!)}</span>
+                  <span>{t('tenants.leaseSince', { date: formatDate(tenant.lease_start_date!) })}</span>
                 </div>
                 <Badge variant="muted" className="text-[10px]">
-                  {LEASE_TYPE_LABELS[tenant.lease_type ?? ''] ?? tenant.lease_type}
+                  {tenant.lease_type ? t(LEASE_TYPE_LABELS[tenant.lease_type] ?? tenant.lease_type) : tenant.lease_type}
                 </Badge>
               </div>
 
               <div className="flex items-center justify-between mt-0.5">
                 <div className="flex items-center gap-1 text-sm font-semibold text-textPrimary">
                   <Euro className="w-3.5 h-3.5 text-primary" />
-                  {formatCurrency(totalRent)} / mois
+                  {t('tenants.monthlyAmount', { amount: formatCurrency(totalRent) })}
                 </div>
                 {!hasUnpaid && (
                   <div className="flex items-center gap-1 text-xs text-success">
                     <CheckCircle2 className="w-3.5 h-3.5" />
-                    A jour
+                    {t('tenants.upToDate')}
                   </div>
                 )}
               </div>
@@ -431,19 +435,19 @@ function TenantCard({
           ) : (
             <div className="flex items-center gap-2 text-xs text-textMuted">
               <div className="w-2 h-2 rounded-full bg-textMuted/30" />
-              <span className="italic">Aucun bail actif</span>
+              <span className="italic">{t('tenants.noLease')}</span>
             </div>
           )}
 
           <div className={`grid gap-2 mt-auto ${hasLease ? 'grid-cols-2' : 'grid-cols-1'}`}>
             <Button variant="outline" size="sm" onClick={onOpenDossier} className="w-full">
               <ShieldCheck className="w-3.5 h-3.5" />
-              Dossier locatif
+              {t('tenants.file')}
             </Button>
             {hasLease && (
               <Button variant="outline" size="sm" onClick={onOpenLedger} className="w-full">
                 <ScrollText className="w-3.5 h-3.5" />
-                Compte locataire
+                {t('tenants.ledger')}
               </Button>
             )}
           </div>
@@ -462,6 +466,7 @@ function TenantFormModal({
   onSave: (data: TenantInput) => Promise<void>
   onClose: () => void
 }) {
+  const { t } = useTranslation()
   const [form, setForm] = useState<TenantInput>(
     initial
       ? {
@@ -483,8 +488,8 @@ function TenantFormModal({
     event.preventDefault()
     setError('')
 
-    if (!form.first_name.trim()) return setError('Le prenom est requis.')
-    if (!form.last_name.trim()) return setError('Le nom est requis.')
+    if (!form.first_name.trim()) return setError(t('tenants.firstNameRequired'))
+    if (!form.last_name.trim()) return setError(t('tenants.lastNameRequired'))
 
     setSaving(true)
 
@@ -495,7 +500,7 @@ function TenantFormModal({
         phone: form.phone?.trim() || null,
       })
     } catch (err) {
-      setError(`Erreur : ${err instanceof Error ? err.message : String(err)}`)
+      setError(`${t('common.error')}: ${err instanceof Error ? err.message : String(err)}`)
       setSaving(false)
     }
   }
@@ -517,7 +522,7 @@ function TenantFormModal({
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <h2 className="text-base font-semibold text-textPrimary">
-            {initial ? 'Modifier le locataire' : 'Ajouter un locataire'}
+            {initial ? t('tenants.editTitle') : t('tenants.addTitle')}
           </h2>
           <button onClick={onClose} className="text-textMuted hover:text-textPrimary transition-colors">
             <X className="w-4 h-4" />
@@ -527,7 +532,7 @@ function TenantFormModal({
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-6">
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-textMuted">Prenom</label>
+              <label className="text-xs font-medium text-textMuted">{t('tenants.firstName')}</label>
               <Input
                 value={form.first_name}
                 onChange={(event) => setField('first_name', event.target.value)}
@@ -536,7 +541,7 @@ function TenantFormModal({
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-textMuted">Nom</label>
+              <label className="text-xs font-medium text-textMuted">{t('tenants.lastName')}</label>
               <Input
                 value={form.last_name}
                 onChange={(event) => setField('last_name', event.target.value)}
@@ -546,7 +551,7 @@ function TenantFormModal({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-textMuted">Adresse e-mail - optionnel</label>
+            <label className="text-xs font-medium text-textMuted">{`${t('tenants.email')} - ${t('common.optional')}`}</label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-textMuted" />
               <Input
@@ -560,7 +565,7 @@ function TenantFormModal({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-textMuted">Telephone - optionnel</label>
+            <label className="text-xs font-medium text-textMuted">{`${t('tenants.phone')} - ${t('common.optional')}`}</label>
             <div className="relative">
               <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-textMuted" />
               <Input
@@ -574,17 +579,16 @@ function TenantFormModal({
           </div>
 
           <div className="rounded-xl border border-border bg-surfaceHigh/40 px-3 py-2.5 text-xs text-textMuted">
-            Le garant, le contact d'urgence et les pieces justificatives se gerent ensuite via le bouton
-            {' '}<span className="text-textPrimary font-medium">Dossier locatif</span>.
+            {t('tenants.fileAfterCreate')}
           </div>
 
           {error && <p className="text-xs text-danger bg-danger/10 rounded-lg px-3 py-2">{error}</p>}
 
           <div className="flex gap-2 pt-1">
-            <Button type="button" variant="secondary" onClick={onClose} className="flex-1">Annuler</Button>
+            <Button type="button" variant="secondary" onClick={onClose} className="flex-1">{t('common.cancel')}</Button>
             <Button type="submit" disabled={saving} className="flex-1">
               <Save className="w-3.5 h-3.5" />
-              {saving ? 'Enregistrement...' : initial ? 'Modifier' : 'Ajouter'}
+              {saving ? t('common.saving') : initial ? t('common.edit') : t('common.add')}
             </Button>
           </div>
         </form>
@@ -606,6 +610,7 @@ function DeleteModal({
   error: string
   loading: boolean
 }) {
+  const { t } = useTranslation()
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -626,9 +631,9 @@ function DeleteModal({
             <AlertTriangle className="w-5 h-5 text-danger" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-textPrimary">Supprimer ce locataire ?</p>
+            <p className="text-sm font-semibold text-textPrimary">{t('tenants.deleteTitle')}</p>
             <p className="text-xs text-textMuted mt-0.5">
-              "{tenant.first_name} {tenant.last_name}" sera supprime definitivement.
+              {t('tenants.deleteDesc', { name: `${tenant.first_name} ${tenant.last_name}` })}
             </p>
           </div>
         </div>
@@ -636,10 +641,10 @@ function DeleteModal({
           <p className="text-xs text-danger bg-danger/10 rounded-lg px-3 py-2">{error}</p>
         ) : null}
         <div className="flex gap-2">
-          <Button variant="secondary" onClick={onClose} className="flex-1" disabled={loading}>Annuler</Button>
+          <Button variant="secondary" onClick={onClose} className="flex-1" disabled={loading}>{t('common.cancel')}</Button>
           <Button variant="danger" onClick={onConfirm} className="flex-1" disabled={loading}>
             <Trash2 className="w-3.5 h-3.5" />
-            {loading ? 'Suppression...' : 'Supprimer'}
+            {loading ? t('common.deleting') : t('common.delete')}
           </Button>
         </div>
       </motion.div>

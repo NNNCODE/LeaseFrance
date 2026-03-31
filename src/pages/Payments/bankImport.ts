@@ -1,5 +1,3 @@
-// ── Types ────────────────────────────────────────────────────────────────────
-
 export interface ParsedBankTransaction {
   id: string
   rowNumber: number
@@ -22,12 +20,11 @@ export interface BankImportSuggestion {
 }
 
 export interface MatchReason {
-  label: string
-  detail: string
+  labelKey: string
+  detailKey: string
+  values?: Record<string, string | number>
   points: number
 }
-
-// ── Bank Presets ─────────────────────────────────────────────────────────────
 
 export interface BankPreset {
   id: string
@@ -43,7 +40,7 @@ export interface BankPreset {
 export const BANK_PRESETS: BankPreset[] = [
   {
     id: 'auto',
-    name: 'Detection automatique',
+    name: 'auto',
     separator: '',
     dateHeaders: [],
     descriptionHeaders: [],
@@ -133,8 +130,6 @@ export const BANK_PRESETS: BankPreset[] = [
   },
 ]
 
-// ── Default header pools (used for auto-detect) ─────────────────────────────
-
 const DEFAULT_DATE_HEADERS = [
   'date', 'date operation', 'date operation comptable', 'date comptable',
   'date de l operation', 'date de comptabilisation', 'date de valeur',
@@ -151,8 +146,6 @@ const DEFAULT_AMOUNT_HEADERS = ['montant', 'amount', 'net amount', 'montant eur'
 const DEFAULT_CREDIT_HEADERS = ['credit', 'credits', 'montant credit']
 const DEFAULT_DEBIT_HEADERS = ['debit', 'debits', 'montant debit']
 
-// ── CSV Parsing ──────────────────────────────────────────────────────────────
-
 export function parseBankCsv(text: string, presetId?: string): ParsedBankTransaction[] {
   const cleaned = text.replace(/^\uFEFF/, '').trim()
   if (!cleaned) return []
@@ -164,7 +157,7 @@ export function parseBankCsv(text: string, presetId?: string): ParsedBankTransac
 
   if (lines.length < 2) return []
 
-  const preset = presetId ? BANK_PRESETS.find((p) => p.id === presetId) : null
+  const preset = presetId ? BANK_PRESETS.find((entry) => entry.id === presetId) : null
   const isAuto = !preset || preset.id === 'auto'
 
   const separator = isAuto
@@ -177,19 +170,19 @@ export function parseBankCsv(text: string, presetId?: string): ParsedBankTransac
   const dateHeaders = isAuto ? DEFAULT_DATE_HEADERS : [...preset.dateHeaders, ...DEFAULT_DATE_HEADERS]
   const descHeaders = isAuto ? DEFAULT_DESCRIPTION_HEADERS : [...preset.descriptionHeaders, ...DEFAULT_DESCRIPTION_HEADERS]
   const amtHeaders = isAuto ? DEFAULT_AMOUNT_HEADERS : [...preset.amountHeaders, ...DEFAULT_AMOUNT_HEADERS]
-  const crdHeaders = isAuto ? DEFAULT_CREDIT_HEADERS : [...preset.creditHeaders, ...DEFAULT_CREDIT_HEADERS]
-  const dbtHeaders = isAuto ? DEFAULT_DEBIT_HEADERS : [...preset.debitHeaders, ...DEFAULT_DEBIT_HEADERS]
+  const creditHeaders = isAuto ? DEFAULT_CREDIT_HEADERS : [...preset.creditHeaders, ...DEFAULT_CREDIT_HEADERS]
+  const debitHeaders = isAuto ? DEFAULT_DEBIT_HEADERS : [...preset.debitHeaders, ...DEFAULT_DEBIT_HEADERS]
 
   const dateIndex = findHeaderIndex(normalizedHeaders, dateHeaders)
   const descriptionIndex = findHeaderIndex(normalizedHeaders, descHeaders)
   const amountIndex = findHeaderIndex(normalizedHeaders, amtHeaders)
-  const creditIndex = findHeaderIndex(normalizedHeaders, crdHeaders)
-  const debitIndex = findHeaderIndex(normalizedHeaders, dbtHeaders)
+  const creditIndex = findHeaderIndex(normalizedHeaders, creditHeaders)
+  const debitIndex = findHeaderIndex(normalizedHeaders, debitHeaders)
 
-  if (dateIndex < 0) throw new Error('Colonne date introuvable dans le CSV.')
-  if (descriptionIndex < 0) throw new Error('Colonne libelle/description introuvable dans le CSV.')
+  if (dateIndex < 0) throw new Error('payments.bankImport.errors.missingDateColumn')
+  if (descriptionIndex < 0) throw new Error('payments.bankImport.errors.missingDescriptionColumn')
   if (amountIndex < 0 && creditIndex < 0 && debitIndex < 0) {
-    throw new Error('Colonne montant introuvable dans le CSV.')
+    throw new Error('payments.bankImport.errors.missingAmountColumn')
   }
 
   const transactions: ParsedBankTransaction[] = []
@@ -225,8 +218,6 @@ export function parseBankCsv(text: string, presetId?: string): ParsedBankTransac
   return transactions
 }
 
-// ── Auto-detect bank from headers ────────────────────────────────────────────
-
 export function detectBankPreset(text: string): string {
   const cleaned = text.replace(/^\uFEFF/, '').trim()
   if (!cleaned) return 'auto'
@@ -238,6 +229,7 @@ export function detectBankPreset(text: string): string {
 
   for (const preset of BANK_PRESETS) {
     if (preset.id === 'auto') continue
+
     let score = 0
     const allHeaders = [
       ...preset.dateHeaders,
@@ -246,24 +238,22 @@ export function detectBankPreset(text: string): string {
       ...preset.creditHeaders,
       ...preset.debitHeaders,
     ]
+
     for (const header of allHeaders) {
       if (normalized.includes(header)) score += 1
     }
+
     scores.push({ id: preset.id, score })
   }
 
-  scores.sort((a, b) => b.score - a.score)
+  scores.sort((left, right) => right.score - left.score)
   return scores[0] && scores[0].score >= 2 ? scores[0].id : 'auto'
 }
-
-// ── Fingerprinting ───────────────────────────────────────────────────────────
 
 export function generateFingerprint(date: string, amount: number, description: string): string {
   const normDesc = normalizeForMatch(description).substring(0, 60)
   return `${date}|${round2(amount)}|${normDesc}`
 }
-
-// ── Suggestion Engine ────────────────────────────────────────────────────────
 
 export function suggestBankImport(
   transaction: ParsedBankTransaction,
@@ -316,11 +306,13 @@ export function suggestBankImport(
     periodYear,
     confidence: 'none',
     score: 0,
-    reasons: [{ label: 'Aucune correspondance', detail: 'Montant et libelle ne correspondent a aucun paiement ou bail actif.', points: 0 }],
+    reasons: [{
+      labelKey: 'payments.bankImport.reason.none.label',
+      detailKey: 'payments.bankImport.reason.none.detail',
+      points: 0,
+    }],
   }
 }
-
-// ── Amount Allocation ────────────────────────────────────────────────────────
 
 export function allocateImportedAmount(amount: number, leaseRent: number, leaseCharges: number) {
   const roundedAmount = round2(amount)
@@ -347,10 +339,8 @@ export function allocateImportedAmount(amount: number, leaseRent: number, leaseC
 }
 
 export function buildImportedNote(description: string, rowNumber: number) {
-  return `Import banque CSV ligne ${rowNumber}: ${description}`
+  return `[CSV ${rowNumber}] ${description}`
 }
-
-// ── Detailed Scoring ─────────────────────────────────────────────────────────
 
 function scorePaymentMatch(transaction: ParsedBankTransaction, payment: Payment) {
   const reasons: MatchReason[] = []
@@ -360,12 +350,14 @@ function scorePaymentMatch(transaction: ParsedBankTransaction, payment: Payment)
   const diff = Math.abs(transaction.amount - expected)
   const amountScore = amountSimilarity(transaction.amount, expected)
   total += amountScore
+
   if (amountScore > 0) {
     reasons.push({
-      label: 'Montant',
-      detail: diff < 0.01
-        ? `Montant exact (${formatNum(expected)} attendu)`
-        : `Ecart de ${formatNum(diff)} (${formatNum(expected)} attendu)`,
+      labelKey: 'payments.bankImport.reason.amount.label',
+      detailKey: diff < 0.01
+        ? 'payments.bankImport.reason.amount.exact'
+        : 'payments.bankImport.reason.amount.diff',
+      values: diff < 0.01 ? { expected } : { diff, expected },
       points: amountScore,
     })
   }
@@ -376,10 +368,12 @@ function scorePaymentMatch(transaction: ParsedBankTransaction, payment: Payment)
     { value: payment.property_name, label: payment.property_name },
   ])
   total += textResult.score
+
   if (textResult.score > 0) {
     reasons.push({
-      label: 'Libelle',
-      detail: `"${textResult.matched}" detecte dans le libelle`,
+      labelKey: 'payments.bankImport.reason.description.label',
+      detailKey: 'payments.bankImport.reason.description.match',
+      values: { matched: textResult.matched },
       points: textResult.score,
     })
   }
@@ -387,15 +381,27 @@ function scorePaymentMatch(transaction: ParsedBankTransaction, payment: Payment)
   const txDate = new Date(transaction.date)
   if (payment.period_month === txDate.getMonth() + 1 && payment.period_year === txDate.getFullYear()) {
     total += 14
-    reasons.push({ label: 'Periode', detail: 'Transaction dans le meme mois/annee', points: 14 })
+    reasons.push({
+      labelKey: 'payments.bankImport.reason.period.label',
+      detailKey: 'payments.bankImport.reason.period.sameMonth',
+      points: 14,
+    })
   }
 
   if (payment.status === 'late') {
     total += 8
-    reasons.push({ label: 'Statut', detail: 'Paiement en retard (prioritaire)', points: 8 })
+    reasons.push({
+      labelKey: 'payments.bankImport.reason.status.label',
+      detailKey: 'payments.bankImport.reason.status.late',
+      points: 8,
+    })
   } else if (payment.status === 'pending') {
     total += 5
-    reasons.push({ label: 'Statut', detail: 'Paiement en attente', points: 5 })
+    reasons.push({
+      labelKey: 'payments.bankImport.reason.status.label',
+      detailKey: 'payments.bankImport.reason.status.pending',
+      points: 5,
+    })
   }
 
   return { total, reasons }
@@ -409,12 +415,14 @@ function scoreLeaseMatch(transaction: ParsedBankTransaction, lease: Lease) {
   const diff = Math.abs(transaction.amount - expected)
   const amountScore = amountSimilarity(transaction.amount, expected)
   total += amountScore
+
   if (amountScore > 0) {
     reasons.push({
-      label: 'Montant',
-      detail: diff < 0.01
-        ? `Montant exact (${formatNum(expected)} attendu)`
-        : `Ecart de ${formatNum(diff)} (${formatNum(expected)} attendu)`,
+      labelKey: 'payments.bankImport.reason.amount.label',
+      detailKey: diff < 0.01
+        ? 'payments.bankImport.reason.amount.exact'
+        : 'payments.bankImport.reason.amount.diff',
+      values: diff < 0.01 ? { expected } : { diff, expected },
       points: amountScore,
     })
   }
@@ -425,10 +433,12 @@ function scoreLeaseMatch(transaction: ParsedBankTransaction, lease: Lease) {
     { value: lease.property_name, label: lease.property_name },
   ])
   total += textResult.score
+
   if (textResult.score > 0) {
     reasons.push({
-      label: 'Libelle',
-      detail: `"${textResult.matched}" detecte dans le libelle`,
+      labelKey: 'payments.bankImport.reason.description.label',
+      detailKey: 'payments.bankImport.reason.description.match',
+      values: { matched: textResult.matched },
       points: textResult.score,
     })
   }
@@ -456,11 +466,12 @@ function textSimilarityDetailed(
     if (!normalized) continue
 
     if (text.includes(normalized)) {
-      const pts = normalized.includes(' ') ? 24 : 16
-      if (pts > best.score) best = { score: pts, matched: candidate.label }
+      const points = normalized.includes(' ') ? 24 : 16
+      if (points > best.score) best = { score: points, matched: candidate.label }
     } else {
       const parts = normalized.split(' ').filter(Boolean)
       const matchedParts = parts.filter((part) => text.includes(part))
+
       if (matchedParts.length >= 2 && 18 > best.score) {
         best = { score: 18, matched: candidate.label }
       } else if (matchedParts.length === 1 && 8 > best.score) {
@@ -478,8 +489,6 @@ function confidenceForScore(score: number): BankImportSuggestion['confidence'] {
   if (score >= 28) return 'low'
   return 'none'
 }
-
-// ── CSV Utilities ────────────────────────────────────────────────────────────
 
 function buildSignedAmount(creditValue: string, debitValue: string) {
   const credit = parseCsvAmount(creditValue)
@@ -582,8 +591,4 @@ function normalizeForMatch(value: string) {
 
 function round2(value: number) {
   return Math.round(value * 100) / 100
-}
-
-function formatNum(n: number) {
-  return n.toFixed(2).replace('.', ',') + ' \u20ac'
 }
