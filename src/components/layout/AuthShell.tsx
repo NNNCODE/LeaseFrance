@@ -66,7 +66,7 @@ export default function AuthShell({
 
       <main className="relative flex-1 overflow-hidden">
         <div className="pointer-events-none absolute inset-0">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(245,158,11,0.14),transparent_28%),radial-gradient(circle_at_75%_18%,rgba(99,102,241,0.18),transparent_26%),radial-gradient(circle_at_70%_80%,rgba(16,185,129,0.10),transparent_24%)]" />
+          <div className="absolute inset-0" style={{ backgroundImage: 'var(--auth-shell-backdrop)' }} />
           <div className="absolute left-[-10%] top-[18%] h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
           <div className="absolute bottom-[-8%] right-[10%] h-64 w-64 rounded-full bg-warning/10 blur-3xl" />
         </div>
@@ -76,7 +76,8 @@ export default function AuthShell({
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35, ease: 'easeOut' }}
-            className="hidden rounded-[28px] border border-border/70 bg-[linear-gradient(145deg,rgba(20,24,34,0.96),rgba(26,26,36,0.88))] p-8 shadow-card md:flex md:flex-col md:justify-between no-drag"
+            className="hidden rounded-[28px] border border-border/70 p-8 shadow-card md:flex md:flex-col md:justify-between no-drag"
+            style={{ background: 'var(--auth-shell-panel-bg)' }}
           >
             <div className="max-w-xl">
               <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
@@ -88,7 +89,7 @@ export default function AuthShell({
                 {t('authShell.heroTitle')}
               </h2>
 
-              <p className="mt-4 max-w-xl text-sm leading-7 text-slate-300">
+              <p className="mt-4 max-w-xl text-sm leading-7 text-textPrimary/72">
                 {t('authShell.heroDesc')}
               </p>
             </div>
@@ -124,7 +125,10 @@ export default function AuthShell({
             transition={{ duration: 0.35, ease: 'easeOut' }}
             className="flex items-center justify-center no-drag"
           >
-            <div className="w-full max-w-md rounded-[28px] border border-border/70 bg-[linear-gradient(180deg,rgba(26,26,36,0.95),rgba(20,20,28,0.92))] p-7 shadow-card backdrop-blur-sm">
+            <div
+              className="w-full max-w-md rounded-[28px] border border-border/70 p-7 shadow-card backdrop-blur-sm"
+              style={{ background: 'var(--auth-shell-form-bg)' }}
+            >
               <div>
                 <p className="text-[11px] uppercase tracking-[0.22em] text-textMuted">{eyebrow}</p>
                 <h1 className="mt-3 text-2xl font-semibold text-textPrimary">{title}</h1>

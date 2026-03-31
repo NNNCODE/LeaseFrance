@@ -16,15 +16,37 @@ import Documents from '@/pages/Documents'
 import Inspections from '@/pages/Inspections'
 import Fiscal from '@/pages/Fiscal'
 import Profile from '@/pages/Profile'
+import { SYSTEM_THEME_QUERY } from '@/theme/config'
+import { useThemeStore } from '@/stores/useThemeStore'
 
 export default function App() {
   const { t } = useTranslation()
   const { status, init } = useAuthStore()
+  const syncTheme = useThemeStore((state) => state.syncTheme)
   const [showRegister, setShowRegister] = useState(false)
   const [authNotice, setAuthNotice] = useState<string | null>(null)
   const [prefilledEmail, setPrefilledEmail] = useState('')
 
   useEffect(() => { init() }, [init])
+  useEffect(() => {
+    syncTheme()
+
+    if (typeof window.matchMedia !== 'function') {
+      return
+    }
+
+    const mediaQuery = window.matchMedia(SYSTEM_THEME_QUERY)
+    const handleChange = () => syncTheme()
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', handleChange)
+      return () => mediaQuery.removeEventListener('change', handleChange)
+    }
+
+    mediaQuery.addListener(handleChange)
+    return () => mediaQuery.removeListener(handleChange)
+  }, [syncTheme])
+
   useEffect(() => {
     if (status === 'unlocked') {
       setAuthNotice(null)

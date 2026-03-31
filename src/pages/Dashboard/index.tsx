@@ -278,18 +278,24 @@ export default function Dashboard() {
                   <AreaChart data={revenueData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                     <defs>
                       <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%"  stopColor="#6366F1" stopOpacity={0.25} />
-                        <stop offset="95%" stopColor="#6366F1" stopOpacity={0}    />
+                        <stop offset="5%" stopColor="var(--chart-primary)" stopOpacity={0.25} />
+                        <stop offset="95%" stopColor="var(--chart-primary)" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#2A2A3A" />
-                    <XAxis dataKey="month" tick={{ fill: '#64748B', fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
+                    <XAxis dataKey="month" tick={{ fill: 'var(--chart-axis)', fontSize: 11 }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fill: '#64748B', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}€`} />
                     <Tooltip
-                      contentStyle={{ background: '#1A1A24', border: '1px solid #2A2A3A', borderRadius: '8px', color: '#E2E8F0', fontSize: '12px' }}
+                      contentStyle={{
+                        background: 'var(--chart-tooltip-background)',
+                        border: '1px solid var(--chart-tooltip-border)',
+                        borderRadius: '8px',
+                        color: 'var(--chart-tooltip-text)',
+                        fontSize: '12px',
+                      }}
                       formatter={(v: number) => [`${v} €`, t('dashboard.revenue')]}
                     />
-                    <Area type="monotone" dataKey="revenus" stroke="#6366F1" strokeWidth={2} fill="url(#colorRev)" />
+                    <Area type="monotone" dataKey="revenus" stroke="var(--chart-primary)" strokeWidth={2} fill="url(#colorRev)" />
                   </AreaChart>
                 </ResponsiveContainer>
               )}

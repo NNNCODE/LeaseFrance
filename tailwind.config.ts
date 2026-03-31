@@ -1,38 +1,40 @@
 import type { Config } from 'tailwindcss'
 
+const withOpacity = (variable: string) => `rgb(var(${variable}) / <alpha-value>)`
+
 const config: Config = {
   darkMode: ['class'],
   content: ['./src/**/*.{ts,tsx}', './index.html'],
   theme: {
     extend: {
       colors: {
-        background:  '#0F0F13',
-        surface:     '#1A1A24',
-        surfaceHigh: '#22222F',
-        border:      '#2A2A3A',
+        background:  withOpacity('--color-background'),
+        surface:     withOpacity('--color-surface'),
+        surfaceHigh: withOpacity('--color-surface-high'),
+        border:      withOpacity('--color-border'),
         primary: {
-          DEFAULT: '#6366F1',
-          hover:   '#818CF8',
-          muted:   '#6366F120',
+          DEFAULT: withOpacity('--color-primary'),
+          hover:   withOpacity('--color-primary-hover'),
+          muted:   'rgb(var(--color-primary) / 0.16)',
         },
         accent: {
-          DEFAULT: '#F59E0B',
-          muted:   '#F59E0B20',
+          DEFAULT: withOpacity('--color-accent'),
+          muted:   'rgb(var(--color-accent) / 0.16)',
         },
         success: {
-          DEFAULT: '#10B981',
-          muted:   '#10B98120',
+          DEFAULT: withOpacity('--color-success'),
+          muted:   'rgb(var(--color-success) / 0.16)',
         },
         warning: {
-          DEFAULT: '#F59E0B',
-          muted:   '#F59E0B20',
+          DEFAULT: withOpacity('--color-warning'),
+          muted:   'rgb(var(--color-warning) / 0.16)',
         },
         danger: {
-          DEFAULT: '#EF4444',
-          muted:   '#EF444420',
+          DEFAULT: withOpacity('--color-danger'),
+          muted:   'rgb(var(--color-danger) / 0.16)',
         },
-        textPrimary: '#E2E8F0',
-        textMuted:   '#64748B',
+        textPrimary: withOpacity('--color-text-primary'),
+        textMuted:   withOpacity('--color-text-muted'),
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
@@ -42,8 +44,8 @@ const config: Config = {
         '2xl': '16px',
       },
       boxShadow: {
-        card: '0 4px 24px rgba(0,0,0,0.3)',
-        glow: '0 0 20px rgba(99,102,241,0.15)',
+        card: 'var(--shadow-card)',
+        glow: 'var(--shadow-glow)',
       },
       animation: {
         'fade-in': 'fadeIn 0.2s ease-out',
