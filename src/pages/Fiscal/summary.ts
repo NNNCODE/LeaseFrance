@@ -1,16 +1,20 @@
 // ── Expense Categories ───────────────────────────────────────────────────────
 
-export const EXPENSE_CATEGORIES: Array<{ value: string; label: string }> = [
-  { value: 'taxe_fonciere', label: 'Taxe fonciere' },
-  { value: 'travaux', label: 'Travaux' },
-  { value: 'assurance_pno', label: 'Assurance PNO' },
-  { value: 'frais_gestion', label: 'Frais de gestion / syndic' },
-  { value: 'interets_emprunt', label: "Interets d'emprunt" },
-  { value: 'autre', label: 'Autre charge deductible' },
+import type { TFunction } from 'i18next'
+
+export const EXPENSE_CATEGORIES: Array<{ value: string; label: string; labelKey: string }> = [
+  { value: 'taxe_fonciere', label: 'Taxe fonciere', labelKey: 'fiscal.expenseCategory.taxe_fonciere' },
+  { value: 'travaux', label: 'Travaux', labelKey: 'fiscal.expenseCategory.travaux' },
+  { value: 'assurance_pno', label: 'Assurance PNO', labelKey: 'fiscal.expenseCategory.assurance_pno' },
+  { value: 'frais_gestion', label: 'Frais de gestion / syndic', labelKey: 'fiscal.expenseCategory.frais_gestion' },
+  { value: 'interets_emprunt', label: "Interets d'emprunt", labelKey: 'fiscal.expenseCategory.interets_emprunt' },
+  { value: 'autre', label: 'Autre charge deductible', labelKey: 'fiscal.expenseCategory.autre' },
 ]
 
-export function categoryLabel(value: string) {
-  return EXPENSE_CATEGORIES.find((c) => c.value === value)?.label ?? value
+export function categoryLabel(value: string, t?: TFunction) {
+  const category = EXPENSE_CATEGORIES.find((entry) => entry.value === value)
+  if (!category) return value
+  return t ? t(category.labelKey) : category.label
 }
 
 // ── Types ────────────────────────────────────────────────────────────────────

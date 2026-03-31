@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { pdf } from '@react-pdf/renderer'
 import { AnimatePresence, motion } from 'framer-motion'
 import { FileText, Search, X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { buildFurnishedLeaseContractPdfData } from '@/lib/leaseContractDocument'
@@ -20,8 +21,9 @@ import { useAuthStore } from '@/stores/useAuthStore'
 import DocumentDeleteModal from './DocumentDeleteModal'
 import DocumentRow from './DocumentRow'
 import {
-  DOC_TYPE_FILTERS,
   getDocumentMeta,
+  getDocumentStatusMeta,
+  getDocumentTypeFilters,
   normalizeDocumentSearch,
 } from './documentPageUtils'
 import DocumentsEmptyState from './DocumentsEmptyState'
@@ -38,6 +40,7 @@ import {
 const TEMPLATE_PARAMS_KEY = 'lf_doc_template_params'
 
 export default function Documents() {
+  const { t } = useTranslation()
   const { profile } = useAuthStore()
   const [docs, setDocs] = useState<DocumentRecord[]>([])
   const [payments, setPayments] = useState<Payment[]>([])
@@ -62,6 +65,8 @@ export default function Documents() {
   const [typeFilter, setTypeFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [regenerateKind, setRegenerateKind] = useState<DocumentTemplateKind | null>(null)
+  const statusMeta = getDocumentStatusMeta(t)
+  const typeFilters = getDocumentTypeFilters(t)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -104,7 +109,7 @@ export default function Documents() {
             doc.tenant_last_name,
             doc.property_name,
             doc.property_city,
-            getDocumentMeta(doc.type).label,
+            getDocumentMeta(doc.type, t).label,
           ].join(' '),
         )
         return terms.every((term) => haystack.includes(term))
@@ -112,7 +117,7 @@ export default function Documents() {
     }
 
     return result
-  }, [docs, typeFilter, statusFilter, searchQuery])
+  }, [docs, typeFilter, statusFilter, searchQuery, t])
 
   function saveTemplateParams(kind: DocumentTemplateKind, params: Record<string, unknown>) {
     try {
@@ -404,11 +409,11 @@ export default function Documents() {
     <div className="flex flex-col gap-5">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-textPrimary">Documents</h1>
+          <h1 className="text-2xl font-semibold text-textPrimary">{t('documents.title')}</h1>
           <p className="mt-1 text-sm text-textMuted">
-            {docs.length} document{docs.length !== 1 ? 's' : ''} genere{docs.length !== 1 ? 's' : ''}
+            {t('documents.generatedCount', { count: docs.length })}
             {filteredDocs.length !== docs.length
-              ? ` · ${filteredDocs.length} affiche${filteredDocs.length !== 1 ? 's' : ''}`
+              ? ` | ${t('documents.filteredCount', { count: filteredDocs.length })}`
               : ''}
           </p>
         </div>
@@ -419,7 +424,7 @@ export default function Documents() {
           disabled={!canGenerateAnyDocument || generationLoading}
         >
           <FileText className="h-4 w-4" />
-          {generationLoading ? 'Chargement...' : 'Nouveau document'}
+          {generationLoading ? t('common.loading') : t('documents.generate')}
         </Button>
       </div>
 
@@ -436,7 +441,7 @@ export default function Documents() {
             <Input
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Rechercher par locataire, bien, ville..."
+              placeholder={t('documents.searchPlaceholder')}
               className="h-9 pl-10"
             />
             {searchQuery && (
@@ -454,7 +459,7 @@ export default function Documents() {
             onChange={(event) => setTypeFilter(event.target.value)}
             className="h-9 rounded-lg border border-border bg-surface px-3 text-sm text-textPrimary focus:outline-none focus:ring-1 focus:ring-primary"
           >
-            {DOC_TYPE_FILTERS.map((filter) => (
+            {typeFilters.map((filter) => (
               <option key={filter.value} value={filter.value}>
                 {filter.label}
               </option>
@@ -466,10 +471,10 @@ export default function Documents() {
             onChange={(event) => setStatusFilter(event.target.value)}
             className="h-9 rounded-lg border border-border bg-surface px-3 text-sm text-textPrimary focus:outline-none focus:ring-1 focus:ring-primary"
           >
-            <option value="">Tous les statuts</option>
-            <option value="generated">Genere</option>
-            <option value="sent">Envoye</option>
-            <option value="archived">Archive</option>
+            <option value="">{t('documents.allStatuses')}</option>
+            <option value="generated">{statusMeta.generated.label}</option>
+            <option value="sent">{statusMeta.sent.label}</option>
+            <option value="archived">{statusMeta.archived.label}</option>
           </select>
 
           {hasFilters && (
@@ -481,7 +486,7 @@ export default function Documents() {
               }}
               className="text-xs text-textMuted transition-colors hover:text-primary"
             >
-              Reinitialiser
+              {t('documents.resetFilters')}
             </button>
           )}
         </div>
@@ -502,12 +507,12 @@ export default function Documents() {
           </div>
           <div>
             <p className="text-base font-semibold text-textPrimary">
-              {hasFilters ? 'Aucun document ne correspond' : 'Aucun document genere'}
+              {hasFilters ? t('documents.noMatchTitle') : t('documents.empty')}
             </p>
             <p className="mt-1 text-sm text-textMuted">
               {hasFilters
-                ? "Essayez d'ajuster vos filtres ou votre recherche."
-                : "Ouvrez le centre de modeles pour generer une quittance, un avis de revision, un contrat meuble ou un document de depot."}
+                ? t('documents.noMatchDesc')
+                : t('documents.generateHelp')}
             </p>
           </div>
         </div>

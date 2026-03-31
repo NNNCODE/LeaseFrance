@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { AlertTriangle, Plus, TrendingUp } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import IrlManagerModal from '@/components/irl/IrlManagerModal'
 import { Button } from '@/components/ui/button'
 import {
@@ -17,6 +18,7 @@ import LeaseRevisionModal from './LeaseRevisionModal'
 import LeaseRow from './LeaseRow'
 
 export default function Leases() {
+  const { t } = useTranslation()
   const [leases, setLeases] = useState<Lease[]>([])
   const [irlIndices, setIrlIndices] = useState<IrlIndex[]>([])
   const [loading, setLoading] = useState(true)
@@ -180,20 +182,20 @@ export default function Leases() {
     <div className="flex flex-col gap-6">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-textPrimary">Baux</h1>
+          <h1 className="text-2xl font-semibold text-textPrimary">{t('leases.title')}</h1>
           <p className="mt-1 text-sm text-textMuted">
-            {activeCount} bail{activeCount !== 1 ? 's' : ''} en cours
-            {endedCount > 0 && ` · ${endedCount} termine${endedCount !== 1 ? 's' : ''}`}
+            {t('leases.summaryActive', { count: activeCount })}
+            {endedCount > 0 && ` | ${t('leases.summaryEnded', { count: endedCount })}`}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="secondary" onClick={() => setShowIrlManager(true)}>
             <TrendingUp className="h-4 w-4" />
-            Gerer l IRL
+            {t('leases.irlManager')}
           </Button>
           <Button onClick={openAdd}>
             <Plus className="h-4 w-4" />
-            Nouveau bail
+            {t('leases.add')}
           </Button>
         </div>
       </div>
@@ -207,14 +209,14 @@ export default function Leases() {
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-warning" />
           <div className="flex-1">
             <p className="text-sm font-semibold text-textPrimary">
-              Les donnees IRL locales s arretent a {irlDatasetStatus.latestLabel ?? 'une date inconnue'}
+              {t('leases.irlStaleTitle', { latest: irlDatasetStatus.latestLabel ?? t('leases.unknownDate') })}
             </p>
             <p className="mt-0.5 text-xs text-textMuted">
-              Ajoutez les derniers indices publies pour garder les revisions et documents IRL exploitables.
+              {t('leases.irlStaleDesc')}
             </p>
           </div>
           <Button variant="secondary" size="sm" onClick={() => setShowIrlManager(true)}>
-            Ouvrir
+            {t('leases.open')}
           </Button>
         </motion.div>
       )}
@@ -228,11 +230,10 @@ export default function Leases() {
           <TrendingUp className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
           <div className="flex-1">
             <p className="text-sm font-semibold text-textPrimary">
-              {revisionEligible.length} bail{revisionEligible.length > 1 ? 's' : ''} eligibl
-              {revisionEligible.length > 1 ? 'es' : 'e'} a la revision IRL
+              {t('leases.revisionEligibleTitle', { count: revisionEligible.length })}
             </p>
             <p className="mt-0.5 text-xs text-textMuted">
-              La date anniversaire approche. Vous pouvez reviser le loyer selon l'indice IRL.
+              {t('leases.revisionEligibleDesc')}
             </p>
           </div>
         </motion.div>

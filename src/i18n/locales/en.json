@@ -394,6 +394,7 @@
     "addTitle": "Create a lease",
     "deleteTitle": "Delete this lease?",
     "deleteDesc": "This lease will be permanently deleted.",
+    "deleteWarning": "This action is permanent. Related payments and documents should already be handled.",
     "property": "Property",
     "tenant": "Tenant",
     "type": "Lease type",
@@ -408,6 +409,7 @@
     "typeMobilite": "Mobility",
     "statusActive": "Active",
     "statusEnded": "Ended",
+    "statusTerminated": "Terminated",
     "revision": "IRL revision",
     "manageDeposit": "Security deposit",
     "chargeReconciliation": "Charge reconciliation",
@@ -415,7 +417,86 @@
     "irlWarning": "No IRL index available. Import IRL data to enable revisions.",
     "expiresIn": "Expires in {{days}}d",
     "expired": "Expired {{days}}d ago",
-    "nextRevision": "Revision in {{days}}d"
+    "nextRevision": "Revision in {{days}}d",
+    "typeVideDesc": "Min. term 3 years",
+    "typeMeubleDesc": "Min. term 1 year",
+    "typeMobiliteDesc": "1 to 10 months",
+    "summaryActive": "{{count}} active lease",
+    "summaryActive_plural": "{{count}} active leases",
+    "summaryEnded": "{{count}} ended lease",
+    "summaryEnded_plural": "{{count}} ended leases",
+    "irlStaleTitle": "Local IRL data stops at {{latest}}",
+    "irlStaleDesc": "Add the latest published indices to keep revisions and IRL-based documents usable.",
+    "unknownDate": "an unknown date",
+    "open": "Open",
+    "revisionEligibleTitle": "{{count}} lease eligible for IRL revision",
+    "revisionEligibleTitle_plural": "{{count}} leases eligible for IRL revision",
+    "revisionEligibleDesc": "The anniversary date is approaching. You can revise the rent using the IRL index.",
+    "revisionModal": {
+      "title": "IRL rent revision",
+      "doneTitle": "Rent revised",
+      "doneDesc": "The new rent of {{amount}} has been applied.",
+      "unavailableTitle": "Revision unavailable",
+      "missingReferenceQuarter": "The reference IRL quarter is not defined for this lease.",
+      "missingReferenceValue": "The reference IRL value is not defined for this lease.",
+      "missingNewIndex": "No more recent IRL index is available for this quarter.",
+      "unavailableHelp": "Edit the lease to define the reference IRL, or add a more recent IRL index.",
+      "property": "Property",
+      "tenant": "Tenant",
+      "referenceIrl": "Reference IRL",
+      "newIrl": "New IRL",
+      "currentRent": "Current rent",
+      "newRent": "New rent",
+      "increase": "Increase",
+      "formula": "Formula: rent x (new IRL / reference IRL) = {{oldRent}} x ({{newIrl}} / {{referenceIrl}}) = {{newRent}} EUR",
+      "apply": "Apply revision",
+      "applying": "Applying...",
+      "error": "Unable to apply the revision: {{error}}"
+    },
+    "row": {
+      "since": "Since {{date}}",
+      "until": "Until {{date}}",
+      "perMonth": "{{amount}} / month",
+      "charges": "+ {{amount}} charges",
+      "deposit": "Deposit: {{amount}}",
+      "depositCollected": "Collected on {{date}}",
+      "depositToReturn": "To return: {{amount}}",
+      "manageCharges": "Reconcile charges",
+      "manageDeposit": "Manage security deposit",
+      "reviseRent": "Revise rent (IRL)"
+    },
+    "depositStatus": {
+      "awaiting": "To collect",
+      "held": "Held",
+      "returned": "Returned",
+      "partial": "Partially returned",
+      "retained": "Retained",
+      "none": "No deposit"
+    },
+    "form": {
+      "noProperties": "No property available. Add a property first in Properties.",
+      "noTenants": "No tenant available. Add a tenant first in Tenants.",
+      "selectProperty": "Select a property...",
+      "selectTenant": "Select a tenant...",
+      "rentExclCharges": "Rent excl. charges (EUR/month)",
+      "monthlyCharges": "Charges (EUR/month)",
+      "depositAmount": "Security deposit (EUR)",
+      "maxLegal": "Legal max: {{amount}}",
+      "irlReferenceHint": "for yearly revision",
+      "quarter": "Quarter",
+      "undefined": "Undefined",
+      "irlValue": "IRL value",
+      "exampleIrl": "e.g. 143.46",
+      "status": "Status",
+      "errors": {
+        "selectProperty": "Select a property.",
+        "selectTenant": "Select a tenant.",
+        "startDateRequired": "Start date is required.",
+        "rentPositive": "Rent must be greater than 0.",
+        "mobilityEndDateRequired": "A mobility lease requires an end date.",
+        "save": "Unable to save the lease: {{error}}"
+      }
+    }
   },
   "payments": {
     "title": "Payments",
@@ -679,7 +760,103 @@
     "preview": "Preview",
     "download": "Download",
     "markSent": "Mark as sent",
-    "markArchived": "Mark as archived"
+    "markArchived": "Mark as archived",
+    "open": "Open file",
+    "regenerate": "Regenerate",
+    "fileMissing": "No linked file.",
+    "loadingPdf": "Loading PDF...",
+    "emptySourcesTitle": "No document source yet",
+    "emptySourcesDesc": "Templates become available once a payment is marked paid, a furnished lease is active, a lease can be revised, or a security deposit has been collected or returned.",
+    "noMatchTitle": "No matching document",
+    "noMatchDesc": "Try adjusting your filters or search.",
+    "generateHelp": "Open the template center to generate a rent receipt, revision notice, furnished lease contract or deposit document.",
+    "resetFilters": "Reset filters",
+    "modal": {
+      "title": "Template center",
+      "doneTitle": "Document generated",
+      "doneDesc": "The PDF was saved and added to the document list.",
+      "availableCount": "{{count}} available",
+      "availableCount_plural": "{{count}} available",
+      "noTemplate": "No template can be generated right now. Check that a payment is marked paid, that a lease can be revised, or that a furnished lease or security deposit is available.",
+      "labels": {
+        "payment": "Payment",
+        "lease": "Lease",
+        "furnishedLease": "Furnished lease"
+      },
+      "generating": "Generating...",
+      "generatePdf": "Generate PDF",
+      "selectPlaceholder": "Choose an item...",
+      "cards": {
+        "payment_certificate": {
+          "title": "Receipt or payment receipt",
+          "description": "From a payment marked as paid."
+        },
+        "rent_revision_notice": {
+          "title": "Rent revision notice",
+          "description": "Generated from the lease IRL reference."
+        },
+        "furnished_lease_contract": {
+          "title": "Furnished lease contract",
+          "description": "Official furnished lease template with additional fields."
+        },
+        "deposit_receipt": {
+          "title": "Deposit receipt",
+          "description": "Requires a collected security deposit."
+        },
+        "deposit_settlement": {
+          "title": "Deposit settlement",
+          "description": "Requires a recorded refund."
+        }
+      },
+      "errors": {
+        "noTemplate": "No template is available right now.",
+        "selectItem": "Choose an item.",
+        "fillRevisionDates": "Enter the notice date and the effective date.",
+        "selectFurnishedLease": "Choose a furnished lease.",
+        "missingRequiredMentions": "The contract still has required fields to complete.",
+        "generic": "Error: {{error}}"
+      },
+      "payment": {
+        "tenant": "Tenant",
+        "property": "Property",
+        "period": "Period",
+        "rentDue": "Rent due",
+        "paidAmount": "Paid amount",
+        "fullTitle": "Rent receipt",
+        "partialTitle": "Payment receipt",
+        "fullDesc": "Full payment: a rent receipt will be generated.",
+        "partialDesc": "Partial payment: a payment receipt will be generated."
+      },
+      "revision": {
+        "tenant": "Tenant",
+        "property": "Property",
+        "referenceIrl": "Reference IRL",
+        "newIrl": "New IRL",
+        "currentRent": "Current rent excl. charges",
+        "newRent": "New rent excl. charges",
+        "noticeDate": "Notice date",
+        "effectiveDate": "Effective date",
+        "summary": "The document will restate the IRL revision formula and notify a new monthly rent excl. charges of {{amount}} effective on {{date}}.",
+        "dateChosen": "the chosen date"
+      },
+      "depositReceipt": {
+        "tenant": "Tenant",
+        "property": "Property",
+        "amount": "Collected deposit",
+        "date": "Collection date",
+        "summary": "The PDF will confirm the collection of the security deposit planned in the lease dated {{date}}."
+      },
+      "depositSettlement": {
+        "tenant": "Tenant",
+        "property": "Property",
+        "initialAmount": "Initial deposit",
+        "retainedAmount": "Retained amount",
+        "returnedAmount": "Returned amount",
+        "date": "Refund date",
+        "summaryWithNotes": "The recorded notes will be included in the document: {{notes}}",
+        "summaryWithoutNotes": "The document will mention that no additional note was recorded."
+      }
+    }
   },
   "reminders": {
     "title": "Deadline center",
@@ -739,6 +916,13 @@
         "titleRequired": "Enter a title.",
         "dueDateRequired": "Enter a due date."
       }
+    },
+    "derived": {
+      "leaseEndTitle": "Lease ending soon",
+      "leaseEndDesc": "The lease is nearing its end date. Review renewal, move-out or notice steps.",
+      "irlRevisionTitle": "IRL revision available",
+      "irlRevisionDesc": "Lease anniversary date for a possible IRL revision.",
+      "irlRevisionDescWithQuarter": "Lease anniversary date. Current reference: {{quarter}}."
     }
   },
   "inspections": {
@@ -791,7 +975,70 @@
     "property": "Property",
     "category": "Category",
     "amount": "Amount",
-    "description": "Description"
+    "description": "Description",
+    "csvSaved": "CSV export saved.",
+    "pdfSaved": "PDF export saved.",
+    "propertiesTracked": "Tracked properties",
+    "propertiesTrackedDetail": "{{count}} occupied month",
+    "propertiesTrackedDetail_plural": "{{count}} occupied months",
+    "receivedRentDetail": "{{percent}}% of collected total",
+    "receivedChargesDetail": "{{count}} estimated vacant month",
+    "receivedChargesDetail_plural": "{{count}} estimated vacant months",
+    "expensesDetail": "{{count}} recorded expense",
+    "expensesDetail_plural": "{{count}} recorded expenses",
+    "netResultPositive": "Positive result",
+    "netResultNegative": "Negative result",
+    "incomeByPropertyTitle": "Income by property",
+    "incomeByPropertyDesc": "Collected rents and charges, outstanding amounts and deductible expenses by property.",
+    "noPropertiesTitle": "No property registered",
+    "noPropertiesDesc": "Add at least one property and a lease to build an annual fiscal summary.",
+    "noActivityTitle": "No activity for this year",
+    "noActivityDesc": "The selected year has no lease coverage or matched payment for your properties.",
+    "tableOccupied": "Occupied",
+    "tableVacant": "Vacant",
+    "tableRent": "Rent",
+    "tableCharges": "Charges",
+    "tableOutstanding": "Outstanding",
+    "tableDeductible": "Deductible",
+    "tableNet": "Net",
+    "cityMissing": "City not provided",
+    "leaseCount": "{{count}} lease",
+    "leaseCount_plural": "{{count}} leases",
+    "paymentCount": "{{count}} payment",
+    "paymentCount_plural": "{{count}} payments",
+    "yearTotal": "Year total {{year}}",
+    "totalCollectedLabel": "Collected total: {{amount}}",
+    "scopeTitle": "Calculation scope",
+    "scopeLine1": "Collected rents and charges only include payments with the paid status.",
+    "scopeLine2": "Outstanding amounts include pending and late entries for the selected year.",
+    "scopeLine3": "Deductible expenses are entered manually per property and per year.",
+    "scopeLine4": "Net result = total collected - total deductible expenses.",
+    "notesTitle": "Good to know",
+    "notesLine1": "The PDF and CSV are working documents for a private landlord, not an automatic tax filing.",
+    "notesLine2": "If your payment history is incomplete, collected totals and outstanding balances will stay partial.",
+    "notesLine3": "Remember to enter expenses for each property before exporting.",
+    "expensesTitle": "Deductible expenses {{year}}",
+    "expensesDesc": "Property tax, works, landlord insurance, management fees, loan interest...",
+    "editExpenseInline": "Edit expense",
+    "newExpense": "New deductible expense",
+    "label": "Label",
+    "labelPlaceholder": "Example: Property tax 2026",
+    "notesOptional": "Notes (optional)",
+    "notesPlaceholder": "Reference, description...",
+    "noExpensesTitle": "No expense recorded for {{year}}",
+    "noExpensesDesc": "Add deductible expenses (property tax, works, insurance...) to calculate the net result.",
+    "lineCount": "{{count}} line",
+    "lineCount_plural": "{{count}} lines",
+    "status": {
+      "outstanding": "Outstanding",
+      "collected": "Collected",
+      "noFlow": "No activity"
+    },
+    "errors": {
+      "selectProperty": "Select a property.",
+      "labelRequired": "Enter a label.",
+      "amountPositive": "Amount must be positive."
+    }
   },
   "settings": {
     "title": "Settings",

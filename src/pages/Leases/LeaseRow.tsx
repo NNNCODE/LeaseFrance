@@ -10,12 +10,13 @@ import {
   TrendingUp,
   User,
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { isRevisionEligible } from '@/lib/irl'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { getDepositReturnedAmount, getDepositStatus, getDepositStatusMeta } from './depositUtils'
-import { STATUS_CONFIG, typeLabel } from './leasePageUtils'
+import { STATUS_CONFIG, statusLabel, typeLabel } from './leasePageUtils'
 
 interface LeaseRowProps {
   lease: Lease
@@ -34,6 +35,7 @@ export default function LeaseRow({
   onManageCharges,
   onRevise,
 }: LeaseRowProps) {
+  const { t } = useTranslation()
   const status = STATUS_CONFIG[lease.status]
   const StatusIcon = status.icon
   const canRevise =
@@ -45,7 +47,7 @@ export default function LeaseRow({
       lease.irl_reference_quarter,
     )
   const depositStatus = getDepositStatus(lease)
-  const depositMeta = getDepositStatusMeta(depositStatus)
+  const depositMeta = getDepositStatusMeta(depositStatus, t)
   const returnedAmount = getDepositReturnedAmount(lease)
 
   return (
@@ -92,9 +94,9 @@ export default function LeaseRow({
             </div>
 
             <div className="flex flex-col gap-1">
-              <Badge variant="muted">{typeLabel(lease.type)}</Badge>
+              <Badge variant="muted">{typeLabel(lease.type, t)}</Badge>
               <Badge variant={status.variant as 'success' | 'danger' | 'muted'}>
-                {status.label}
+                {statusLabel(lease.status, t)}
               </Badge>
               {lease.irl_reference_quarter && (
                 <span className="text-[10px] text-textMuted">IRL : {lease.irl_reference_quarter}</span>
@@ -104,12 +106,12 @@ export default function LeaseRow({
             <div className="flex flex-col gap-1 text-xs text-textMuted">
               <div className="flex items-center gap-1.5">
                 <CalendarDays className="h-3.5 w-3.5 shrink-0" />
-                <span>Depuis le {formatDate(lease.start_date)}</span>
+                <span>{t('leases.row.since', { date: formatDate(lease.start_date) })}</span>
               </div>
               {lease.end_date && (
                 <div className="flex items-center gap-1.5">
                   <CalendarDays className="h-3.5 w-3.5 shrink-0 opacity-0" />
-                  <span>Jusqu'au {formatDate(lease.end_date)}</span>
+                  <span>{t('leases.row.until', { date: formatDate(lease.end_date) })}</span>
                 </div>
               )}
             </div>
@@ -117,14 +119,14 @@ export default function LeaseRow({
             <div className="flex flex-col gap-1 text-right">
               <div className="flex items-center justify-end gap-1 text-sm font-semibold text-textPrimary">
                 <Euro className="h-3.5 w-3.5 text-primary" />
-                {formatCurrency(lease.rent_amount)} / mois
+                {t('leases.row.perMonth', { amount: formatCurrency(lease.rent_amount) })}
               </div>
               {lease.charges_amount > 0 && (
-                <p className="text-xs text-textMuted">+ {formatCurrency(lease.charges_amount)} charges</p>
+                <p className="text-xs text-textMuted">{t('leases.row.charges', { amount: formatCurrency(lease.charges_amount) })}</p>
               )}
               {lease.deposit_amount > 0 && (
                 <div className="flex items-center justify-end gap-2">
-                  <p className="text-xs text-textMuted">Depot : {formatCurrency(lease.deposit_amount)}</p>
+                  <p className="text-xs text-textMuted">{t('leases.row.deposit', { amount: formatCurrency(lease.deposit_amount) })}</p>
                   <Badge variant={depositMeta.variant} className="text-[10px]">
                     {depositMeta.label}
                   </Badge>
@@ -133,8 +135,8 @@ export default function LeaseRow({
               {lease.deposit_amount > 0 && depositStatus !== 'awaiting' && (
                 <p className="text-xs text-textMuted">
                   {depositStatus === 'held'
-                    ? `Encaisse le ${formatDate(lease.deposit_received_date!)}`
-                    : `A restituer : ${formatCurrency(returnedAmount)}`}
+                    ? t('leases.row.depositCollected', { date: formatDate(lease.deposit_received_date!) })
+                    : t('leases.row.depositToReturn', { amount: formatCurrency(returnedAmount) })}
                 </p>
               )}
             </div>
@@ -144,7 +146,7 @@ export default function LeaseRow({
             {lease.charges_amount > 0 && (
               <button
                 onClick={onManageCharges}
-                title="Regulariser les charges"
+                title={t('leases.row.manageCharges')}
                 className="rounded-lg p-1.5 text-textMuted transition-colors hover:bg-warning/10 hover:text-warning"
               >
                 <ScrollText className="h-3.5 w-3.5" />
@@ -153,7 +155,7 @@ export default function LeaseRow({
             {lease.deposit_amount > 0 && (
               <button
                 onClick={onManageDeposit}
-                title="Gerer le depot de garantie"
+                title={t('leases.row.manageDeposit')}
                 className="rounded-lg p-1.5 text-textMuted transition-colors hover:bg-primary/10 hover:text-primary"
               >
                 <ShieldCheck className="h-3.5 w-3.5" />
@@ -162,7 +164,7 @@ export default function LeaseRow({
             {canRevise && (
               <button
                 onClick={onRevise}
-                title="Reviser le loyer (IRL)"
+                title={t('leases.row.reviseRent')}
                 className="rounded-lg p-1.5 text-textMuted transition-colors hover:bg-primary/10 hover:text-primary"
               >
                 <TrendingUp className="h-3.5 w-3.5" />

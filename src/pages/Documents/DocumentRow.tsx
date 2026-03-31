@@ -10,10 +10,11 @@ import {
   Send,
   Trash2,
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { formatDate } from '@/lib/utils'
-import { DOC_STATUS_META, getDocumentMeta } from './documentPageUtils'
+import { getDocumentMeta, getDocumentStatusMeta } from './documentPageUtils'
 
 interface DocumentRowProps {
   doc: DocumentRecord
@@ -32,8 +33,10 @@ export default function DocumentRow({
   onStatusChange,
   onRegenerate,
 }: DocumentRowProps) {
-  const meta = getDocumentMeta(doc.type)
-  const statusMeta = DOC_STATUS_META[doc.status] ?? DOC_STATUS_META.generated
+  const { t } = useTranslation()
+  const documentStatusMeta = getDocumentStatusMeta(t)
+  const meta = getDocumentMeta(doc.type, t)
+  const statusMeta = documentStatusMeta[doc.status] ?? documentStatusMeta.generated
   const Icon = meta.icon
   const [showStatusMenu, setShowStatusMenu] = useState(false)
   const canRegenerate = [
@@ -84,7 +87,7 @@ export default function DocumentRow({
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setShowStatusMenu(false)} />
                   <div className="absolute left-0 top-full z-50 mt-1 min-w-[140px] rounded-xl border border-border bg-surface py-1 shadow-lg">
-                    {Object.entries(DOC_STATUS_META).map(([status, statusOption]) => (
+                    {Object.entries(documentStatusMeta).map(([status, statusOption]) => (
                       <button
                         key={status}
                         onClick={() => {
@@ -114,7 +117,7 @@ export default function DocumentRow({
             {doc.file_path && (
               <button
                 onClick={onPreview}
-                title="Apercu PDF"
+                title={t('documents.preview')}
                 className="rounded-lg p-1.5 text-textMuted transition-colors hover:bg-primary/10 hover:text-primary"
               >
                 <Eye className="h-3.5 w-3.5" />
@@ -123,7 +126,7 @@ export default function DocumentRow({
             {doc.file_path && (
               <button
                 onClick={onOpen}
-                title="Ouvrir le fichier"
+                title={t('documents.open')}
                 className="rounded-lg p-1.5 text-textMuted transition-colors hover:bg-primary/10 hover:text-primary"
               >
                 <FolderOpen className="h-3.5 w-3.5" />
@@ -132,7 +135,7 @@ export default function DocumentRow({
             {canRegenerate && (
               <button
                 onClick={onRegenerate}
-                title="Regenerer ce type de document"
+                title={t('documents.regenerate')}
                 className="rounded-lg p-1.5 text-textMuted transition-colors hover:bg-warning/10 hover:text-warning"
               >
                 <RefreshCw className="h-3.5 w-3.5" />
@@ -140,7 +143,7 @@ export default function DocumentRow({
             )}
             <button
               onClick={onDelete}
-              title="Supprimer"
+              title={t('common.delete')}
               className="rounded-lg p-1.5 text-textMuted transition-colors hover:bg-danger/10 hover:text-danger"
             >
               <Trash2 className="h-3.5 w-3.5" />

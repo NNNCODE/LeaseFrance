@@ -1,19 +1,27 @@
 import { Ban, Clock, ShieldCheck } from 'lucide-react'
+import type { TFunction } from 'i18next'
 
 export const LEASE_TYPES = [
-  { value: 'vide', label: 'Vide', description: 'Duree min. 3 ans' },
-  { value: 'meuble', label: 'Meuble', description: 'Duree min. 1 an' },
-  { value: 'mobilite', label: 'Mobilite', description: '1 a 10 mois' },
+  { value: 'vide', label: 'Vide', labelKey: 'leases.typeVide', description: 'Duree min. 3 ans', descriptionKey: 'leases.typeVideDesc' },
+  { value: 'meuble', label: 'Meuble', labelKey: 'leases.typeMeuble', description: 'Duree min. 1 an', descriptionKey: 'leases.typeMeubleDesc' },
+  { value: 'mobilite', label: 'Mobilite', labelKey: 'leases.typeMobilite', description: '1 a 10 mois', descriptionKey: 'leases.typeMobiliteDesc' },
 ] as const
 
 export const STATUS_CONFIG = {
-  active: { label: 'En cours', variant: 'success', icon: ShieldCheck },
-  ended: { label: 'Termine', variant: 'muted', icon: Clock },
-  terminated: { label: 'Resilie', variant: 'danger', icon: Ban },
+  active: { label: 'En cours', labelKey: 'leases.statusActive', variant: 'success', icon: ShieldCheck },
+  ended: { label: 'Termine', labelKey: 'leases.statusEnded', variant: 'muted', icon: Clock },
+  terminated: { label: 'Resilie', labelKey: 'leases.statusTerminated', variant: 'danger', icon: Ban },
 } as const
 
-export function typeLabel(type: string) {
-  return LEASE_TYPES.find((leaseType) => leaseType.value === type)?.label ?? type
+export function typeLabel(type: string, t?: TFunction) {
+  const leaseType = LEASE_TYPES.find((entry) => entry.value === type)
+  if (!leaseType) return type
+  return t ? t(leaseType.labelKey) : leaseType.label
+}
+
+export function statusLabel(status: keyof typeof STATUS_CONFIG, t?: TFunction) {
+  const meta = STATUS_CONFIG[status]
+  return t ? t(meta.labelKey) : meta.label
 }
 
 export const emptyLeaseForm: LeaseInput = {

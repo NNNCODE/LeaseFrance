@@ -69,6 +69,43 @@ function categoryMeta(item: ReminderFeedItem) {
   return MANUAL_CATEGORY_META[item.category] ?? MANUAL_CATEGORY_META.custom
 }
 
+function extractIrlQuarter(notes: string | null) {
+  if (!notes) return null
+  const match = notes.match(/(\d{4}-T[1-4])/i)
+  return match?.[1] ?? null
+}
+
+function displayReminderTitle(item: ReminderFeedItem, t: TFunction) {
+  if (item.source !== 'derived') return item.title
+
+  if (item.derived_kind === 'irl_revision') {
+    return t('reminders.derived.irlRevisionTitle')
+  }
+
+  if (item.derived_kind === 'lease_end') {
+    return t('reminders.derived.leaseEndTitle')
+  }
+
+  return item.title
+}
+
+function displayReminderNotes(item: ReminderFeedItem, t: TFunction) {
+  if (item.source !== 'derived') return item.notes
+
+  if (item.derived_kind === 'irl_revision') {
+    const quarter = extractIrlQuarter(item.notes)
+    return quarter
+      ? t('reminders.derived.irlRevisionDescWithQuarter', { quarter })
+      : t('reminders.derived.irlRevisionDesc')
+  }
+
+  if (item.derived_kind === 'lease_end') {
+    return t('reminders.derived.leaseEndDesc')
+  }
+
+  return item.notes
+}
+
 export default function Reminders() {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -325,6 +362,8 @@ function ReminderRow({
   const timing = timingMeta(item.due_date, t)
   const category = categoryMeta(item)
   const CategoryIcon = category.icon
+  const title = displayReminderTitle(item, t)
+  const notes = displayReminderNotes(item, t)
 
   return (
     <motion.div
@@ -337,7 +376,7 @@ function ReminderRow({
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <p className="text-sm font-semibold text-textPrimary">{item.title}</p>
+              <p className="text-sm font-semibold text-textPrimary">{title}</p>
               <Badge variant={timing.variant}>{timing.label}</Badge>
               <Badge variant={item.source === 'derived' ? 'muted' : 'default'}>
                 {item.source === 'derived' ? t('reminders.sourceAutomatic') : t('reminders.sourceManual')}
@@ -367,8 +406,8 @@ function ReminderRow({
               ) : null}
             </div>
 
-            {item.notes ? (
-              <p className="mt-3 text-xs leading-5 text-textMuted">{item.notes}</p>
+            {notes ? (
+              <p className="mt-3 text-xs leading-5 text-textMuted">{notes}</p>
             ) : null}
           </div>
 

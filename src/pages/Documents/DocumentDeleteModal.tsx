@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
 import { AlertTriangle, Trash2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 
 interface DocumentDeleteModalProps {
@@ -13,6 +14,8 @@ export default function DocumentDeleteModal({
   onConfirm,
   onClose,
 }: DocumentDeleteModalProps) {
+  const { t } = useTranslation()
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -33,19 +36,19 @@ export default function DocumentDeleteModal({
             <AlertTriangle className="h-5 w-5 text-danger" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-textPrimary">Supprimer ce document ?</p>
+            <p className="text-sm font-semibold text-textPrimary">{t('documents.deleteTitle')}</p>
             <p className="mt-0.5 text-xs text-textMuted">
-              {doc.tenant_first_name} {doc.tenant_last_name} · {doc.property_name}
+              {doc.tenant_first_name} {doc.tenant_last_name} | {doc.property_name}
             </p>
           </div>
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" onClick={onClose} className="flex-1">
-            Annuler
+            {t('common.cancel')}
           </Button>
           <Button variant="danger" onClick={onConfirm} className="flex-1">
             <Trash2 className="h-3.5 w-3.5" />
-            Supprimer
+            {t('common.delete')}
           </Button>
         </div>
       </motion.div>

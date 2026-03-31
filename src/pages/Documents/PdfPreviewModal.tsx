@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { AlertTriangle, FolderOpen, X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { formatDate } from '@/lib/utils'
 import { getDocumentMeta } from './documentPageUtils'
@@ -11,6 +12,7 @@ interface PdfPreviewModalProps {
 }
 
 export default function PdfPreviewModal({ doc, onClose }: PdfPreviewModalProps) {
+  const { t } = useTranslation()
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
@@ -21,7 +23,7 @@ export default function PdfPreviewModal({ doc, onClose }: PdfPreviewModalProps) 
     setLoading(true)
 
     if (!doc.file_path) {
-      setError('Aucun fichier associe.')
+      setError(t('documents.fileMissing'))
       setLoading(false)
       return
     }
@@ -34,7 +36,7 @@ export default function PdfPreviewModal({ doc, onClose }: PdfPreviewModalProps) 
       if (cancelled) return
 
       if (result.error || !result.data || !result.mimeType) {
-        setError(result.error || 'Impossible de lire le fichier.')
+        setError(result.error || t('documents.readError'))
       } else {
         const nextUrl = URL.createObjectURL(new Blob([result.data], { type: result.mimeType }))
         if (cancelled) {
@@ -52,9 +54,9 @@ export default function PdfPreviewModal({ doc, onClose }: PdfPreviewModalProps) 
       cancelled = true
       if (objectUrl) URL.revokeObjectURL(objectUrl)
     }
-  }, [doc.file_path])
+  }, [doc.file_path, t])
 
-  const meta = getDocumentMeta(doc.type)
+  const meta = getDocumentMeta(doc.type, t)
   const PreviewIcon = meta.icon
 
   return (
@@ -90,7 +92,7 @@ export default function PdfPreviewModal({ doc, onClose }: PdfPreviewModalProps) 
             {doc.file_path && (
               <Button variant="secondary" size="sm" onClick={() => window.api.documents.openFile(doc.file_path!)}>
                 <FolderOpen className="h-3.5 w-3.5" />
-                Ouvrir
+                {t('documents.open')}
               </Button>
             )}
             <button
@@ -105,7 +107,7 @@ export default function PdfPreviewModal({ doc, onClose }: PdfPreviewModalProps) 
         <div className="flex-1 overflow-hidden">
           {loading ? (
             <div className="flex h-full items-center justify-center">
-              <div className="animate-pulse text-sm text-textMuted">Chargement du PDF...</div>
+              <div className="animate-pulse text-sm text-textMuted">{t('documents.loadingPdf')}</div>
             </div>
           ) : error ? (
             <div className="flex h-full flex-col items-center justify-center gap-3">
@@ -113,7 +115,7 @@ export default function PdfPreviewModal({ doc, onClose }: PdfPreviewModalProps) 
               <p className="text-sm text-textMuted">{error}</p>
             </div>
           ) : previewUrl ? (
-            <iframe src={previewUrl} className="h-full w-full border-0" title="PDF Preview" />
+            <iframe src={previewUrl} className="h-full w-full border-0" title={t('documents.preview')} />
           ) : null}
         </div>
       </motion.div>

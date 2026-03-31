@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { pdf } from '@react-pdf/renderer'
+import { useTranslation } from 'react-i18next'
 import {
   AlertTriangle,
   Building2,
@@ -44,6 +45,7 @@ function exportFileName(kind: 'csv' | 'pdf', year: number) {
 }
 
 export default function Fiscal() {
+  const { t } = useTranslation()
   const { profile } = useAuthStore()
   const [properties, setProperties] = useState<Property[]>([])
   const [leases, setLeases] = useState<Lease[]>([])
@@ -123,7 +125,7 @@ export default function Fiscal() {
       )
 
       if (result.saved) {
-        setNotice('Export CSV enregistre.')
+        setNotice(t('fiscal.csvSaved'))
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
@@ -159,7 +161,7 @@ export default function Fiscal() {
       )
 
       if (result.saved) {
-        setNotice('Export PDF enregistre.')
+        setNotice(t('fiscal.pdfSaved'))
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
@@ -172,14 +174,14 @@ export default function Fiscal() {
     <div className="flex flex-col gap-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-textPrimary">Fiscal annuel</h1>
+          <h1 className="text-2xl font-semibold text-textPrimary">{t('fiscal.title')}</h1>
           <p className="text-sm text-textMuted mt-1">
-            Synthese par annee : revenus, charges deductibles et resultat net foncier.
+            {t('fiscal.subtitle')}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <div className="rounded-lg border border-border bg-surfaceHigh px-3 py-2">
-            <label className="text-[11px] font-medium text-textMuted block mb-1">Exercice</label>
+            <label className="text-[11px] font-medium text-textMuted block mb-1">{t('fiscal.year')}</label>
             <select
               value={selectedYear}
               onChange={(event) => setSelectedYear(Number(event.target.value))}
@@ -192,11 +194,11 @@ export default function Fiscal() {
           </div>
           <Button variant="secondary" onClick={handleExportCsv} disabled={loading || exporting !== null}>
             <FileSpreadsheet className="w-4 h-4" />
-            {exporting === 'csv' ? 'Export CSV...' : 'Exporter CSV'}
+            {exporting === 'csv' ? t('fiscal.exporting') : t('fiscal.exportCsv')}
           </Button>
           <Button onClick={handleExportPdf} disabled={loading || exporting !== null}>
             <Download className="w-4 h-4" />
-            {exporting === 'pdf' ? 'Export PDF...' : 'Exporter PDF'}
+            {exporting === 'pdf' ? t('fiscal.exporting') : t('fiscal.exportPdf')}
           </Button>
         </div>
       </div>
@@ -216,37 +218,39 @@ export default function Fiscal() {
       {/* ── Stat cards ─────────────────────────────────────────────── */}
       <div className="grid grid-cols-5 gap-4">
         <StatCard
-          label="Biens suivis"
+          label={t('fiscal.propertiesTracked')}
           value={summary.propertyCount}
-          detail={`${summary.occupiedMonths} mois occupes`}
+          detail={t('fiscal.propertiesTrackedDetail', { count: summary.occupiedMonths })}
           icon={Building2}
           tone="primary"
         />
         <StatCard
-          label="Loyers encaisses"
+          label={t('fiscal.receivedRent')}
           value={formatCurrency(summary.receivedRent)}
-          detail={`${summary.totalReceived > 0 ? Math.round((summary.receivedRent / summary.totalReceived) * 100) : 0}% du total encaisse`}
+          detail={t('fiscal.receivedRentDetail', {
+            percent: summary.totalReceived > 0 ? Math.round((summary.receivedRent / summary.totalReceived) * 100) : 0,
+          })}
           icon={Euro}
           tone="success"
         />
         <StatCard
-          label="Charges recuperees"
+          label={t('fiscal.receivedCharges')}
           value={formatCurrency(summary.receivedCharges)}
-          detail={`${summary.vacantMonths} mois vacants estimes`}
+          detail={t('fiscal.receivedChargesDetail', { count: summary.vacantMonths })}
           icon={ReceiptText}
           tone="warning"
         />
         <StatCard
-          label="Charges deductibles"
+          label={t('fiscal.totalExpenses')}
           value={formatCurrency(summary.expenses.total)}
-          detail={`${expenses.filter((e) => e.year === selectedYear).length} ligne${expenses.filter((e) => e.year === selectedYear).length !== 1 ? 's' : ''} saisie${expenses.filter((e) => e.year === selectedYear).length !== 1 ? 's' : ''}`}
+          detail={t('fiscal.expensesDetail', { count: expenses.filter((e) => e.year === selectedYear).length })}
           icon={TrendingDown}
           tone="danger"
         />
         <StatCard
-          label="Resultat net foncier"
+          label={t('fiscal.netResult')}
           value={formatCurrency(summary.netResult)}
-          detail={summary.netResult >= 0 ? 'Benefice' : 'Deficit foncier'}
+          detail={summary.netResult >= 0 ? t('fiscal.netResultPositive') : t('fiscal.netResultNegative')}
           icon={Euro}
           tone={summary.netResult >= 0 ? 'success' : 'danger'}
         />
@@ -257,9 +261,9 @@ export default function Fiscal() {
         <CardContent className="pt-5">
           <div className="flex items-start justify-between gap-4 mb-4">
             <div>
-              <h2 className="text-base font-semibold text-textPrimary">Revenus par bien</h2>
+              <h2 className="text-base font-semibold text-textPrimary">{t('fiscal.incomeByPropertyTitle')}</h2>
               <p className="text-sm text-textMuted mt-1">
-                Loyers et charges encaisses, impayes et charges deductibles par bien.
+                {t('fiscal.incomeByPropertyDesc')}
               </p>
             </div>
             <Badge variant="muted">{selectedYear}</Badge>
@@ -273,25 +277,25 @@ export default function Fiscal() {
             </div>
           ) : properties.length === 0 ? (
             <EmptyState
-              title="Aucun bien enregistre"
-              description="Ajoutez au moins un bien puis un bail pour pouvoir produire une synthese fiscale annuelle."
+              title={t('fiscal.noPropertiesTitle')}
+              description={t('fiscal.noPropertiesDesc')}
             />
           ) : activeProperties.length === 0 ? (
             <EmptyState
-              title="Aucune activite sur cet exercice"
-              description="L annee selectionnee ne contient ni bail couvrant la periode ni paiement rapproche pour vos biens."
+              title={t('fiscal.noActivityTitle')}
+              description={t('fiscal.noActivityDesc')}
             />
           ) : (
             <div className="rounded-2xl border border-border overflow-hidden">
               <div className="grid grid-cols-[1.5fr_80px_80px_120px_120px_120px_120px_120px] gap-2 px-4 py-3 bg-surfaceHigh/60 border-b border-border text-[11px] font-medium uppercase tracking-wide text-textMuted">
-                <span>Bien</span>
-                <span className="text-right">Occup.</span>
-                <span className="text-right">Vacants</span>
-                <span className="text-right">Loyers</span>
-                <span className="text-right">Charges</span>
-                <span className="text-right">Impayes</span>
-                <span className="text-right">Deductible</span>
-                <span className="text-right">Net</span>
+                <span>{t('fiscal.property')}</span>
+                <span className="text-right">{t('fiscal.tableOccupied')}</span>
+                <span className="text-right">{t('fiscal.tableVacant')}</span>
+                <span className="text-right">{t('fiscal.tableRent')}</span>
+                <span className="text-right">{t('fiscal.tableCharges')}</span>
+                <span className="text-right">{t('fiscal.tableOutstanding')}</span>
+                <span className="text-right">{t('fiscal.tableDeductible')}</span>
+                <span className="text-right">{t('fiscal.tableNet')}</span>
               </div>
 
               <div className="flex flex-col divide-y divide-border">
@@ -305,9 +309,9 @@ export default function Fiscal() {
                           <PropertyStatusBadge item={item} />
                         </div>
                         <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-textMuted">
-                          <span>{item.propertyCity || 'Ville non renseignee'}</span>
-                          <span>{item.leaseCount} bail{item.leaseCount !== 1 ? 's' : ''}</span>
-                          <span>{item.paidPaymentCount} paiement{item.paidPaymentCount !== 1 ? 's' : ''}</span>
+                          <span>{item.propertyCity || t('fiscal.cityMissing')}</span>
+                          <span>{t('fiscal.leaseCount', { count: item.leaseCount })}</span>
+                          <span>{t('fiscal.paymentCount', { count: item.paidPaymentCount })}</span>
                         </div>
                       </div>
                       <div className="text-right text-sm text-textPrimary">{item.occupiedMonths}</div>
@@ -329,8 +333,8 @@ export default function Fiscal() {
 
                 <div className="grid grid-cols-[1.5fr_80px_80px_120px_120px_120px_120px_120px] gap-2 px-4 py-4 bg-surface border-t border-border items-center">
                   <div>
-                    <p className="text-sm font-semibold text-textPrimary">Total exercice {selectedYear}</p>
-                    <p className="text-xs text-textMuted mt-1">Total encaisse : {formatCurrency(summary.totalReceived)}</p>
+                    <p className="text-sm font-semibold text-textPrimary">{t('fiscal.yearTotal', { year: selectedYear })}</p>
+                    <p className="text-xs text-textMuted mt-1">{t('fiscal.totalCollectedLabel', { amount: formatCurrency(summary.totalReceived) })}</p>
                   </div>
                   <div className="text-right text-sm font-semibold text-textPrimary">{summary.occupiedMonths}</div>
                   <div className="text-right text-sm font-semibold text-textPrimary">{summary.vacantMonths}</div>
@@ -366,13 +370,13 @@ export default function Fiscal() {
           <CardContent className="pt-5">
             <div className="flex items-center gap-2 mb-3">
               <CalendarDays className="w-4 h-4 text-primary" />
-              <h2 className="text-base font-semibold text-textPrimary">Perimetre du calcul</h2>
+              <h2 className="text-base font-semibold text-textPrimary">{t('fiscal.scopeTitle')}</h2>
             </div>
             <div className="space-y-2 text-sm text-textMuted leading-6">
-              <p>Les loyers et charges encaisses proviennent uniquement des paiements avec statut `paid`.</p>
-              <p>Les impayes reprennent les lignes `pending` et `late` sur l exercice choisi.</p>
-              <p>Les charges deductibles sont saisies manuellement par bien et par annee.</p>
-              <p>Le resultat net foncier = total encaisse - total charges deductibles.</p>
+              <p>{t('fiscal.scopeLine1')}</p>
+              <p>{t('fiscal.scopeLine2')}</p>
+              <p>{t('fiscal.scopeLine3')}</p>
+              <p>{t('fiscal.scopeLine4')}</p>
             </div>
           </CardContent>
         </Card>
@@ -381,12 +385,12 @@ export default function Fiscal() {
           <CardContent className="pt-5">
             <div className="flex items-center gap-2 mb-3">
               <FileText className="w-4 h-4 text-primary" />
-              <h2 className="text-base font-semibold text-textPrimary">A savoir</h2>
+              <h2 className="text-base font-semibold text-textPrimary">{t('fiscal.notesTitle')}</h2>
             </div>
             <div className="space-y-2 text-sm text-textMuted leading-6">
-              <p>Le PDF et le CSV servent de base de travail pour un bailleur particulier, pas de declaration fiscale automatique.</p>
-              <p>Si votre historique de paiements est incomplet, les totaux encaissements ou impayes resteront partiels.</p>
-              <p>N oubliez pas de saisir vos charges pour chaque bien avant d exporter.</p>
+              <p>{t('fiscal.notesLine1')}</p>
+              <p>{t('fiscal.notesLine2')}</p>
+              <p>{t('fiscal.notesLine3')}</p>
             </div>
           </CardContent>
         </Card>
@@ -408,6 +412,7 @@ function ExpenseSection({
   expenses: FiscalExpense[]
   onChanged: () => void
 }) {
+  const { t } = useTranslation()
   const yearExpenses = useMemo(
     () => expenses.filter((e) => e.year === year),
     [expenses, year]
@@ -465,9 +470,9 @@ function ExpenseSection({
   }
 
   async function handleSave() {
-    if (!formData.property_id) return setError('Selectionnez un bien.')
-    if (!formData.label.trim()) return setError('Saisissez un libelle.')
-    if (formData.amount <= 0) return setError('Le montant doit etre positif.')
+    if (!formData.property_id) return setError(t('fiscal.errors.selectProperty'))
+    if (!formData.label.trim()) return setError(t('fiscal.errors.labelRequired'))
+    if (formData.amount <= 0) return setError(t('fiscal.errors.amountPositive'))
 
     setSaving(true)
     setError('')
@@ -513,14 +518,14 @@ function ExpenseSection({
       <CardContent className="pt-5">
         <div className="flex items-start justify-between gap-4 mb-4">
           <div>
-            <h2 className="text-base font-semibold text-textPrimary">Charges deductibles {year}</h2>
+            <h2 className="text-base font-semibold text-textPrimary">{t('fiscal.expensesTitle', { year })}</h2>
             <p className="text-sm text-textMuted mt-1">
-              Taxe fonciere, travaux, assurance PNO, frais de gestion, interets d'emprunt...
+              {t('fiscal.expensesDesc')}
             </p>
           </div>
           <Button size="sm" onClick={openNew} disabled={properties.length === 0}>
             <Plus className="w-3.5 h-3.5" />
-            Ajouter une charge
+            {t('fiscal.addExpense')}
           </Button>
         </div>
 
@@ -529,7 +534,7 @@ function ExpenseSection({
           <div className="mb-4 rounded-2xl border border-primary/20 bg-primary/5 p-4">
             <div className="flex items-center justify-between mb-3">
               <p className="text-sm font-semibold text-textPrimary">
-                {editingId ? 'Modifier la charge' : 'Nouvelle charge deductible'}
+                {editingId ? t('fiscal.editExpenseInline') : t('fiscal.newExpense')}
               </p>
               <button onClick={closeForm} className="text-textMuted hover:text-textPrimary transition-colors">
                 <X className="w-4 h-4" />
@@ -538,7 +543,7 @@ function ExpenseSection({
 
             <div className="grid grid-cols-[1fr_1fr_1fr_120px] gap-3">
               <div className="flex flex-col gap-1">
-                <label className="text-[11px] font-medium text-textMuted">Bien</label>
+                <label className="text-[11px] font-medium text-textMuted">{t('fiscal.property')}</label>
                 <select
                   value={formData.property_id}
                   onChange={(e) => setFormData({ ...formData, property_id: Number(e.target.value) })}
@@ -551,7 +556,7 @@ function ExpenseSection({
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="text-[11px] font-medium text-textMuted">Categorie</label>
+                <label className="text-[11px] font-medium text-textMuted">{t('fiscal.category')}</label>
                 <select
                   value={formData.category}
                   onChange={(e) => {
@@ -559,29 +564,29 @@ function ExpenseSection({
                     setFormData({
                       ...formData,
                       category: cat,
-                      label: formData.label || categoryLabel(cat),
+                      label: formData.label || categoryLabel(cat, t),
                     })
                   }}
                   className="h-9 rounded-lg border border-border bg-surface px-3 text-sm text-textPrimary focus:outline-none focus:ring-1 focus:ring-primary"
                 >
                   {EXPENSE_CATEGORIES.map((c) => (
-                    <option key={c.value} value={c.value}>{c.label}</option>
+                    <option key={c.value} value={c.value}>{t(c.labelKey)}</option>
                   ))}
                 </select>
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="text-[11px] font-medium text-textMuted">Libelle</label>
+                <label className="text-[11px] font-medium text-textMuted">{t('fiscal.label')}</label>
                 <Input
                   value={formData.label}
                   onChange={(e) => setFormData({ ...formData, label: e.target.value })}
-                  placeholder="ex: Taxe fonciere 2026"
+                  placeholder={t('fiscal.labelPlaceholder')}
                   className="h-9"
                 />
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="text-[11px] font-medium text-textMuted">Montant</label>
+                <label className="text-[11px] font-medium text-textMuted">{t('fiscal.amount')}</label>
                 <Input
                   type="number"
                   step="0.01"
@@ -595,11 +600,11 @@ function ExpenseSection({
             </div>
 
             <div className="mt-3 flex flex-col gap-1">
-              <label className="text-[11px] font-medium text-textMuted">Notes (optionnel)</label>
+              <label className="text-[11px] font-medium text-textMuted">{t('fiscal.notesOptional')}</label>
               <Input
                 value={formData.notes ?? ''}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                placeholder="Reference, description..."
+                placeholder={t('fiscal.notesPlaceholder')}
                 className="h-9"
               />
             </div>
@@ -610,10 +615,10 @@ function ExpenseSection({
 
             <div className="mt-3 flex gap-2 justify-end">
               <Button variant="secondary" size="sm" onClick={closeForm}>
-                Annuler
+                {t('common.cancel')}
               </Button>
               <Button size="sm" onClick={handleSave} disabled={saving}>
-                {saving ? 'Enregistrement...' : editingId ? 'Modifier' : 'Ajouter'}
+                {saving ? t('common.saving') : editingId ? t('fiscal.editExpense') : t('fiscal.addExpense')}
               </Button>
             </div>
           </div>
@@ -623,18 +628,18 @@ function ExpenseSection({
         {yearExpenses.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border bg-surfaceHigh/10 py-10 text-center">
             <Minus className="w-6 h-6 text-textMuted mx-auto" />
-            <p className="text-sm font-semibold text-textPrimary mt-3">Aucune charge saisie pour {year}</p>
+            <p className="text-sm font-semibold text-textPrimary mt-3">{t('fiscal.noExpensesTitle', { year })}</p>
             <p className="text-xs text-textMuted mt-1">
-              Ajoutez vos charges deductibles (taxe fonciere, travaux, assurance...) pour calculer le resultat net.
+              {t('fiscal.noExpensesDesc')}
             </p>
           </div>
         ) : (
           <div className="rounded-2xl border border-border overflow-hidden">
             <div className="grid grid-cols-[1.2fr_1fr_1.3fr_110px_60px] gap-2 px-4 py-2.5 bg-surfaceHigh/60 border-b border-border text-[11px] font-medium uppercase tracking-wide text-textMuted">
-              <span>Bien</span>
-              <span>Categorie</span>
-              <span>Libelle</span>
-              <span className="text-right">Montant</span>
+              <span>{t('fiscal.property')}</span>
+              <span>{t('fiscal.category')}</span>
+              <span>{t('fiscal.label')}</span>
+              <span className="text-right">{t('fiscal.amount')}</span>
               <span />
             </div>
 
@@ -652,7 +657,7 @@ function ExpenseSection({
                     <div className="text-sm text-textPrimary truncate">{expense.property_name}</div>
                     <div className="flex items-center gap-2">
                       {idx === 0 && (
-                        <Badge variant="muted" className="text-[10px]">{cat.label}</Badge>
+                        <Badge variant="muted" className="text-[10px]">{t(cat.labelKey)}</Badge>
                       )}
                       {idx === 0 && items.length > 1 && (
                         <span className="text-[10px] text-textMuted">
@@ -673,14 +678,14 @@ function ExpenseSection({
                       <button
                         onClick={() => openEdit(expense)}
                         className="p-1 rounded-lg text-textMuted hover:text-primary hover:bg-primary/10 transition-colors"
-                        title="Modifier"
+                        title={t('common.edit')}
                       >
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => handleDelete(expense.id)}
                         className="p-1 rounded-lg text-textMuted hover:text-danger hover:bg-danger/10 transition-colors"
-                        title="Supprimer"
+                        title={t('common.delete')}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -692,11 +697,11 @@ function ExpenseSection({
               {/* Total row */}
               <div className="grid grid-cols-[1.2fr_1fr_1.3fr_110px_60px] gap-2 px-4 py-3 bg-surface border-t border-border items-center">
                 <div className="text-sm font-semibold text-textPrimary">
-                  Total charges deductibles
+                  {t('fiscal.totalExpenses')}
                 </div>
                 <div />
                 <div className="text-xs text-textMuted">
-                  {yearExpenses.length} ligne{yearExpenses.length !== 1 ? 's' : ''}
+                  {t('fiscal.lineCount', { count: yearExpenses.length })}
                 </div>
                 <div className="text-right text-sm font-semibold text-danger">
                   {formatCurrency(totalAmount)}
@@ -718,15 +723,17 @@ function PropertyStatusBadge({
 }: {
   item: ReturnType<typeof buildFiscalYearSummary>['properties'][number]
 }) {
+  const { t } = useTranslation()
+
   if (item.outstandingAmount > 0) {
-    return <Badge variant="danger">Impayes</Badge>
+    return <Badge variant="danger">{t('fiscal.status.outstanding')}</Badge>
   }
 
   if (item.receivedRent > 0 || item.receivedCharges > 0) {
-    return <Badge variant="success">Encaissements</Badge>
+    return <Badge variant="success">{t('fiscal.status.collected')}</Badge>
   }
 
-  return <Badge variant="muted">Sans flux</Badge>
+  return <Badge variant="muted">{t('fiscal.status.noFlow')}</Badge>
 }
 
 function StatCard({

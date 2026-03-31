@@ -394,6 +394,7 @@
     "addTitle": "Creer un bail",
     "deleteTitle": "Supprimer ce bail ?",
     "deleteDesc": "Ce bail sera supprime definitivement.",
+    "deleteWarning": "Cette action est definitive. Les paiements et documents lies doivent deja etre traites.",
     "property": "Bien",
     "tenant": "Locataire",
     "type": "Type de bail",
@@ -408,6 +409,7 @@
     "typeMobilite": "Mobilite",
     "statusActive": "Actif",
     "statusEnded": "Termine",
+    "statusTerminated": "Resilie",
     "revision": "Revision IRL",
     "manageDeposit": "Depot de garantie",
     "chargeReconciliation": "Regularisation des charges",
@@ -415,7 +417,86 @@
     "irlWarning": "Aucun indice IRL disponible. Importez les donnees IRL pour activer les revisions.",
     "expiresIn": "Expire dans {{days}} j",
     "expired": "Expire depuis {{days}} j",
-    "nextRevision": "Revision dans {{days}} j"
+    "nextRevision": "Revision dans {{days}} j",
+    "typeVideDesc": "Duree min. 3 ans",
+    "typeMeubleDesc": "Duree min. 1 an",
+    "typeMobiliteDesc": "1 a 10 mois",
+    "summaryActive": "{{count}} bail en cours",
+    "summaryActive_plural": "{{count}} baux en cours",
+    "summaryEnded": "{{count}} bail termine",
+    "summaryEnded_plural": "{{count}} baux termines",
+    "irlStaleTitle": "Les donnees IRL locales s arretent a {{latest}}",
+    "irlStaleDesc": "Ajoutez les derniers indices publies pour garder les revisions et documents IRL exploitables.",
+    "unknownDate": "une date inconnue",
+    "open": "Ouvrir",
+    "revisionEligibleTitle": "{{count}} bail eligible a la revision IRL",
+    "revisionEligibleTitle_plural": "{{count}} baux eligibles a la revision IRL",
+    "revisionEligibleDesc": "La date anniversaire approche. Vous pouvez reviser le loyer selon l indice IRL.",
+    "revisionModal": {
+      "title": "Revision IRL du loyer",
+      "doneTitle": "Loyer revise",
+      "doneDesc": "Le nouveau loyer de {{amount}} a ete applique.",
+      "unavailableTitle": "Revision impossible",
+      "missingReferenceQuarter": "Le trimestre IRL de reference n'est pas defini pour ce bail.",
+      "missingReferenceValue": "La valeur IRL de reference n'est pas definie pour ce bail.",
+      "missingNewIndex": "Aucun indice IRL plus recent n'est disponible pour ce trimestre.",
+      "unavailableHelp": "Modifiez le bail pour definir l'IRL de reference, ou ajoutez un indice IRL plus recent.",
+      "property": "Bien",
+      "tenant": "Locataire",
+      "referenceIrl": "IRL de reference",
+      "newIrl": "Nouvel IRL",
+      "currentRent": "Loyer actuel",
+      "newRent": "Nouveau loyer",
+      "increase": "Augmentation",
+      "formula": "Formule : loyer x (nouvel IRL / IRL de reference) = {{oldRent}} x ({{newIrl}} / {{referenceIrl}}) = {{newRent}} EUR",
+      "apply": "Appliquer la revision",
+      "applying": "Application...",
+      "error": "Impossible d'appliquer la revision : {{error}}"
+    },
+    "row": {
+      "since": "Depuis le {{date}}",
+      "until": "Jusqu au {{date}}",
+      "perMonth": "{{amount}} / mois",
+      "charges": "+ {{amount}} charges",
+      "deposit": "Depot : {{amount}}",
+      "depositCollected": "Encaisse le {{date}}",
+      "depositToReturn": "A restituer : {{amount}}",
+      "manageCharges": "Regulariser les charges",
+      "manageDeposit": "Gerer le depot de garantie",
+      "reviseRent": "Reviser le loyer (IRL)"
+    },
+    "depositStatus": {
+      "awaiting": "A encaisser",
+      "held": "Detenu",
+      "returned": "Restitue",
+      "partial": "Restitue partiellement",
+      "retained": "Retenu",
+      "none": "Aucun depot"
+    },
+    "form": {
+      "noProperties": "Aucun bien disponible. Ajoutez d'abord un bien dans Biens.",
+      "noTenants": "Aucun locataire disponible. Ajoutez d'abord un locataire dans Locataires.",
+      "selectProperty": "Selectionnez un bien...",
+      "selectTenant": "Selectionnez un locataire...",
+      "rentExclCharges": "Loyer HC (EUR/mois)",
+      "monthlyCharges": "Charges (EUR/mois)",
+      "depositAmount": "Depot de garantie (EUR)",
+      "maxLegal": "Maximum legal : {{amount}}",
+      "irlReferenceHint": "pour la revision annuelle",
+      "quarter": "Trimestre",
+      "undefined": "Non defini",
+      "irlValue": "Valeur IRL",
+      "exampleIrl": "ex. 143.46",
+      "status": "Statut",
+      "errors": {
+        "selectProperty": "Selectionnez un bien.",
+        "selectTenant": "Selectionnez un locataire.",
+        "startDateRequired": "La date de debut est requise.",
+        "rentPositive": "Le loyer doit etre superieur a 0.",
+        "mobilityEndDateRequired": "Le bail mobilite requiert une date de fin.",
+        "save": "Impossible d'enregistrer le bail : {{error}}"
+      }
+    }
   },
   "payments": {
     "title": "Paiements",
@@ -679,7 +760,103 @@
     "preview": "Apercu",
     "download": "Telecharger",
     "markSent": "Marquer envoye",
-    "markArchived": "Marquer archive"
+    "markArchived": "Marquer archive",
+    "open": "Ouvrir le fichier",
+    "regenerate": "Regenerer",
+    "fileMissing": "Aucun fichier associe.",
+    "loadingPdf": "Chargement du PDF...",
+    "emptySourcesTitle": "Aucune source de document",
+    "emptySourcesDesc": "Les modeles deviennent disponibles des qu un paiement est marque paye, qu un bail meuble est actif, qu un bail peut etre revise ou qu un depot de garantie est encaisse ou restitue.",
+    "noMatchTitle": "Aucun document ne correspond",
+    "noMatchDesc": "Essayez d ajuster vos filtres ou votre recherche.",
+    "generateHelp": "Ouvrez le centre de modeles pour generer une quittance, un avis de revision, un contrat meuble ou un document de depot.",
+    "resetFilters": "Reinitialiser",
+    "modal": {
+      "title": "Centre de modeles",
+      "doneTitle": "Document genere",
+      "doneDesc": "Le PDF a ete enregistre puis ajoute a la liste des documents.",
+      "availableCount": "{{count}} disponible",
+      "availableCount_plural": "{{count}} disponibles",
+      "noTemplate": "Aucun modele ne peut etre genere pour le moment. Verifiez qu'un paiement est marque paye, qu'un bail est revisable ou qu'un bail meuble ou depot de garantie est disponible.",
+      "labels": {
+        "payment": "Paiement",
+        "lease": "Bail",
+        "furnishedLease": "Bail meuble"
+      },
+      "generating": "Generation...",
+      "generatePdf": "Generer le PDF",
+      "selectPlaceholder": "Choisissez un element...",
+      "cards": {
+        "payment_certificate": {
+          "title": "Quittance ou recu",
+          "description": "A partir d'un paiement marque paye."
+        },
+        "rent_revision_notice": {
+          "title": "Avis de revision",
+          "description": "Genere a partir de la reference IRL du bail."
+        },
+        "furnished_lease_contract": {
+          "title": "Contrat de location meublee",
+          "description": "Modele officiel meuble avec champs complementaires."
+        },
+        "deposit_receipt": {
+          "title": "Recu de depot",
+          "description": "Necessite un depot de garantie encaisse."
+        },
+        "deposit_settlement": {
+          "title": "Solde de depot",
+          "description": "Necessite une restitution deja renseignee."
+        }
+      },
+      "errors": {
+        "noTemplate": "Aucun modele disponible pour le moment.",
+        "selectItem": "Selectionnez un element.",
+        "fillRevisionDates": "Renseignez la date de l'avis et la date d'effet.",
+        "selectFurnishedLease": "Selectionnez un bail meuble.",
+        "missingRequiredMentions": "Le contrat comporte encore des mentions obligatoires a completer.",
+        "generic": "Erreur : {{error}}"
+      },
+      "payment": {
+        "tenant": "Locataire",
+        "property": "Bien",
+        "period": "Periode",
+        "rentDue": "Loyer du",
+        "paidAmount": "Montant paye",
+        "fullTitle": "Quittance de loyer",
+        "partialTitle": "Recu de paiement",
+        "fullDesc": "Paiement integral : une quittance sera generee.",
+        "partialDesc": "Paiement partiel : un recu sera genere."
+      },
+      "revision": {
+        "tenant": "Locataire",
+        "property": "Bien",
+        "referenceIrl": "IRL de reference",
+        "newIrl": "Nouvel IRL",
+        "currentRent": "Loyer actuel HC",
+        "newRent": "Nouveau loyer HC",
+        "noticeDate": "Date de l'avis",
+        "effectiveDate": "Date d'effet",
+        "summary": "Le document rappellera la formule de revision IRL et notifiera un nouveau loyer mensuel hors charges de {{amount}} a compter du {{date}}.",
+        "dateChosen": "la date choisie"
+      },
+      "depositReceipt": {
+        "tenant": "Locataire",
+        "property": "Bien",
+        "amount": "Depot encaisse",
+        "date": "Date d'encaissement",
+        "summary": "Le PDF constatera l'encaissement du depot de garantie prevu au bail du {{date}}."
+      },
+      "depositSettlement": {
+        "tenant": "Locataire",
+        "property": "Bien",
+        "initialAmount": "Depot initial",
+        "retainedAmount": "Montant retenu",
+        "returnedAmount": "Montant restitue",
+        "date": "Date de restitution",
+        "summaryWithNotes": "Les observations enregistrees seront reprises dans le document : {{notes}}",
+        "summaryWithoutNotes": "Le document mentionnera qu'aucune observation complementaire n'a ete renseignee."
+      }
+    }
   },
   "reminders": {
     "title": "Centre d'echeances",
@@ -739,6 +916,13 @@
         "titleRequired": "Renseignez un titre.",
         "dueDateRequired": "Renseignez une date d'echeance."
       }
+    },
+    "derived": {
+      "leaseEndTitle": "Fin du bail",
+      "leaseEndDesc": "Le bail approche de son terme. Verifiez renouvellement, sortie ou conge.",
+      "irlRevisionTitle": "Revision IRL possible",
+      "irlRevisionDesc": "Date anniversaire du bail pour une eventuelle revision IRL.",
+      "irlRevisionDescWithQuarter": "Date anniversaire du bail. Reference actuelle : {{quarter}}."
     }
   },
   "inspections": {
@@ -791,7 +975,70 @@
     "property": "Bien",
     "category": "Categorie",
     "amount": "Montant",
-    "description": "Description"
+    "description": "Description",
+    "csvSaved": "Export CSV enregistre.",
+    "pdfSaved": "Export PDF enregistre.",
+    "propertiesTracked": "Biens suivis",
+    "propertiesTrackedDetail": "{{count}} mois occupe",
+    "propertiesTrackedDetail_plural": "{{count}} mois occupes",
+    "receivedRentDetail": "{{percent}}% du total encaisse",
+    "receivedChargesDetail": "{{count}} mois vacant estime",
+    "receivedChargesDetail_plural": "{{count}} mois vacants estimes",
+    "expensesDetail": "{{count}} charge saisie",
+    "expensesDetail_plural": "{{count}} charges saisies",
+    "netResultPositive": "Benefice",
+    "netResultNegative": "Deficit foncier",
+    "incomeByPropertyTitle": "Revenus par bien",
+    "incomeByPropertyDesc": "Loyers et charges encaisses, impayes et charges deductibles par bien.",
+    "noPropertiesTitle": "Aucun bien enregistre",
+    "noPropertiesDesc": "Ajoutez au moins un bien puis un bail pour pouvoir produire une synthese fiscale annuelle.",
+    "noActivityTitle": "Aucune activite sur cet exercice",
+    "noActivityDesc": "L annee selectionnee ne contient ni bail couvrant la periode ni paiement rapproche pour vos biens.",
+    "tableOccupied": "Occup.",
+    "tableVacant": "Vacants",
+    "tableRent": "Loyers",
+    "tableCharges": "Charges",
+    "tableOutstanding": "Impayes",
+    "tableDeductible": "Deductible",
+    "tableNet": "Net",
+    "cityMissing": "Ville non renseignee",
+    "leaseCount": "{{count}} bail",
+    "leaseCount_plural": "{{count}} baux",
+    "paymentCount": "{{count}} paiement",
+    "paymentCount_plural": "{{count}} paiements",
+    "yearTotal": "Total exercice {{year}}",
+    "totalCollectedLabel": "Total encaisse : {{amount}}",
+    "scopeTitle": "Perimetre du calcul",
+    "scopeLine1": "Les loyers et charges encaisses proviennent uniquement des paiements avec statut paid.",
+    "scopeLine2": "Les impayes reprennent les lignes pending et late sur l exercice choisi.",
+    "scopeLine3": "Les charges deductibles sont saisies manuellement par bien et par annee.",
+    "scopeLine4": "Le resultat net foncier = total encaisse - total charges deductibles.",
+    "notesTitle": "A savoir",
+    "notesLine1": "Le PDF et le CSV servent de base de travail pour un bailleur particulier, pas de declaration fiscale automatique.",
+    "notesLine2": "Si votre historique de paiements est incomplet, les totaux encaissements ou impayes resteront partiels.",
+    "notesLine3": "N oubliez pas de saisir vos charges pour chaque bien avant d exporter.",
+    "expensesTitle": "Charges deductibles {{year}}",
+    "expensesDesc": "Taxe fonciere, travaux, assurance PNO, frais de gestion, interets d emprunt...",
+    "editExpenseInline": "Modifier la charge",
+    "newExpense": "Nouvelle charge deductible",
+    "label": "Libelle",
+    "labelPlaceholder": "ex: Taxe fonciere 2026",
+    "notesOptional": "Notes (optionnel)",
+    "notesPlaceholder": "Reference, description...",
+    "noExpensesTitle": "Aucune charge saisie pour {{year}}",
+    "noExpensesDesc": "Ajoutez vos charges deductibles (taxe fonciere, travaux, assurance...) pour calculer le resultat net.",
+    "lineCount": "{{count}} ligne",
+    "lineCount_plural": "{{count}} lignes",
+    "status": {
+      "outstanding": "Impayes",
+      "collected": "Encaissements",
+      "noFlow": "Sans flux"
+    },
+    "errors": {
+      "selectProperty": "Selectionnez un bien.",
+      "labelRequired": "Saisissez un libelle.",
+      "amountPositive": "Le montant doit etre positif."
+    }
   },
   "settings": {
     "title": "Paramètres",

@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
 import { AlertTriangle, Trash2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 
 interface LeaseDeleteModalProps {
@@ -17,6 +18,8 @@ export default function LeaseDeleteModal({
   error,
   loading,
 }: LeaseDeleteModalProps) {
+  const { t } = useTranslation()
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -37,26 +40,26 @@ export default function LeaseDeleteModal({
             <AlertTriangle className="h-5 w-5 text-danger" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-textPrimary">Supprimer ce bail ?</p>
+            <p className="text-sm font-semibold text-textPrimary">{t('leases.deleteTitle')}</p>
             <p className="mt-0.5 text-xs text-textMuted">
-              {lease.property_name} · {lease.tenant_first_name} {lease.tenant_last_name}
+              {lease.property_name} | {lease.tenant_first_name} {lease.tenant_last_name}
             </p>
           </div>
         </div>
 
         <div className="rounded-lg bg-warning/10 px-3 py-2 text-xs text-warning">
-          Cette action est definitive. Les paiements et documents relies doivent deja etre traites.
+          {t('leases.deleteWarning')}
         </div>
 
         {error && <p className="rounded-lg bg-danger/10 px-3 py-2 text-xs text-danger">{error}</p>}
 
         <div className="flex gap-2">
           <Button variant="secondary" onClick={onClose} className="flex-1">
-            Annuler
+            {t('common.cancel')}
           </Button>
           <Button variant="danger" onClick={onConfirm} disabled={loading} className="flex-1">
             <Trash2 className="h-3.5 w-3.5" />
-            {loading ? 'Suppression...' : 'Supprimer'}
+            {loading ? t('common.deleting') : t('common.delete')}
           </Button>
         </div>
       </motion.div>

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { AlertTriangle, ArrowRight, CheckCircle2, TrendingUp, X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { calculateRevision, formatQuarter, parseQuarter, type RevisionResult } from '@/lib/irl'
 import { formatCurrency } from '@/lib/utils'
@@ -26,6 +27,7 @@ export default function LeaseRevisionModal({
   onManageIrl,
   onClose,
 }: LeaseRevisionModalProps) {
+  const { t } = useTranslation()
   const [applying, setApplying] = useState(false)
   const [error, setError] = useState('')
   const [done, setDone] = useState(false)
@@ -34,19 +36,19 @@ export default function LeaseRevisionModal({
   const referenceValue = lease.irl_reference_index
   const latestIrl = referenceQuarter
     ? irlIndices
-        .filter((index) => index.quarter === referenceQuarter.quarter && index.year > referenceQuarter.year)
-        .sort((left, right) => right.year - left.year)[0]
+      .filter((index) => index.quarter === referenceQuarter.quarter && index.year > referenceQuarter.year)
+      .sort((left, right) => right.year - left.year)[0]
     : null
 
   const revision: RevisionResult | null =
     referenceValue && latestIrl && referenceQuarter
       ? calculateRevision(
-          lease.rent_amount,
-          referenceValue,
-          latestIrl.value,
-          lease.irl_reference_quarter!,
-          formatQuarter(latestIrl.year, latestIrl.quarter),
-        )
+        lease.rent_amount,
+        referenceValue,
+        latestIrl.value,
+        lease.irl_reference_quarter!,
+        formatQuarter(latestIrl.year, latestIrl.quarter),
+      )
       : null
 
   async function handleApply() {
@@ -62,10 +64,16 @@ export default function LeaseRevisionModal({
       )
       setDone(true)
     } catch (err) {
-      setError(`Erreur : ${err instanceof Error ? err.message : String(err)}`)
+      setError(t('leases.revisionModal.error', { error: err instanceof Error ? err.message : String(err) }))
       setApplying(false)
     }
   }
+
+  const unavailableReason = !referenceQuarter
+    ? t('leases.revisionModal.missingReferenceQuarter')
+    : !referenceValue
+      ? t('leases.revisionModal.missingReferenceValue')
+      : t('leases.revisionModal.missingNewIndex')
 
   return (
     <motion.div
@@ -85,7 +93,7 @@ export default function LeaseRevisionModal({
         <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <div className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-primary" />
-            <h2 className="text-base font-semibold text-textPrimary">Revision IRL du loyer</h2>
+            <h2 className="text-base font-semibold text-textPrimary">{t('leases.revisionModal.title')}</h2>
           </div>
           <button onClick={onClose} className="text-textMuted transition-colors hover:text-textPrimary">
             <X className="h-4 w-4" />
@@ -97,12 +105,12 @@ export default function LeaseRevisionModal({
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-success/10">
               <CheckCircle2 className="h-7 w-7 text-success" />
             </div>
-            <p className="text-base font-semibold text-textPrimary">Loyer revise</p>
+            <p className="text-base font-semibold text-textPrimary">{t('leases.revisionModal.doneTitle')}</p>
             <p className="text-center text-sm text-textMuted">
-              Le nouveau loyer de {formatCurrency(revision!.newRent)} a ete applique.
+              {t('leases.revisionModal.doneDesc', { amount: formatCurrency(revision!.newRent) })}
             </p>
             <Button onClick={onClose} className="mt-2">
-              Fermer
+              {t('common.close')}
             </Button>
           </div>
         ) : !revision ? (
@@ -110,23 +118,19 @@ export default function LeaseRevisionModal({
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-warning/10">
               <AlertTriangle className="h-7 w-7 text-warning" />
             </div>
-            <p className="text-base font-semibold text-textPrimary">Revision impossible</p>
+            <p className="text-base font-semibold text-textPrimary">{t('leases.revisionModal.unavailableTitle')}</p>
             <p className="text-center text-sm text-textMuted">
-              {!referenceQuarter
-                ? "Le trimestre IRL de reference n'est pas defini pour ce bail."
-                : !referenceValue
-                  ? "La valeur IRL de reference n'est pas definie pour ce bail."
-                  : "Aucun indice IRL plus recent n'est disponible pour ce trimestre."}
+              {unavailableReason}
             </p>
-            <p className="text-xs text-textMuted">
-              Modifiez le bail pour definir l'IRL de reference, ou ajoutez un indice IRL plus recent.
+            <p className="text-center text-xs text-textMuted">
+              {t('leases.revisionModal.unavailableHelp')}
             </p>
             <div className="mt-2 flex gap-2">
               <Button variant="secondary" onClick={onManageIrl}>
-                Gerer l IRL
+                {t('leases.irlManager')}
               </Button>
               <Button variant="secondary" onClick={onClose}>
-                Fermer
+                {t('common.close')}
               </Button>
             </div>
           </div>
@@ -134,30 +138,30 @@ export default function LeaseRevisionModal({
           <div className="flex flex-col gap-4 p-6">
             <div className="flex flex-col gap-1.5 rounded-lg bg-surfaceHigh p-3 text-xs">
               <div className="flex justify-between text-textMuted">
-                <span>Bien</span>
+                <span>{t('leases.revisionModal.property')}</span>
                 <span className="font-medium text-textPrimary">{lease.property_name}</span>
               </div>
               <div className="flex justify-between text-textMuted">
-                <span>Locataire</span>
+                <span>{t('leases.revisionModal.tenant')}</span>
                 <span className="font-medium text-textPrimary">
                   {lease.tenant_first_name} {lease.tenant_last_name}
                 </span>
               </div>
               <div className="flex justify-between text-textMuted">
-                <span>Type</span>
-                <span className="font-medium text-textPrimary">{typeLabel(lease.type)}</span>
+                <span>{t('leases.type')}</span>
+                <span className="font-medium text-textPrimary">{typeLabel(lease.type, t)}</span>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
               <div className="flex-1 rounded-lg bg-surfaceHigh p-3 text-center">
-                <p className="text-[10px] uppercase tracking-wide text-textMuted">IRL reference</p>
+                <p className="text-[10px] uppercase tracking-wide text-textMuted">{t('leases.revisionModal.referenceIrl')}</p>
                 <p className="mt-1 text-lg font-bold text-textPrimary">{revision.referenceIrl}</p>
                 <p className="text-xs text-textMuted">{revision.referenceLabel}</p>
               </div>
               <ArrowRight className="h-4 w-4 shrink-0 text-primary" />
               <div className="flex-1 rounded-lg border border-primary/20 bg-primary/10 p-3 text-center">
-                <p className="text-[10px] uppercase tracking-wide text-primary">Nouvel IRL</p>
+                <p className="text-[10px] uppercase tracking-wide text-primary">{t('leases.revisionModal.newIrl')}</p>
                 <p className="mt-1 text-lg font-bold text-primary">{revision.newIrl}</p>
                 <p className="text-xs text-textMuted">{revision.newLabel}</p>
               </div>
@@ -165,15 +169,15 @@ export default function LeaseRevisionModal({
 
             <div className="rounded-lg bg-surfaceHigh p-4">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-textMuted">Loyer actuel</span>
+                <span className="text-textMuted">{t('leases.revisionModal.currentRent')}</span>
                 <span className="font-medium text-textPrimary">{formatCurrency(revision.oldRent)}</span>
               </div>
               <div className="mt-2 flex items-center justify-between text-sm">
-                <span className="text-textMuted">Nouveau loyer</span>
+                <span className="text-textMuted">{t('leases.revisionModal.newRent')}</span>
                 <span className="text-base font-bold text-primary">{formatCurrency(revision.newRent)}</span>
               </div>
               <div className="mt-3 flex items-center justify-between border-t border-border pt-3 text-xs">
-                <span className="text-textMuted">Augmentation</span>
+                <span className="text-textMuted">{t('leases.revisionModal.increase')}</span>
                 <span className="font-semibold text-success">
                   +{formatCurrency(revision.difference)} (+{revision.percentChange}%)
                 </span>
@@ -181,19 +185,23 @@ export default function LeaseRevisionModal({
             </div>
 
             <p className="text-[10px] leading-relaxed text-textMuted">
-              Formule : loyer x (nouvel IRL / IRL de reference) = {revision.oldRent} x (
-              {revision.newIrl} / {revision.referenceIrl}) = {revision.newRent} EUR
+              {t('leases.revisionModal.formula', {
+                oldRent: revision.oldRent,
+                newIrl: revision.newIrl,
+                referenceIrl: revision.referenceIrl,
+                newRent: revision.newRent,
+              })}
             </p>
 
             {error && <p className="rounded-lg bg-danger/10 px-3 py-2 text-xs text-danger">{error}</p>}
 
             <div className="flex gap-2 pt-1">
               <Button type="button" variant="secondary" onClick={onClose} className="flex-1">
-                Annuler
+                {t('common.cancel')}
               </Button>
               <Button onClick={() => void handleApply()} disabled={applying} className="flex-1">
                 <TrendingUp className="h-3.5 w-3.5" />
-                {applying ? 'Application...' : 'Appliquer la revision'}
+                {applying ? t('leases.revisionModal.applying') : t('leases.revisionModal.apply')}
               </Button>
             </div>
           </div>
