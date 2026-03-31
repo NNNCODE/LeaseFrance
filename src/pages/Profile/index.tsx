@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import {
   UserCircle2, Mail, MapPin, Phone, Save, CheckCircle2,
   Building2, FileText, PenTool, Upload, Trash2, MapPinned, Eraser,
@@ -11,40 +12,26 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { formatDate } from '@/lib/utils'
 
 export default function Profile() {
-  const { profile } = useAuthStore()
+  const { t } = useTranslation()
 
   return (
     <div className="flex flex-col gap-6 max-w-3xl">
       <div>
-        <h1 className="text-2xl font-semibold text-textPrimary">Profil du propriétaire</h1>
-        <p className="text-textMuted text-sm mt-1">
-          Vos informations personnelles utilisées dans les documents officiels
-        </p>
+        <h1 className="text-2xl font-semibold text-textPrimary">{t('profile.title')}</h1>
+        <p className="text-textMuted text-sm mt-1">{t('profile.subtitle')}</p>
       </div>
 
-      {/* Profile overview card */}
       <ProfileOverview />
-
-      {/* Editable form */}
       <ProfileForm />
-
-      {/* Signature upload */}
       <SignatureCard />
 
-      {/* Info card about how this data is used */}
       <Card className="border-primary/20 bg-primary/5">
         <CardContent className="pt-5 pb-5">
           <div className="flex gap-3">
             <FileText className="w-5 h-5 text-primary shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-textPrimary mb-1">
-                Utilisation de vos informations
-              </p>
-              <p className="text-xs text-textMuted leading-relaxed">
-                Votre nom, adresse et téléphone apparaissent sur les quittances de loyer et
-                reçus générés par l'application. Assurez-vous que ces informations sont complètes
-                et à jour pour garantir la conformité légale de vos documents.
-              </p>
+              <p className="text-sm font-medium text-textPrimary mb-1">{t('profile.infoTitle')}</p>
+              <p className="text-xs text-textMuted leading-relaxed">{t('profile.infoDesc')}</p>
             </div>
           </div>
         </CardContent>
@@ -53,37 +40,35 @@ export default function Profile() {
   )
 }
 
-// ── Profile Overview ──────────────────────────────────────────────────────────
-
 function ProfileOverview() {
+  const { t } = useTranslation()
   const { profile } = useAuthStore()
 
   if (!profile) return null
 
   const infoItems = [
-    { icon: UserCircle2, label: 'Nom complet', value: profile.name || '—' },
-    { icon: Mail,        label: 'E-mail',      value: profile.email || '—' },
-    { icon: MapPin,      label: 'Adresse',     value: profile.address || 'Non renseignée' },
-    { icon: MapPinned,   label: 'Ville',       value: profile.city || 'Non renseignée' },
-    { icon: Phone,       label: 'Téléphone',   value: profile.phone || 'Non renseigné' },
+    { icon: UserCircle2, label: t('profile.fullName'), value: profile.name || t('nav.profile') },
+    { icon: Mail, label: t('profile.email'), value: profile.email || t('profile.notProvided') },
+    { icon: MapPin, label: t('profile.address'), value: profile.address || t('profile.notProvidedF') },
+    { icon: MapPinned, label: t('profile.city'), value: profile.city || t('profile.notProvidedF') },
+    { icon: Phone, label: t('profile.phone'), value: profile.phone || t('profile.notProvided') },
   ]
 
   return (
     <Card>
       <CardContent className="pt-6 pb-6">
         <div className="flex items-start gap-5">
-          {/* Avatar */}
           <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/15 shrink-0">
             <UserCircle2 className="w-8 h-8 text-primary" />
           </div>
 
           <div className="flex-1 min-w-0">
             <h2 className="text-lg font-semibold text-textPrimary truncate">
-              {profile.name || 'Propriétaire'}
+              {profile.name || t('nav.profile')}
             </h2>
             {profile.createdAt && (
               <p className="text-xs text-textMuted mt-0.5">
-                Membre depuis le {formatDate(profile.createdAt)}
+                {t('profile.createdAt', { date: formatDate(profile.createdAt) })}
               </p>
             )}
 
@@ -110,20 +95,19 @@ function ProfileOverview() {
   )
 }
 
-// ── Editable Profile Form ─────────────────────────────────────────────────────
-
 function ProfileForm() {
+  const { t } = useTranslation()
   const { profile, updateProfile } = useAuthStore()
-  const [name, setName]       = useState(profile?.name ?? '')
-  const [email, setEmail]     = useState(profile?.email ?? '')
+  const [name, setName] = useState(profile?.name ?? '')
+  const [email, setEmail] = useState(profile?.email ?? '')
   const [address, setAddress] = useState(profile?.address ?? '')
-  const [city, setCity]       = useState(profile?.city ?? '')
-  const [phone, setPhone]     = useState(profile?.phone ?? '')
-  const [status, setStatus]   = useState<'idle' | 'saved' | 'error'>('idle')
+  const [city, setCity] = useState(profile?.city ?? '')
+  const [phone, setPhone] = useState(profile?.phone ?? '')
+  const [status, setStatus] = useState<'idle' | 'saved' | 'error'>('idle')
   const [loading, setLoading] = useState(false)
 
-  async function handleSave(e: React.FormEvent) {
-    e.preventDefault()
+  async function handleSave(event: React.FormEvent) {
+    event.preventDefault()
     if (!name.trim() || !email.trim()) return
     setLoading(true)
     const ok = await updateProfile(name, email, address, city, phone)
@@ -137,78 +121,63 @@ function ProfileForm() {
       <CardHeader>
         <div className="flex items-center gap-2">
           <Building2 className="w-4 h-4 text-primary" />
-          <CardTitle>Modifier les informations</CardTitle>
+          <CardTitle>{t('profile.formTitle')}</CardTitle>
         </div>
-        <CardDescription>
-          Ces informations seront utilisées sur les quittances et reçus de loyer.
-          Le champ « Ville » correspond au lieu de signature (« Fait à ») des documents.
-        </CardDescription>
+        <CardDescription>{t('profile.formDesc')}</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSave} className="flex flex-col gap-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-textMuted">
-                Nom complet <span className="text-danger">*</span>
+                {t('profile.fullName')} <span className="text-danger">*</span>
               </label>
               <Input
                 value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Jean Dupont"
+                onChange={(event) => setName(event.target.value)}
+                placeholder={t('profile.fullNamePlaceholder')}
               />
-              <p className="text-[10px] text-textMuted">
-                Nom légal tel qu'il apparaît sur les documents
-              </p>
+              <p className="text-[10px] text-textMuted">{t('profile.fullNameHelp')}</p>
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-textMuted">
-                Adresse e-mail <span className="text-danger">*</span>
+                {t('profile.email')} <span className="text-danger">*</span>
               </label>
               <Input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="jean@email.fr"
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder={t('profile.emailPlaceholder')}
               />
             </div>
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-textMuted">
-              Adresse postale
-            </label>
+            <label className="text-xs font-medium text-textMuted">{t('profile.address')}</label>
             <Input
               value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder="12 rue de la Paix, 75002 Paris"
+              onChange={(event) => setAddress(event.target.value)}
+              placeholder={t('profile.addressPlaceholder')}
             />
-            <p className="text-[10px] text-textMuted">
-              Adresse complète du propriétaire (affichée sur les quittances)
-            </p>
+            <p className="text-[10px] text-textMuted">{t('profile.addressHelp')}</p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-textMuted">
-                Ville (pour « Fait à »)
-              </label>
+              <label className="text-xs font-medium text-textMuted">{t('profile.city')}</label>
               <Input
                 value={city}
-                onChange={(e) => setCity(e.target.value)}
-                placeholder="Paris"
+                onChange={(event) => setCity(event.target.value)}
+                placeholder={t('profile.cityPlaceholder')}
               />
-              <p className="text-[10px] text-textMuted">
-                Ville de signature affichée dans « Fait à » sur les documents
-              </p>
+              <p className="text-[10px] text-textMuted">{t('profile.cityHelp')}</p>
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-textMuted">
-                Téléphone
-              </label>
+              <label className="text-xs font-medium text-textMuted">{t('profile.phone')}</label>
               <Input
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="06 12 34 56 78"
+                onChange={(event) => setPhone(event.target.value)}
+                placeholder={t('profile.phonePlaceholder')}
               />
             </div>
           </div>
@@ -216,7 +185,7 @@ function ProfileForm() {
           <div className="flex items-center gap-3 pt-1">
             <Button type="submit" size="sm" disabled={loading}>
               <Save className="w-3.5 h-3.5" />
-              {loading ? 'Enregistrement...' : 'Enregistrer'}
+              {loading ? t('profile.saving') : t('profile.save')}
             </Button>
             <AnimatePresence>
               {status === 'saved' && (
@@ -226,7 +195,7 @@ function ProfileForm() {
                   exit={{ opacity: 0 }}
                   className="flex items-center gap-1.5 text-xs text-success"
                 >
-                  <CheckCircle2 className="w-3.5 h-3.5" /> Modifications enregistrées
+                  <CheckCircle2 className="w-3.5 h-3.5" /> {t('profile.saved')}
                 </motion.span>
               )}
               {status === 'error' && (
@@ -236,7 +205,7 @@ function ProfileForm() {
                   exit={{ opacity: 0 }}
                   className="flex items-center gap-1.5 text-xs text-danger"
                 >
-                  Erreur lors de la sauvegarde
+                  {t('profile.saveError')}
                 </motion.span>
               )}
             </AnimatePresence>
@@ -247,9 +216,8 @@ function ProfileForm() {
   )
 }
 
-// ── Signature Pad (Canvas Drawing) ───────────────────────────────────────────
-
 function SignaturePad({ onSave, disabled }: { onSave: (dataUrl: string) => void; disabled: boolean }) {
+  const { t } = useTranslation()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [drawing, setDrawing] = useState(false)
   const [hasStrokes, setHasStrokes] = useState(false)
@@ -269,13 +237,12 @@ function SignaturePad({ onSave, disabled }: { onSave: (dataUrl: string) => void;
     ctx.strokeStyle = '#1a1a2e'
   }
 
-  function fillWhite(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, w: number, h: number) {
+  function fillWhite(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, width: number, height: number) {
     ctx.fillStyle = '#ffffff'
-    ctx.fillRect(0, 0, w, h)
+    ctx.fillRect(0, 0, width, height)
     ctx.fillStyle = 'transparent'
   }
 
-  // Initialize canvas
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -290,34 +257,34 @@ function SignaturePad({ onSave, disabled }: { onSave: (dataUrl: string) => void;
     applyCtxStyle(ctx)
   }, [])
 
-  function getPos(e: React.MouseEvent | React.TouchEvent) {
+  function getPos(event: React.MouseEvent | React.TouchEvent) {
     const canvas = canvasRef.current
     if (!canvas) return { x: 0, y: 0 }
     const rect = canvas.getBoundingClientRect()
-    if ('touches' in e) {
-      const touch = e.touches[0]
+    if ('touches' in event) {
+      const touch = event.touches[0]
       return { x: touch.clientX - rect.left, y: touch.clientY - rect.top }
     }
-    return { x: e.clientX - rect.left, y: e.clientY - rect.top }
+    return { x: event.clientX - rect.left, y: event.clientY - rect.top }
   }
 
-  function handleStart(e: React.MouseEvent | React.TouchEvent) {
+  function handleStart(event: React.MouseEvent | React.TouchEvent) {
     if (disabled) return
-    e.preventDefault()
+    event.preventDefault()
     const ctx = getCtx()
     if (!ctx) return
-    const pos = getPos(e)
+    const pos = getPos(event)
     ctx.beginPath()
     ctx.moveTo(pos.x, pos.y)
     setDrawing(true)
   }
 
-  function handleMove(e: React.MouseEvent | React.TouchEvent) {
+  function handleMove(event: React.MouseEvent | React.TouchEvent) {
     if (!drawing || disabled) return
-    e.preventDefault()
+    event.preventDefault()
     const ctx = getCtx()
     if (!ctx) return
-    const pos = getPos(e)
+    const pos = getPos(event)
     ctx.lineTo(pos.x, pos.y)
     ctx.stroke()
     setHasStrokes(true)
@@ -342,7 +309,6 @@ function SignaturePad({ onSave, disabled }: { onSave: (dataUrl: string) => void;
   function handleSave() {
     const canvas = canvasRef.current
     if (!canvas || !hasStrokes) return
-    // Export at standard resolution (not high-DPI) for smaller base64 output
     const rect = canvas.getBoundingClientRect()
     const out = document.createElement('canvas')
     out.width = rect.width
@@ -370,20 +336,19 @@ function SignaturePad({ onSave, disabled }: { onSave: (dataUrl: string) => void;
       <div className="flex items-center gap-2">
         <Button size="sm" onClick={handleSave} disabled={!hasStrokes || disabled}>
           <Save className="w-3.5 h-3.5" />
-          Enregistrer
+          {t('profile.saveSignature')}
         </Button>
         <Button size="sm" variant="ghost" onClick={handleClear} disabled={disabled}>
           <Eraser className="w-3.5 h-3.5" />
-          Effacer
+          {t('profile.clearSignature')}
         </Button>
       </div>
     </div>
   )
 }
 
-// ── Signature Upload Card ─────────────────────────────────────────────────────
-
 function SignatureCard() {
+  const { t } = useTranslation()
   const { profile, updateProfile } = useAuthStore()
   const fileRef = useRef<HTMLInputElement>(null)
   const [saving, setSaving] = useState(false)
@@ -396,7 +361,12 @@ function SignatureCard() {
     if (!profile) return
     setSaving(true)
     const ok = await updateProfile(
-      profile.name, profile.email, profile.address, profile.city, profile.phone, base64,
+      profile.name,
+      profile.email,
+      profile.address,
+      profile.city,
+      profile.phone,
+      base64,
     )
     setSaving(false)
     setStatus(ok ? 'saved' : 'error')
@@ -404,8 +374,8 @@ function SignatureCard() {
     setTimeout(() => setStatus('idle'), 2500)
   }
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
+  function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
     if (!file || !profile) return
     if (!file.type.startsWith('image/')) return
 
@@ -414,14 +384,19 @@ function SignatureCard() {
       await saveSignature(reader.result as string)
     }
     reader.readAsDataURL(file)
-    e.target.value = ''
+    event.target.value = ''
   }
 
   async function handleRemove() {
     if (!profile) return
     setSaving(true)
     const ok = await updateProfile(
-      profile.name, profile.email, profile.address, profile.city, profile.phone, '',
+      profile.name,
+      profile.email,
+      profile.address,
+      profile.city,
+      profile.phone,
+      '',
     )
     setSaving(false)
     setStatus(ok ? 'saved' : 'error')
@@ -433,19 +408,14 @@ function SignatureCard() {
       <CardHeader>
         <div className="flex items-center gap-2">
           <PenTool className="w-4 h-4 text-primary" />
-          <CardTitle>Signature du propriétaire</CardTitle>
+          <CardTitle>{t('profile.signature')}</CardTitle>
         </div>
-        <CardDescription>
-          Dessinez votre signature directement ou importez une image (PNG/JPG).
-          Elle sera apposée automatiquement sur les quittances et reçus.
-        </CardDescription>
+        <CardDescription>{t('profile.signatureDesc')}</CardDescription>
       </CardHeader>
       <CardContent>
         {mode === 'draw' ? (
           <div className="flex flex-col gap-3">
-            <p className="text-xs text-textMuted">
-              Dessinez votre signature ci-dessous avec la souris ou un stylet :
-            </p>
+            <p className="text-xs text-textMuted">{t('profile.signatureDrawHelp')}</p>
             <SignaturePad onSave={saveSignature} disabled={saving} />
             <Button
               size="sm"
@@ -453,32 +423,27 @@ function SignatureCard() {
               onClick={() => setMode('preview')}
               className="self-start"
             >
-              Annuler
+              {t('common.cancel')}
             </Button>
           </div>
         ) : (
           <div className="flex items-start gap-5">
-            {/* Preview */}
             <div className="flex items-center justify-center w-48 h-24 rounded-lg border border-dashed border-border bg-white shrink-0 overflow-hidden">
               {hasSignature ? (
                 <img
                   src={profile.signatureImage}
-                  alt="Signature"
+                  alt={t('profile.signatureAlt')}
                   className="max-w-full max-h-full object-contain"
                 />
               ) : (
-                <span className="text-xs text-textMuted">Aucune signature</span>
+                <span className="text-xs text-textMuted">{t('profile.noSignature')}</span>
               )}
             </div>
 
             <div className="flex flex-col gap-2">
-              <Button
-                size="sm"
-                onClick={() => setMode('draw')}
-                disabled={saving}
-              >
+              <Button size="sm" onClick={() => setMode('draw')} disabled={saving}>
                 <PenTool className="w-3.5 h-3.5" />
-                Dessiner
+                {t('profile.drawSignature')}
               </Button>
               <input
                 ref={fileRef}
@@ -494,7 +459,7 @@ function SignatureCard() {
                 disabled={saving}
               >
                 <Upload className="w-3.5 h-3.5" />
-                {hasSignature ? 'Remplacer' : 'Importer'}
+                {hasSignature ? t('profile.replaceSignature') : t('profile.uploadSignature')}
               </Button>
               {hasSignature && (
                 <Button
@@ -505,7 +470,7 @@ function SignatureCard() {
                   className="text-danger hover:text-danger"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                  Supprimer
+                  {t('profile.removeSignature')}
                 </Button>
               )}
               <AnimatePresence>
@@ -516,7 +481,17 @@ function SignatureCard() {
                     exit={{ opacity: 0 }}
                     className="flex items-center gap-1.5 text-xs text-success"
                   >
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Signature enregistrée
+                    <CheckCircle2 className="w-3.5 h-3.5" /> {t('profile.signatureSaved')}
+                  </motion.span>
+                )}
+                {status === 'error' && (
+                  <motion.span
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex items-center gap-1.5 text-xs text-danger"
+                  >
+                    {t('profile.saveError')}
                   </motion.span>
                 )}
               </AnimatePresence>

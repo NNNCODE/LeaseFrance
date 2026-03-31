@@ -1,6 +1,8 @@
 import {
   Document, Page, Text, View, StyleSheet, Image,
 } from '@react-pdf/renderer'
+import i18n from '@/i18n'
+import { getLocaleForLanguage } from '@/i18n/config'
 
 export interface InspectionPdfRoom {
   area: string
@@ -194,9 +196,13 @@ const s = StyleSheet.create({
   },
 })
 
-function formatDateFr(value: string | null | undefined) {
-  if (!value) return 'Non renseigne'
-  return new Intl.DateTimeFormat('fr-FR', {
+function translate(key: string, options?: Record<string, unknown>) {
+  return i18n.t(key, options)
+}
+
+function formatDateLocalized(value: string | null | undefined) {
+  if (!value) return translate('profile.notProvided')
+  return new Intl.DateTimeFormat(getLocaleForLanguage(i18n.resolvedLanguage || i18n.language), {
     day: '2-digit',
     month: 'long',
     year: 'numeric',
@@ -208,10 +214,12 @@ function buildAddress(address: string, zip: string, city: string) {
 }
 
 function kindLabel(kind: 'entry' | 'exit') {
-  return kind === 'entry' ? "Etat des lieux d'entree" : 'Etat des lieux de sortie'
+  return kind === 'entry'
+    ? translate('inspections.pdf.entryTitle')
+    : translate('inspections.pdf.exitTitle')
 }
 
-function safeText(value: string | null | undefined, fallback = 'Aucune precision') {
+function safeText(value: string | null | undefined, fallback = translate('inspections.pdf.noDetails')) {
   const text = value?.trim()
   return text ? text : fallback
 }
@@ -232,55 +240,55 @@ export function InspectionPDF({ data }: { data: InspectionPdfData }) {
 
           <View style={s.titleBlock}>
             <Text style={s.title}>{kindLabel(data.kind).toUpperCase()}</Text>
-            <Text style={s.subtitle}>{data.propertyName || 'Logement loue'}</Text>
+            <Text style={s.subtitle}>{data.propertyName || translate('inspections.pdf.rentalUnit')}</Text>
           </View>
         </View>
 
         <View style={s.rule} />
 
         <View style={s.section}>
-          <Text style={s.sectionTitle}>Informations generales</Text>
+          <Text style={s.sectionTitle}>{translate('inspections.pdf.generalInformation')}</Text>
           <View style={s.metaGrid}>
             <View style={s.metaRow}>
-              <Text style={s.metaLabel}>Locataire</Text>
+              <Text style={s.metaLabel}>{translate('inspections.tenant')}</Text>
               <Text style={s.metaValue}>{data.tenantFirstName} {data.tenantLastName}</Text>
             </View>
             <View style={s.metaRow}>
-              <Text style={s.metaLabel}>Bien</Text>
+              <Text style={s.metaLabel}>{translate('inspections.property')}</Text>
               <Text style={s.metaValue}>{address}</Text>
             </View>
             <View style={s.metaRow}>
-              <Text style={s.metaLabel}>Date du constat</Text>
-              <Text style={s.metaValue}>{formatDateFr(data.inspectionDate)}</Text>
+              <Text style={s.metaLabel}>{translate('inspections.date')}</Text>
+              <Text style={s.metaValue}>{formatDateLocalized(data.inspectionDate)}</Text>
             </View>
             <View style={s.metaRow}>
-              <Text style={s.metaLabel}>Debut du bail</Text>
-              <Text style={s.metaValue}>{formatDateFr(data.leaseStartDate)}</Text>
+              <Text style={s.metaLabel}>{translate('inspections.leaseStartDate')}</Text>
+              <Text style={s.metaValue}>{formatDateLocalized(data.leaseStartDate)}</Text>
             </View>
             <View style={s.metaRow}>
-              <Text style={s.metaLabel}>Fin du bail</Text>
-              <Text style={s.metaValue}>{formatDateFr(data.leaseEndDate)}</Text>
+              <Text style={s.metaLabel}>{translate('inspections.leaseEndDate')}</Text>
+              <Text style={s.metaValue}>{formatDateLocalized(data.leaseEndDate)}</Text>
             </View>
           </View>
         </View>
 
         <View style={s.section}>
-          <Text style={s.sectionTitle}>Etat general</Text>
+          <Text style={s.sectionTitle}>{translate('inspections.generalCondition')}</Text>
           <View style={s.paragraphBox}>
-            <Text style={s.paragraph}>{safeText(data.generalCondition, "Aucun commentaire general")}</Text>
+            <Text style={s.paragraph}>{safeText(data.generalCondition, translate('inspections.noGeneralCondition'))}</Text>
           </View>
         </View>
 
         <View style={s.section}>
-          <Text style={s.sectionTitle}>Pieces et equipements</Text>
+          <Text style={s.sectionTitle}>{translate('inspections.pdf.roomsAndEquipment')}</Text>
           <View style={s.roomTable}>
             <View style={s.roomHeader}>
-              <Text style={[s.roomHeaderCell, s.colArea]}>Zone</Text>
-              <Text style={[s.roomHeaderCell, s.colCondition]}>Etat constate</Text>
-              <Text style={[s.roomHeaderCell, s.colNotes]}>Observations</Text>
+              <Text style={[s.roomHeaderCell, s.colArea]}>{translate('inspections.area')}</Text>
+              <Text style={[s.roomHeaderCell, s.colCondition]}>{translate('inspections.condition')}</Text>
+              <Text style={[s.roomHeaderCell, s.colNotes]}>{translate('inspections.notes')}</Text>
             </View>
 
-            {(data.rooms.length > 0 ? data.rooms : [{ area: 'Logement', condition: '', notes: '' }]).map((room, index, array) => (
+            {(data.rooms.length > 0 ? data.rooms : [{ area: translate('inspections.pdf.rentalUnit'), condition: '', notes: '' }]).map((room, index, array) => (
               <View
                 key={`${room.area}-${index}`}
                 style={[
@@ -298,40 +306,38 @@ export function InspectionPDF({ data }: { data: InspectionPdfData }) {
 
         <View style={[s.section, s.noteGrid]} wrap={false}>
           <View style={s.noteCol}>
-            <Text style={s.sectionTitle}>Releves de compteurs</Text>
+            <Text style={s.sectionTitle}>{translate('inspections.meterReadings')}</Text>
             <View style={s.paragraphBox}>
               <Text style={s.paragraph}>{safeText(data.meterReadings)}</Text>
             </View>
           </View>
           <View style={s.noteCol}>
-            <Text style={s.sectionTitle}>Remarques complementaires</Text>
+            <Text style={s.sectionTitle}>{translate('inspections.notes')}</Text>
             <View style={s.paragraphBox}>
-              <Text style={s.paragraph}>{safeText(data.notes)}</Text>
+              <Text style={s.paragraph}>{safeText(data.notes, translate('inspections.noAdditionalNotes'))}</Text>
             </View>
           </View>
         </View>
 
         <View style={s.signRow} wrap={false}>
           <View style={s.signBox}>
-            <Text style={s.signTitle}>Proprietaire</Text>
+            <Text style={s.signTitle}>{translate('nav.profile')}</Text>
             {data.landlordSignature && data.landlordSignature.startsWith('data:image') ? (
               <Image src={{ uri: data.landlordSignature }} style={{ width: 120, height: 52 }} />
             ) : (
               <View style={s.signPlaceholder} />
             )}
-            <Text style={s.signHint}>Nom: {data.landlordName}</Text>
+            <Text style={s.signHint}>{translate('profile.fullName')}: {data.landlordName}</Text>
           </View>
 
           <View style={s.signBox}>
-            <Text style={s.signTitle}>Locataire</Text>
+            <Text style={s.signTitle}>{translate('inspections.tenant')}</Text>
             <View style={s.signPlaceholder} />
-            <Text style={s.signHint}>Nom: {data.tenantFirstName} {data.tenantLastName}</Text>
+            <Text style={s.signHint}>{translate('profile.fullName')}: {data.tenantFirstName} {data.tenantLastName}</Text>
           </View>
         </View>
 
-        <Text style={s.legalNote}>
-          Document genere via RentFlow. Cette version MVP prevoit une signature du proprietaire et un emplacement de signature pour le locataire.
-        </Text>
+        <Text style={s.legalNote}>{translate('inspections.pdf.legalNote')}</Text>
       </Page>
     </Document>
   )

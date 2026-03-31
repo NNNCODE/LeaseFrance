@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import { CheckCircle2, Plus, ScrollText, Trash2, X } from 'lucide-react'
 import AttachmentPanel from '@/components/AttachmentPanel'
 import { Button } from '@/components/ui/button'
@@ -11,30 +12,24 @@ type InspectionKind = Inspection['kind']
 
 const KIND_ORDER: InspectionKind[] = ['entry', 'exit']
 
-const KIND_META: Record<InspectionKind, { label: string }> = {
-  entry: { label: 'Entree' },
-  exit: { label: 'Sortie' },
+const KIND_META: Record<InspectionKind, { labelKey: string }> = {
+  entry: { labelKey: 'inspections.kindEntry' },
+  exit: { labelKey: 'inspections.kindExit' },
 }
 
 function today() {
   return new Date().toISOString().split('T')[0]
 }
 
-function defaultRooms(): InspectionRoom[] {
-  return [
-    { area: 'Entree', condition: '', notes: '' },
-    { area: 'Sejour', condition: '', notes: '' },
-    { area: 'Cuisine', condition: '', notes: '' },
-    { area: 'Chambre', condition: '', notes: '' },
-    { area: 'Salle de bain', condition: '', notes: '' },
-    { area: 'WC', condition: '', notes: '' },
-  ]
-}
-
-function seedRooms(leaseId: number | null, inspections: Inspection[], editingId?: number): InspectionRoom[] {
-  if (!leaseId) return defaultRooms()
-  const previous = inspections.find((inspection) => inspection.lease_id === leaseId && inspection.id !== editingId)
-  if (!previous || previous.rooms.length === 0) return defaultRooms()
+function seedRooms(
+  leaseId: number | null,
+  inspections: Inspection[],
+  buildDefaultRooms: () => InspectionRoom[],
+  editingId?: number,
+): InspectionRoom[] {
+  if (!leaseId) return buildDefaultRooms()
+  const previous = inspections.find((item) => item.lease_id === leaseId && item.id !== editingId)
+  if (!previous || previous.rooms.length === 0) return buildDefaultRooms()
   return previous.rooms.map((room) => ({ ...room }))
 }
 
@@ -53,6 +48,16 @@ export default function InspectionModal({
   onSave: (data: InspectionInput) => Promise<void>
   onClose: () => void
 }) {
+  const { t } = useTranslation()
+  const buildDefaultRooms = () => ([
+    { area: t('inspections.roomDefaults.entryHall'), condition: '', notes: '' },
+    { area: t('inspections.roomDefaults.livingRoom'), condition: '', notes: '' },
+    { area: t('inspections.roomDefaults.kitchen'), condition: '', notes: '' },
+    { area: t('inspections.roomDefaults.bedroom'), condition: '', notes: '' },
+    { area: t('inspections.roomDefaults.bathroom'), condition: '', notes: '' },
+    { area: t('inspections.roomDefaults.toilet'), condition: '', notes: '' },
+  ])
+
   const initialLease = inspection?.lease_id ?? initialLeaseId ?? leases[0]?.id ?? 0
   const [form, setForm] = useState<InspectionInput>(() => ({
     lease_id: initialLease,
@@ -63,7 +68,7 @@ export default function InspectionModal({
     notes: inspection?.notes ?? '',
     rooms: inspection?.rooms.length
       ? inspection.rooms.map((room) => ({ ...room }))
-      : seedRooms(initialLease || null, inspections, inspection?.id),
+      : seedRooms(initialLease || null, inspections, buildDefaultRooms, inspection?.id),
   }))
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
@@ -71,7 +76,7 @@ export default function InspectionModal({
   const selectedLease = leases.find((lease) => lease.id === form.lease_id) ?? null
   const latestForLease = useMemo(
     () => inspections.find((item) => item.lease_id === form.lease_id && item.id !== inspection?.id),
-    [form.lease_id, inspection?.id, inspections]
+    [form.lease_id, inspection?.id, inspections],
   )
 
   function setField<K extends keyof InspectionInput>(field: K, value: InspectionInput[K]) {
@@ -104,7 +109,7 @@ export default function InspectionModal({
   function restoreLatestRooms() {
     setForm((current) => ({
       ...current,
-      rooms: seedRooms(current.lease_id || null, inspections, inspection?.id),
+      rooms: seedRooms(current.lease_id || null, inspections, buildDefaultRooms, inspection?.id),
     }))
   }
 
@@ -112,10 +117,10 @@ export default function InspectionModal({
     event.preventDefault()
     setError('')
 
-    if (!form.lease_id) return setError('Selectionnez un bail.')
-    if (!form.inspection_date) return setError("Renseignez une date d'etat des lieux.")
+    if (!form.lease_id) return setError(t('inspections.errors.selectLease'))
+    if (!form.inspection_date) return setError(t('inspections.errors.dateRequired'))
     if (selectedLease && form.inspection_date < selectedLease.start_date) {
-      return setError("La date ne peut pas etre anterieure au debut du bail.")
+      return setError(t('inspections.errors.dateBeforeLeaseStart'))
     }
 
     const rooms = form.rooms
@@ -126,8 +131,8 @@ export default function InspectionModal({
       }))
       .filter((room) => room.area || room.condition || room.notes)
 
-    if (rooms.length === 0) return setError('Ajoutez au moins une zone a decrire.')
-    if (rooms.some((room) => !room.area)) return setError('Chaque ligne doit avoir un nom de zone.')
+    if (rooms.length === 0) return setError(t('inspections.errors.addRoom'))
+    if (rooms.some((room) => !room.area)) return setError(t('inspections.errors.roomNameRequired'))
 
     setSaving(true)
     try {
@@ -168,9 +173,9 @@ export default function InspectionModal({
             </div>
             <div>
               <h2 className="text-base font-semibold text-textPrimary">
-                {inspection ? "Modifier l'etat des lieux" : 'Nouvel etat des lieux'}
+                {inspection ? t('inspections.editTitle') : t('inspections.addTitle')}
               </h2>
-              <p className="text-sm text-textMuted">Constat d'entree ou de sortie pour un bail.</p>
+              <p className="text-sm text-textMuted">{t('inspections.formSubtitle')}</p>
             </div>
           </div>
           <button onClick={onClose} className="text-textMuted hover:text-textPrimary transition-colors shrink-0">
@@ -181,7 +186,7 @@ export default function InspectionModal({
         <form onSubmit={handleSubmit} className="p-6 overflow-y-auto flex flex-col gap-5">
           <div className="grid grid-cols-[1.5fr_1fr_1fr] gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-textMuted">Bail</label>
+              <label className="text-xs font-medium text-textMuted">{t('inspections.lease')}</label>
               <select
                 value={form.lease_id}
                 onChange={(event) => {
@@ -191,20 +196,20 @@ export default function InspectionModal({
                     lease_id: leaseId,
                     rooms: inspection?.lease_id === leaseId && inspection.rooms.length
                       ? inspection.rooms.map((room) => ({ ...room }))
-                      : seedRooms(leaseId, inspections, inspection?.id),
+                      : seedRooms(leaseId, inspections, buildDefaultRooms, inspection?.id),
                   }))
                 }}
                 className="h-10 rounded-lg border border-border bg-surfaceHigh px-3 py-2 text-sm text-textPrimary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               >
                 {leases.map((lease) => (
                   <option key={lease.id} value={lease.id}>
-                    {lease.tenant_first_name} {lease.tenant_last_name} · {lease.property_name}
+                    {lease.tenant_first_name} {lease.tenant_last_name} - {lease.property_name}
                   </option>
                 ))}
               </select>
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-textMuted">Type</label>
+              <label className="text-xs font-medium text-textMuted">{t('inspections.kind')}</label>
               <div className="grid grid-cols-2 gap-2">
                 {KIND_ORDER.map((kind) => (
                   <button
@@ -213,85 +218,146 @@ export default function InspectionModal({
                     onClick={() => setField('kind', kind)}
                     className={`rounded-lg border px-3 py-2 text-sm transition-colors ${form.kind === kind ? 'border-primary bg-primary/10 text-primary' : 'border-border text-textMuted hover:text-textPrimary'}`}
                   >
-                    {KIND_META[kind].label}
+                    {t(KIND_META[kind].labelKey)}
                   </button>
                 ))}
               </div>
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-textMuted">Date du constat</label>
+              <label className="text-xs font-medium text-textMuted">{t('inspections.date')}</label>
               <Input type="date" value={form.inspection_date} onChange={(event) => setField('inspection_date', event.target.value)} />
             </div>
           </div>
 
           {selectedLease ? (
             <div className="grid grid-cols-3 gap-4">
-              <Card><CardContent className="pt-4"><p className="text-xs text-textMuted">Locataire</p><p className="text-base font-semibold text-textPrimary mt-1">{selectedLease.tenant_first_name} {selectedLease.tenant_last_name}</p></CardContent></Card>
-              <Card><CardContent className="pt-4"><p className="text-xs text-textMuted">Bien</p><p className="text-base font-semibold text-textPrimary mt-1">{selectedLease.property_name}</p></CardContent></Card>
-              <Card><CardContent className="pt-4"><p className="text-xs text-textMuted">Debut du bail</p><p className="text-base font-semibold text-textPrimary mt-1">{formatDate(selectedLease.start_date)}</p></CardContent></Card>
+              <Card>
+                <CardContent className="pt-4">
+                  <p className="text-xs text-textMuted">{t('inspections.tenant')}</p>
+                  <p className="text-base font-semibold text-textPrimary mt-1">
+                    {selectedLease.tenant_first_name} {selectedLease.tenant_last_name}
+                  </p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-4">
+                  <p className="text-xs text-textMuted">{t('inspections.property')}</p>
+                  <p className="text-base font-semibold text-textPrimary mt-1">{selectedLease.property_name}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-4">
+                  <p className="text-xs text-textMuted">{t('inspections.leaseStartDate')}</p>
+                  <p className="text-base font-semibold text-textPrimary mt-1">{formatDate(selectedLease.start_date)}</p>
+                </CardContent>
+              </Card>
             </div>
           ) : null}
 
           {latestForLease ? (
             <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 flex items-center justify-between gap-4">
               <div>
-                <p className="text-sm font-medium text-textPrimary">Dernier constat trouve pour ce bail</p>
-                <p className="text-xs text-textMuted mt-1">{KIND_META[latestForLease.kind].label} du {formatDate(latestForLease.inspection_date)} · {latestForLease.rooms.length} zone{latestForLease.rooms.length !== 1 ? 's' : ''}</p>
+                <p className="text-sm font-medium text-textPrimary">{t('inspections.latestFoundTitle')}</p>
+                <p className="text-xs text-textMuted mt-1">
+                  {t(KIND_META[latestForLease.kind].labelKey)} - {formatDate(latestForLease.inspection_date)} - {t('inspections.zoneCount', { count: latestForLease.rooms.length })}
+                </p>
               </div>
-              <Button type="button" variant="outline" size="sm" onClick={restoreLatestRooms}>Reprendre les pieces</Button>
+              <Button type="button" variant="outline" size="sm" onClick={restoreLatestRooms}>
+                {t('inspections.restoreRooms')}
+              </Button>
             </div>
           ) : null}
 
           <div className="grid grid-cols-2 gap-4">
-            <textarea value={form.general_condition ?? ''} onChange={(event) => setField('general_condition', event.target.value)} rows={4} placeholder="Etat general du logement..." className="w-full resize-none rounded-lg border border-border bg-surfaceHigh px-3 py-2 text-sm text-textPrimary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
-            <textarea value={form.meter_readings ?? ''} onChange={(event) => setField('meter_readings', event.target.value)} rows={4} placeholder="Releves de compteurs..." className="w-full resize-none rounded-lg border border-border bg-surfaceHigh px-3 py-2 text-sm text-textPrimary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
+            <textarea
+              value={form.general_condition ?? ''}
+              onChange={(event) => setField('general_condition', event.target.value)}
+              rows={4}
+              placeholder={t('inspections.generalConditionPlaceholder')}
+              className="w-full resize-none rounded-lg border border-border bg-surfaceHigh px-3 py-2 text-sm text-textPrimary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+            />
+            <textarea
+              value={form.meter_readings ?? ''}
+              onChange={(event) => setField('meter_readings', event.target.value)}
+              rows={4}
+              placeholder={t('inspections.meterReadingsPlaceholder')}
+              className="w-full resize-none rounded-lg border border-border bg-surfaceHigh px-3 py-2 text-sm text-textPrimary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+            />
           </div>
 
           <div className="rounded-2xl border border-border">
             <div className="flex items-center justify-between gap-4 px-4 py-3 border-b border-border">
               <div>
-                <p className="text-sm font-semibold text-textPrimary">Pieces et zones controlees</p>
-                <p className="text-xs text-textMuted mt-1">Une ligne par piece, zone ou equipement notable.</p>
+                <p className="text-sm font-semibold text-textPrimary">{t('inspections.roomsTitle')}</p>
+                <p className="text-xs text-textMuted mt-1">{t('inspections.roomsDesc')}</p>
               </div>
-              <Button type="button" variant="outline" size="sm" onClick={addRoom}><Plus className="w-3.5 h-3.5" />Ajouter une ligne</Button>
+              <Button type="button" variant="outline" size="sm" onClick={addRoom}>
+                <Plus className="w-3.5 h-3.5" />
+                {t('inspections.addRoom')}
+              </Button>
             </div>
             <div className="p-4 flex flex-col gap-3">
               {form.rooms.map((room, index) => (
                 <div key={index} className="grid grid-cols-[1.1fr_1fr_1.4fr_auto] gap-3 items-start">
-                  <Input value={room.area} onChange={(event) => setRoom(index, 'area', event.target.value)} placeholder="Zone" />
-                  <Input value={room.condition} onChange={(event) => setRoom(index, 'condition', event.target.value)} placeholder="Etat constate" />
-                  <textarea value={room.notes} onChange={(event) => setRoom(index, 'notes', event.target.value)} rows={2} placeholder="Observations" className="w-full resize-none rounded-lg border border-border bg-surfaceHigh px-3 py-2 text-sm text-textPrimary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
-                  <button type="button" onClick={() => removeRoom(index)} className="mt-2 p-2 rounded-lg text-textMuted hover:text-danger hover:bg-danger/10 transition-colors" title="Supprimer la ligne"><Trash2 className="w-4 h-4" /></button>
+                  <Input
+                    value={room.area}
+                    onChange={(event) => setRoom(index, 'area', event.target.value)}
+                    placeholder={t('inspections.roomAreaPlaceholder')}
+                  />
+                  <Input
+                    value={room.condition}
+                    onChange={(event) => setRoom(index, 'condition', event.target.value)}
+                    placeholder={t('inspections.roomConditionPlaceholder')}
+                  />
+                  <textarea
+                    value={room.notes}
+                    onChange={(event) => setRoom(index, 'notes', event.target.value)}
+                    rows={2}
+                    placeholder={t('inspections.roomNotesPlaceholder')}
+                    className="w-full resize-none rounded-lg border border-border bg-surfaceHigh px-3 py-2 text-sm text-textPrimary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeRoom(index)}
+                    className="mt-2 p-2 rounded-lg text-textMuted hover:text-danger hover:bg-danger/10 transition-colors"
+                    title={t('inspections.removeRoom')}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               ))}
             </div>
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-textMuted">Remarques complementaires</label>
-            <textarea value={form.notes ?? ''} onChange={(event) => setField('notes', event.target.value)} rows={3} placeholder="Observations supplementaires..." className="w-full resize-none rounded-lg border border-border bg-surfaceHigh px-3 py-2 text-sm text-textPrimary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
+            <label className="text-xs font-medium text-textMuted">{t('inspections.notes')}</label>
+            <textarea
+              value={form.notes ?? ''}
+              onChange={(event) => setField('notes', event.target.value)}
+              rows={3}
+              placeholder={t('inspections.notesPlaceholder')}
+              className="w-full resize-none rounded-lg border border-border bg-surfaceHigh px-3 py-2 text-sm text-textPrimary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+            />
           </div>
 
-          {/* ── Attachments (only for existing inspections) ── */}
           {inspection && (
             <AttachmentPanel
               entityType="inspection"
               entityId={inspection.id}
-              title="Photos et pieces jointes"
               compact
             />
           )}
 
           <div className="rounded-xl border border-warning/20 bg-warning/5 px-4 py-3 text-xs text-textMuted leading-5">
-            Le PDF reprend la signature du proprietaire si elle existe dans `Proprietaire`. La signature du locataire reste un emplacement a signer sur la version imprimee.
+            {t('inspections.signatureHelp', { owner: t('nav.profile') })}
           </div>
 
           {error ? <div className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">{error}</div> : null}
 
           <div className="flex gap-2 justify-end">
-            <Button type="button" variant="secondary" onClick={onClose}>Annuler</Button>
+            <Button type="button" variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
             <Button type="submit" disabled={saving}>
-              {saving ? <>Enregistrement...</> : <><CheckCircle2 className="w-3.5 h-3.5" />Enregistrer le constat</>}
+              {saving ? t('common.saving') : <><CheckCircle2 className="w-3.5 h-3.5" />{t('inspections.saveInspection')}</>}
             </Button>
           </div>
         </form>

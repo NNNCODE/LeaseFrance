@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { pdf } from '@react-pdf/renderer'
+import { useTranslation } from 'react-i18next'
 import {
   CalendarDays,
   Download,
@@ -10,7 +11,6 @@ import {
   Plus,
   ScrollText,
   Trash2,
-  X,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -23,11 +23,11 @@ import InspectionModal from './InspectionModal'
 type InspectionKind = Inspection['kind']
 
 const KIND_META: Record<InspectionKind, {
-  label: string
+  labelKey: string
   badge: 'default' | 'warning'
 }> = {
-  entry: { label: 'Entree', badge: 'default' },
-  exit: { label: 'Sortie', badge: 'warning' },
+  entry: { labelKey: 'inspections.kindEntry', badge: 'default' },
+  exit: { labelKey: 'inspections.kindExit', badge: 'warning' },
 }
 
 function buildFileName(inspection: Inspection) {
@@ -39,9 +39,13 @@ function buildDocumentType(kind: InspectionKind) {
   return kind === 'entry' ? 'etat_des_lieux_entree' : 'etat_des_lieux_sortie'
 }
 
-function buildInspectionPdfData(inspection: Inspection, profile: UserProfile | null): InspectionPdfData {
+function buildInspectionPdfData(
+  inspection: Inspection,
+  profile: UserProfile | null,
+  fallbackLandlordName: string,
+): InspectionPdfData {
   return {
-    landlordName: profile?.name ?? 'Proprietaire',
+    landlordName: profile?.name ?? fallbackLandlordName,
     landlordAddress: profile?.address,
     landlordCity: profile?.city,
     landlordPhone: profile?.phone,
@@ -64,6 +68,7 @@ function buildInspectionPdfData(inspection: Inspection, profile: UserProfile | n
 }
 
 export default function Inspections() {
+  const { t } = useTranslation()
   const { profile } = useAuthStore()
   const [inspections, setInspections] = useState<Inspection[]>([])
   const [leases, setLeases] = useState<Lease[]>([])
@@ -98,7 +103,7 @@ export default function Inspections() {
 
   const availableLeases = useMemo(
     () => leases.filter((lease) => lease.status === 'active' || lease.status === 'ended'),
-    [leases]
+    [leases],
   )
 
   const stats = useMemo(() => ({
@@ -128,10 +133,10 @@ export default function Inspections() {
   async function handleSave(data: InspectionInput) {
     if (editing) {
       await window.api.inspections.update(editing.id, data)
-      setNotice("Etat des lieux mis a jour.")
+      setNotice(t('inspections.updatedNotice'))
     } else {
       await window.api.inspections.create(data)
-      setNotice('Etat des lieux cree.')
+      setNotice(t('inspections.createdNotice'))
     }
     closeForm()
     await load()
@@ -144,7 +149,7 @@ export default function Inspections() {
     setError('')
     try {
       await window.api.inspections.delete(deleting.id)
-      setNotice('Etat des lieux supprime.')
+      setNotice(t('inspections.deletedNotice'))
       setDeleting(null)
       await load()
     } catch (err) {
@@ -159,18 +164,18 @@ export default function Inspections() {
     setError('')
 
     try {
-      const data = buildInspectionPdfData(inspection, profile)
+      const data = buildInspectionPdfData(inspection, profile, t('nav.profile'))
       const blob = await pdf(<InspectionPDF data={data} />).toBlob()
       const buffer = new Uint8Array(await blob.arrayBuffer())
       const result = await window.api.documents.savePdf(
         inspection.lease_id,
         buildFileName(inspection),
         buffer,
-        buildDocumentType(inspection.kind)
+        buildDocumentType(inspection.kind),
       )
 
       if (result.saved) {
-        setNotice('PDF enregistre dans Documents.')
+        setNotice(t('inspections.pdfSavedNotice'))
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
@@ -183,14 +188,12 @@ export default function Inspections() {
     <div className="flex flex-col gap-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-textPrimary">Etats des lieux</h1>
-          <p className="text-sm text-textMuted mt-1">
-            Creez vos constats d'entree et de sortie, puis exportez-les en PDF.
-          </p>
+          <h1 className="text-2xl font-semibold text-textPrimary">{t('inspections.title')}</h1>
+          <p className="text-sm text-textMuted mt-1">{t('inspections.subtitle')}</p>
         </div>
         <Button onClick={() => openCreate()} disabled={availableLeases.length === 0}>
           <Plus className="w-4 h-4" />
-          Nouvel etat des lieux
+          {t('inspections.add')}
         </Button>
       </div>
 
@@ -209,19 +212,19 @@ export default function Inspections() {
       <div className="grid grid-cols-3 gap-4">
         <Card>
           <CardContent className="pt-4">
-            <p className="text-xs text-textMuted">Constats enregistres</p>
+            <p className="text-xs text-textMuted">{t('inspections.statsTotal')}</p>
             <p className="text-2xl font-semibold text-textPrimary mt-1">{stats.total}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4">
-            <p className="text-xs text-textMuted">Entrees</p>
+            <p className="text-xs text-textMuted">{t('inspections.statsEntry')}</p>
             <p className="text-2xl font-semibold text-textPrimary mt-1">{stats.entry}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4">
-            <p className="text-xs text-textMuted">Sorties</p>
+            <p className="text-xs text-textMuted">{t('inspections.statsExit')}</p>
             <p className="text-2xl font-semibold text-textPrimary mt-1">{stats.exit}</p>
           </CardContent>
         </Card>
@@ -229,8 +232,8 @@ export default function Inspections() {
 
       {availableLeases.length === 0 ? (
         <EmptyState
-          title='Aucun bail disponible'
-          description='Creez d abord un bail pour pouvoir enregistrer un etat des lieux.'
+          title={t('inspections.noLeaseTitle')}
+          description={t('inspections.noLeaseDesc')}
         />
       ) : loading ? (
         <div className="flex flex-col gap-3">
@@ -240,9 +243,9 @@ export default function Inspections() {
         </div>
       ) : inspections.length === 0 ? (
         <EmptyState
-          title='Aucun etat des lieux'
-          description='Commencez par creer un constat d entree ou de sortie pour un bail.'
-          action={<Button onClick={() => openCreate()}><Plus className="w-4 h-4" />Premier constat</Button>}
+          title={t('inspections.empty')}
+          description={t('inspections.emptyDesc')}
+          action={<Button onClick={() => openCreate()}><Plus className="w-4 h-4" />{t('inspections.emptyAction')}</Button>}
         />
       ) : (
         <motion.div
@@ -327,6 +330,7 @@ function InspectionRow({
   onDelete: () => void
   onGeneratePdf: () => void
 }) {
+  const { t } = useTranslation()
   const meta = KIND_META[inspection.kind]
 
   return (
@@ -344,7 +348,7 @@ function InspectionRow({
                 <p className="text-base font-semibold text-textPrimary">
                   {inspection.tenant_first_name} {inspection.tenant_last_name}
                 </p>
-                <Badge variant={meta.badge}>{meta.label}</Badge>
+                <Badge variant={meta.badge}>{t(meta.labelKey)}</Badge>
               </div>
 
               <div className="flex flex-wrap items-center gap-4 mt-2 text-xs text-textMuted">
@@ -358,18 +362,18 @@ function InspectionRow({
                 </div>
                 <div className="flex items-center gap-1.5">
                   <FileText className="w-3.5 h-3.5" />
-                  <span>{inspection.rooms.length} zone{inspection.rooms.length !== 1 ? 's' : ''}</span>
+                  <span>{t('inspections.zoneCount', { count: inspection.rooms.length })}</span>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4 mt-4 text-sm">
                 <div className="rounded-xl bg-surfaceHigh/30 border border-border px-3 py-2.5">
-                  <p className="text-[11px] uppercase tracking-wide text-textMuted">Etat general</p>
-                  <p className="text-textPrimary mt-1 line-clamp-2">{inspection.general_condition || 'Aucun commentaire general.'}</p>
+                  <p className="text-[11px] uppercase tracking-wide text-textMuted">{t('inspections.generalCondition')}</p>
+                  <p className="text-textPrimary mt-1 line-clamp-2">{inspection.general_condition || t('inspections.noGeneralCondition')}</p>
                 </div>
                 <div className="rounded-xl bg-surfaceHigh/30 border border-border px-3 py-2.5">
-                  <p className="text-[11px] uppercase tracking-wide text-textMuted">Remarques</p>
-                  <p className="text-textPrimary mt-1 line-clamp-2">{inspection.notes || 'Aucune remarque complementaire.'}</p>
+                  <p className="text-[11px] uppercase tracking-wide text-textMuted">{t('inspections.notes')}</p>
+                  <p className="text-textPrimary mt-1 line-clamp-2">{inspection.notes || t('inspections.noAdditionalNotes')}</p>
                 </div>
               </div>
             </div>
@@ -378,7 +382,7 @@ function InspectionRow({
               <button
                 onClick={onGeneratePdf}
                 disabled={busy}
-                title="Generer le PDF"
+                title={t('inspections.generatePdf')}
                 className="p-1.5 rounded-lg hover:bg-primary/10 text-textMuted hover:text-primary transition-colors disabled:opacity-40"
               >
                 <Download className="w-4 h-4" />
@@ -386,7 +390,7 @@ function InspectionRow({
               <button
                 onClick={onEdit}
                 disabled={busy}
-                title="Modifier"
+                title={t('common.edit')}
                 className="p-1.5 rounded-lg hover:bg-surfaceHigh text-textMuted hover:text-textPrimary transition-colors disabled:opacity-40"
               >
                 <Pencil className="w-4 h-4" />
@@ -394,7 +398,7 @@ function InspectionRow({
               <button
                 onClick={onDelete}
                 disabled={busy}
-                title="Supprimer"
+                title={t('common.delete')}
                 className="p-1.5 rounded-lg hover:bg-danger/10 text-textMuted hover:text-danger transition-colors disabled:opacity-40"
               >
                 <Trash2 className="w-4 h-4" />
@@ -418,6 +422,8 @@ function DeleteInspectionModal({
   onConfirm: () => void
   onClose: () => void
 }) {
+  const { t } = useTranslation()
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -438,19 +444,19 @@ function DeleteInspectionModal({
             <Trash2 className="w-5 h-5 text-danger" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-textPrimary">Supprimer ce constat ?</p>
+            <p className="text-sm font-semibold text-textPrimary">{t('inspections.deleteTitle')}</p>
             <p className="text-xs text-textMuted mt-1">
-              {inspection.tenant_first_name} {inspection.tenant_last_name} · {KIND_META[inspection.kind].label} du {formatDate(inspection.inspection_date)}
+              {inspection.tenant_first_name} {inspection.tenant_last_name} - {t(KIND_META[inspection.kind].labelKey)} - {formatDate(inspection.inspection_date)}
             </p>
           </div>
         </div>
 
         <div className="flex gap-2">
           <Button variant="secondary" onClick={onClose} className="flex-1" disabled={deleting}>
-            Annuler
+            {t('common.cancel')}
           </Button>
           <Button variant="danger" onClick={onConfirm} className="flex-1" disabled={deleting}>
-            {deleting ? 'Suppression...' : 'Supprimer'}
+            {deleting ? t('common.deleting') : t('common.delete')}
           </Button>
         </div>
       </motion.div>
