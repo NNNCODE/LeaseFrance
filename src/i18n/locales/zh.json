@@ -1158,7 +1158,10 @@
       "interval12": "每12小时",
       "interval24": "每24小时",
       "interval48": "每48小时",
-      "interval168": "每周"
+      "interval168": "每周",
+      "encryptionPlaceholder": "加密密码（可选）",
+      "restorePasswordPlaceholder": "备份密码",
+      "unlock": "解密"
     },
     "password": {
       "title": "修改密码",

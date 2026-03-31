@@ -544,6 +544,7 @@ interface BackupSettings {
   intervalHours: number
   destinationFolder: string
   maxBackups: number
+  encryptionPassword: string | null
   lastBackupAt: string | null
   lastBackupPath: string | null
   lastBackupSizeBytes: number | null
@@ -553,6 +554,7 @@ interface BackupVerifyResult {
   valid: boolean
   createdAt: string | null
   fileSize: number
+  encrypted: boolean
   errors: string[]
 }
 
@@ -561,6 +563,7 @@ interface BackupPreviewResult {
   valid: boolean
   createdAt: string | null
   fileSize: number
+  encrypted: boolean
   profile: { name: string; email: string } | null
   tables: Array<{ name: string; label: string; count: number }>
   errors: string[]

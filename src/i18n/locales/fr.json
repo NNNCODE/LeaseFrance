@@ -1158,7 +1158,10 @@
       "interval12": "Toutes les 12 heures",
       "interval24": "Toutes les 24 heures",
       "interval48": "Toutes les 48 heures",
-      "interval168": "Toutes les semaines"
+      "interval168": "Toutes les semaines",
+      "encryptionPlaceholder": "Mot de passe de chiffrement (optionnel)",
+      "restorePasswordPlaceholder": "Mot de passe de la sauvegarde",
+      "unlock": "Dechiffrer"
     },
     "password": {
       "title": "Changer le mot de passe",

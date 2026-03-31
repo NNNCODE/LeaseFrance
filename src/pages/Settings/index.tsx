@@ -279,6 +279,9 @@ function BackupSection() {
   const [preview, setPreview] = useState<BackupPreviewResult | null>(null)
   const [verifying, setVerifying] = useState(false)
   const [previewing, setPreviewing] = useState(false)
+  const [backupPassword, setBackupPassword] = useState('')
+  const [restorePassword, setRestorePassword] = useState('')
+  const [needsRestorePassword, setNeedsRestorePassword] = useState(false)
 
   // Load settings on mount
   useEffect(() => {
@@ -303,11 +306,11 @@ function BackupSection() {
     setStatus('saving')
     setMessage('')
     try {
-      const result = await window.api.backup.create()
+      const result = await window.api.backup.create(backupPassword || undefined)
       if (result.saved) {
         setStatus('saved')
         setMessage(t('settings.backup.saved', { path: result.path }))
-        // Refresh settings to pick up lastBackupAt
+        setBackupPassword('')
         window.api.backup.getSettings().then(setSettings).catch(() => {})
         setTimeout(() => setStatus('idle'), 4000)
       } else {
@@ -343,20 +346,28 @@ function BackupSection() {
       const result = await window.api.backup.verify()
       if (result) setVerifyResult(result)
     } catch (err) {
-      setVerifyResult({ valid: false, createdAt: null, fileSize: 0, errors: [String(err)] })
+      setVerifyResult({ valid: false, createdAt: null, fileSize: 0, encrypted: false, errors: [String(err)] })
     } finally {
       setVerifying(false)
     }
   }
 
-  async function handlePreview() {
+  async function handlePreview(pwd?: string) {
     setPreviewing(true)
     setPreview(null)
+    setNeedsRestorePassword(false)
     try {
-      const result = await window.api.backup.preview()
-      if (result) setPreview(result)
+      const result = await window.api.backup.preview(pwd || undefined)
+      if (result) {
+        if (result.encrypted && result.errors.some(e => e.includes('mot de passe') || e.includes('requis'))) {
+          setNeedsRestorePassword(true)
+          setPreview(result)
+        } else {
+          setPreview(result)
+        }
+      }
     } catch (err) {
-      setPreview({ filePath: '', valid: false, createdAt: null, fileSize: 0, profile: null, tables: [], errors: [String(err)] })
+      setPreview({ filePath: '', valid: false, createdAt: null, fileSize: 0, encrypted: false, profile: null, tables: [], errors: [String(err)] })
     } finally {
       setPreviewing(false)
     }
@@ -367,7 +378,7 @@ function BackupSection() {
     setStatus('restoring')
     setMessage('')
     try {
-      const result = await window.api.backup.restoreFromPath(preview.filePath)
+      const result = await window.api.backup.restoreFromPath(preview.filePath, restorePassword || undefined)
       if (result.error) {
         setStatus('error')
         setMessage(result.error)
@@ -415,6 +426,16 @@ function BackupSection() {
               <Download className="w-3.5 h-3.5" />
               {status === 'saving' ? t('settings.backup.saving') : t('settings.backup.save')}
             </Button>
+          </div>
+          <div className="mt-2.5 flex items-center gap-2">
+            <Lock className="w-3 h-3 text-textMuted shrink-0" />
+            <input
+              type="password"
+              placeholder={t('settings.backup.encryptionPlaceholder')}
+              value={backupPassword}
+              onChange={(e) => setBackupPassword(e.target.value)}
+              className="flex-1 text-xs bg-surface border border-border rounded-lg px-3 py-1.5 text-textPrimary placeholder:text-textMuted/50 focus:outline-none focus:ring-1 focus:ring-primary/40"
+            />
           </div>
           {/* Last backup info */}
           {settings?.lastBackupAt && (
@@ -586,8 +607,30 @@ function BackupSection() {
                     </div>
                   )}
 
+                  {/* Encrypted backup password prompt */}
+                  {needsRestorePassword && (
+                    <div className="flex items-center gap-2">
+                      <Lock className="w-3 h-3 text-warning shrink-0" />
+                      <input
+                        type="password"
+                        placeholder={t('settings.backup.restorePasswordPlaceholder')}
+                        value={restorePassword}
+                        onChange={(e) => setRestorePassword(e.target.value)}
+                        className="flex-1 text-xs bg-surface border border-border rounded-lg px-3 py-1.5 text-textPrimary placeholder:text-textMuted/50 focus:outline-none focus:ring-1 focus:ring-primary/40"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePreview(restorePassword)}
+                        disabled={!restorePassword || previewing}
+                      >
+                        {t('settings.backup.unlock')}
+                      </Button>
+                    </div>
+                  )}
+
                   {/* Errors */}
-                  {preview.errors.length > 0 && (
+                  {preview.errors.length > 0 && !needsRestorePassword && (
                     <div className="text-xs text-danger bg-danger/10 rounded-lg px-3 py-2">
                       {preview.errors.map((e, i) => <p key={i}>{e}</p>)}
                     </div>

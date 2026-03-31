@@ -13,7 +13,7 @@ import {
 } from './auth'
 import {
   BACKUP_EXTENSION, buildBackupArchive, ensureBackupPath,
-  readRestorePayload, removeSqliteSidecars,
+  readRestorePayload, removeSqliteSidecars, serializeArchive,
   getBackupSettings, saveBackupSettings, recordBackupDone,
   startAutoBackupTimer, stopAutoBackupTimer,
   verifyBackupFile, previewBackupFile,
@@ -81,10 +81,18 @@ function createWindow(): void {
     backgroundColor: '#0F0F13',
     webPreferences: {
       preload: join(__dirname, '../preload/preload.js'),
+      // sandbox: false is required because better-sqlite3 is a native Node addon
+      // that must be loaded in the preload script. Sandboxed preload scripts cannot
+      // require native modules. Security is maintained through:
+      //   - contextIsolation: true  (renderer cannot access Node globals)
+      //   - nodeIntegration: false  (renderer cannot require() modules)
+      //   - CSP headers             (injected via session.webRequest)
+      //   - whitelist-only API      (only explicitly bridged methods are exposed)
+      // See docs/SECURITY.md for the full rationale.
       sandbox: false,
       contextIsolation: true,
       nodeIntegration: false,
-      devTools: isDev, // DevTools uniquement en développement
+      devTools: isDev,
     },
   })
 
@@ -374,7 +382,7 @@ handle('bankImports:recordImported', (entries) => bankImportsDb.recordImported(e
 
 // ── Backup / restore IPC ─────────────────────────────────────────────────────
 
-handle('backup:create', async () => {
+handle('backup:create', async (password?) => {
   const timestamp = new Date().toISOString().slice(0, 10)
   const { filePath, canceled } = await dialog.showSaveDialog({
     title: 'Sauvegarder les donnees',
@@ -385,7 +393,7 @@ handle('backup:create', async () => {
 
   const targetPath = ensureBackupPath(filePath)
   const archive = await buildBackupArchive()
-  writeFileSync(targetPath, JSON.stringify(archive), 'utf8')
+  writeFileSync(targetPath, serializeArchive(archive, password || undefined), 'utf8')
 
   const size = statSync(targetPath).size
   recordBackupDone(targetPath, size)
@@ -417,17 +425,17 @@ handle('backup:pickFolder', async () => {
   return filePaths[0]
 })
 
-handle('backup:verify', async () => {
+handle('backup:verify', async (password?) => {
   const { filePaths, canceled } = await dialog.showOpenDialog({
     title: 'Verifier une sauvegarde',
     filters: [{ name: 'RentFlow Backup', extensions: [BACKUP_EXTENSION.slice(1)] }],
     properties: ['openFile'],
   })
   if (canceled || filePaths.length === 0) return null
-  return verifyBackupFile(filePaths[0])
+  return verifyBackupFile(filePaths[0], password || undefined)
 })
 
-handle('backup:preview', async () => {
+handle('backup:preview', async (password?) => {
   const { filePaths, canceled } = await dialog.showOpenDialog({
     title: 'Selectionner une sauvegarde a restaurer',
     filters: [
@@ -437,13 +445,13 @@ handle('backup:preview', async () => {
     properties: ['openFile'],
   })
   if (canceled || filePaths.length === 0) return null
-  return previewBackupFile(filePaths[0])
+  return previewBackupFile(filePaths[0], password || undefined)
 })
 
-handle('backup:restoreFromPath', async (filePath) => {
+handle('backup:restoreFromPath', async (filePath, password?) => {
   let payload: { dbBuffer: Buffer; authBuffer: Buffer }
   try {
-    payload = readRestorePayload(filePath)
+    payload = readRestorePayload(filePath, password || undefined)
   } catch (err) {
     return { restored: false, error: err instanceof Error ? err.message : String(err) }
   }

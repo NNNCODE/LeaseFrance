@@ -12,7 +12,7 @@ import {
   statSync, unlinkSync, writeFileSync,
 } from 'fs'
 import { basename, extname, join } from 'path'
-import { randomBytes } from 'crypto'
+import { randomBytes, scryptSync, createCipheriv, createDecipheriv } from 'crypto'
 import Database = require('better-sqlite3')
 import { getCurrentAccountStorageDir, exportCurrentAccountAuth } from './auth'
 import { getDb } from './db/database'
@@ -26,6 +26,77 @@ export interface BackupArchiveV1 {
   createdAt: string
   dbBase64: string
   authBase64: string
+}
+
+export interface BackupArchiveV2 {
+  version: 2
+  createdAt: string
+  encrypted: true
+  salt: string    // hex, 32 bytes
+  iv: string      // hex, 16 bytes
+  tag: string     // hex, 16 bytes (GCM auth tag)
+  ciphertext: string  // base64 (encrypted v1 JSON)
+}
+
+// ── Encryption helpers (AES-256-GCM + scrypt) ───────────────────────────────
+
+const SCRYPT_KEYLEN = 32
+const SCRYPT_COST = { N: 16384, r: 8, p: 1 }
+
+function deriveKey(password: string, salt: Buffer): Buffer {
+  return scryptSync(password, salt, SCRYPT_KEYLEN, SCRYPT_COST)
+}
+
+function encryptArchive(plainJson: string, password: string): BackupArchiveV2 {
+  const salt = randomBytes(32)
+  const iv = randomBytes(16)
+  const key = deriveKey(password, salt)
+
+  const cipher = createCipheriv('aes-256-gcm', key, iv)
+  const encrypted = Buffer.concat([cipher.update(plainJson, 'utf8'), cipher.final()])
+  const tag = cipher.getAuthTag()
+
+  // Parse createdAt from the inner JSON for metadata
+  let createdAt: string
+  try { createdAt = (JSON.parse(plainJson) as { createdAt?: string }).createdAt ?? new Date().toISOString() }
+  catch { createdAt = new Date().toISOString() }
+
+  return {
+    version: 2,
+    createdAt,
+    encrypted: true,
+    salt: salt.toString('hex'),
+    iv: iv.toString('hex'),
+    tag: tag.toString('hex'),
+    ciphertext: encrypted.toString('base64'),
+  }
+}
+
+function decryptArchive(archive: BackupArchiveV2, password: string): string {
+  const salt = Buffer.from(archive.salt, 'hex')
+  const iv = Buffer.from(archive.iv, 'hex')
+  const tag = Buffer.from(archive.tag, 'hex')
+  const ciphertext = Buffer.from(archive.ciphertext, 'base64')
+  const key = deriveKey(password, salt)
+
+  const decipher = createDecipheriv('aes-256-gcm', key, iv)
+  decipher.setAuthTag(tag)
+
+  try {
+    const decrypted = Buffer.concat([decipher.update(ciphertext), decipher.final()])
+    return decrypted.toString('utf8')
+  } catch {
+    throw new Error('Mot de passe incorrect ou sauvegarde corrompue.')
+  }
+}
+
+export function isEncryptedBackup(raw: string): boolean {
+  try {
+    const obj = JSON.parse(raw)
+    return obj && obj.version === 2 && obj.encrypted === true
+  } catch {
+    return false
+  }
 }
 
 // ── Low-level helpers ────────────────────────────────────────────────────────
@@ -71,21 +142,47 @@ export async function buildBackupArchive(): Promise<BackupArchiveV1> {
   }
 }
 
-export function parseBackupArchive(raw: string): { dbBuffer: Buffer; authBuffer: Buffer } {
-  let archive: unknown
-  try { archive = JSON.parse(raw) } catch {
+/**
+ * Serialize a backup archive to a JSON string, optionally encrypting it.
+ * When password is provided, wraps the v1 JSON in AES-256-GCM (v2 format).
+ */
+export function serializeArchive(archive: BackupArchiveV1, password?: string): string {
+  const v1Json = JSON.stringify(archive)
+  if (!password) return v1Json
+  return JSON.stringify(encryptArchive(v1Json, password))
+}
+
+export function parseBackupArchive(raw: string, password?: string): { dbBuffer: Buffer; authBuffer: Buffer } {
+  let parsed: unknown
+  try { parsed = JSON.parse(raw) } catch {
     throw new Error("Le fichier de sauvegarde est illisible ou n'est pas au format attendu.")
   }
+
+  // v2 (encrypted) — decrypt to v1 JSON first
   if (
-    !archive || typeof archive !== 'object' ||
-    (archive as { version?: unknown }).version !== 1 ||
-    typeof (archive as { dbBase64?: unknown }).dbBase64 !== 'string' ||
-    typeof (archive as { authBase64?: unknown }).authBase64 !== 'string'
+    parsed && typeof parsed === 'object' &&
+    (parsed as { version?: unknown }).version === 2 &&
+    (parsed as { encrypted?: unknown }).encrypted === true
+  ) {
+    if (!password) {
+      throw new Error('Cette sauvegarde est chiffree. Un mot de passe est requis.')
+    }
+    const inner = decryptArchive(parsed as BackupArchiveV2, password)
+    return parseBackupArchive(inner) // recurse on decrypted v1
+  }
+
+  // v1 (unencrypted)
+  const archive = parsed as Record<string, unknown>
+  if (
+    !archive ||
+    archive.version !== 1 ||
+    typeof archive.dbBase64 !== 'string' ||
+    typeof archive.authBase64 !== 'string'
   ) {
     throw new Error('Le fichier de sauvegarde est incomplet.')
   }
-  const dbBuffer = Buffer.from((archive as BackupArchiveV1).dbBase64, 'base64')
-  const authBuffer = Buffer.from((archive as BackupArchiveV1).authBase64, 'base64')
+  const dbBuffer = Buffer.from(archive.dbBase64 as string, 'base64')
+  const authBuffer = Buffer.from(archive.authBase64 as string, 'base64')
   if (!hasValidSqliteHeader(dbBuffer)) {
     throw new Error('La base de donnees incluse dans la sauvegarde est invalide.')
   }
@@ -95,9 +192,9 @@ export function parseBackupArchive(raw: string): { dbBuffer: Buffer; authBuffer:
   return { dbBuffer, authBuffer }
 }
 
-export function readRestorePayload(srcPath: string): { dbBuffer: Buffer; authBuffer: Buffer } {
+export function readRestorePayload(srcPath: string, password?: string): { dbBuffer: Buffer; authBuffer: Buffer } {
   if (extname(srcPath).toLowerCase() === BACKUP_EXTENSION) {
-    return parseBackupArchive(readFileSync(srcPath, 'utf8'))
+    return parseBackupArchive(readFileSync(srcPath, 'utf8'), password)
   }
   const dbBuffer = readFileSync(srcPath)
   if (!hasValidSqliteHeader(dbBuffer)) {
@@ -121,6 +218,7 @@ export interface BackupSettings {
   intervalHours: number
   destinationFolder: string
   maxBackups: number
+  encryptionPassword: string | null
   lastBackupAt: string | null
   lastBackupPath: string | null
   lastBackupSizeBytes: number | null
@@ -131,6 +229,7 @@ const DEFAULT_SETTINGS: BackupSettings = {
   intervalHours: 24,
   destinationFolder: '',
   maxBackups: 5,
+  encryptionPassword: null,
   lastBackupAt: null,
   lastBackupPath: null,
   lastBackupSizeBytes: null,
@@ -209,7 +308,7 @@ async function runAutoBackupIfDue(): Promise<void> {
   const filePath = join(settings.destinationFolder, `${AUTO_PREFIX}${ts}${BACKUP_EXTENSION}`)
   mkdirSync(settings.destinationFolder, { recursive: true })
   const archive = await buildBackupArchive()
-  writeFileSync(filePath, JSON.stringify(archive), 'utf8')
+  writeFileSync(filePath, serializeArchive(archive, settings.encryptionPassword || undefined), 'utf8')
 
   const size = statSync(filePath).size
   recordBackupDone(filePath, size)
@@ -232,22 +331,40 @@ export interface BackupVerifyResult {
   valid: boolean
   createdAt: string | null
   fileSize: number
+  encrypted: boolean
   errors: string[]
 }
 
-export function verifyBackupFile(filePath: string): BackupVerifyResult {
+export function verifyBackupFile(filePath: string, password?: string): BackupVerifyResult {
   const fileSize = statSync(filePath).size
   const errors: string[] = []
   let createdAt: string | null = null
+  let encrypted = false
 
   try {
     const raw = readFileSync(filePath, 'utf8')
     let archive: Record<string, unknown>
     try { archive = JSON.parse(raw) } catch {
-      return { valid: false, createdAt: null, fileSize, errors: ["Le fichier n'est pas au format JSON valide."] }
+      return { valid: false, createdAt: null, fileSize, encrypted: false, errors: ["Le fichier n'est pas au format JSON valide."] }
     }
 
     createdAt = typeof archive.createdAt === 'string' ? archive.createdAt : null
+
+    // v2 encrypted archive — can only verify structure without password
+    if (archive.version === 2 && archive.encrypted === true) {
+      encrypted = true
+      if (!archive.salt || !archive.iv || !archive.tag || !archive.ciphertext) {
+        errors.push('Archive chiffree incomplete (champs manquants).')
+      } else if (password) {
+        // If password provided, try full decryption to verify contents
+        try {
+          parseBackupArchive(raw, password)
+        } catch (err) {
+          errors.push(err instanceof Error ? err.message : String(err))
+        }
+      }
+      return { valid: errors.length === 0, createdAt, fileSize, encrypted, errors }
+    }
 
     if (archive.version !== 1) errors.push(`Version de format inconnue : ${archive.version}`)
 
@@ -274,7 +391,7 @@ export function verifyBackupFile(filePath: string): BackupVerifyResult {
     errors.push(`Erreur de lecture : ${err instanceof Error ? err.message : String(err)}`)
   }
 
-  return { valid: errors.length === 0, createdAt, fileSize, errors }
+  return { valid: errors.length === 0, createdAt, fileSize, encrypted, errors }
 }
 
 // ── Preview (verify + table counts + profile) ────────────────────────────────
@@ -284,6 +401,7 @@ export interface BackupPreviewResult {
   valid: boolean
   createdAt: string | null
   fileSize: number
+  encrypted: boolean
   profile: { name: string; email: string } | null
   tables: Array<{ name: string; label: string; count: number }>
   errors: string[]
@@ -303,12 +421,13 @@ const TABLE_LABELS: Array<[string, string]> = [
   ['bank_imports', 'Imports bancaires'],
 ]
 
-export function previewBackupFile(filePath: string): BackupPreviewResult {
+export function previewBackupFile(filePath: string, password?: string): BackupPreviewResult {
   const fileSize = statSync(filePath).size
   const errors: string[] = []
   let createdAt: string | null = null
   let profile: { name: string; email: string } | null = null
   const tables: Array<{ name: string; label: string; count: number }> = []
+  let encrypted = false
 
   let dbBuffer: Buffer
   let authBuffer: Buffer
@@ -317,12 +436,13 @@ export function previewBackupFile(filePath: string): BackupPreviewResult {
     const raw = readFileSync(filePath, 'utf8')
     // Extract createdAt before full parse so we have it even if parsing fails later
     try { createdAt = (JSON.parse(raw) as Record<string, unknown>).createdAt as string ?? null } catch { /* */ }
-    const parsed = parseBackupArchive(raw)
+    encrypted = isEncryptedBackup(raw)
+    const parsed = parseBackupArchive(raw, password)
     dbBuffer = parsed.dbBuffer
     authBuffer = parsed.authBuffer
   } catch (err) {
     errors.push(err instanceof Error ? err.message : String(err))
-    return { filePath, valid: false, createdAt, fileSize, profile: null, tables: [], errors }
+    return { filePath, valid: false, createdAt, fileSize, encrypted, profile: null, tables: [], errors }
   }
 
   // Profile
@@ -353,5 +473,5 @@ export function previewBackupFile(filePath: string): BackupPreviewResult {
     if (existsSync(tempPath)) unlinkSync(tempPath)
   }
 
-  return { filePath, valid: errors.length === 0, createdAt, fileSize, profile, tables, errors }
+  return { filePath, valid: errors.length === 0, createdAt, fileSize, encrypted, profile, tables, errors }
 }

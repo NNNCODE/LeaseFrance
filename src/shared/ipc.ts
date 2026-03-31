@@ -127,13 +127,13 @@ export interface RentFlowInvokeApi {
     recordImported: (entries: BankImportEntry[]) => Promise<void>
   }
   backup: {
-    create: () => Promise<{ saved: boolean; path: string | null }>
+    create: (password?: string) => Promise<{ saved: boolean; path: string | null }>
     getSettings: () => Promise<BackupSettings>
     updateSettings: (patch: Partial<BackupSettings>) => Promise<BackupSettings>
     pickFolder: () => Promise<string | null>
-    verify: () => Promise<BackupVerifyResult | null>
-    preview: () => Promise<BackupPreviewResult | null>
-    restoreFromPath: (filePath: string) => Promise<{ restored: boolean; error?: string }>
+    verify: (password?: string) => Promise<BackupVerifyResult | null>
+    preview: (password?: string) => Promise<BackupPreviewResult | null>
+    restoreFromPath: (filePath: string, password?: string) => Promise<{ restored: boolean; error?: string }>
     openDataFolder: () => Promise<void>
   }
   irl: {

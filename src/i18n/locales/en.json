@@ -1158,7 +1158,10 @@
       "interval12": "Every 12 hours",
       "interval24": "Every 24 hours",
       "interval48": "Every 48 hours",
-      "interval168": "Every week"
+      "interval168": "Every week",
+      "encryptionPlaceholder": "Encryption password (optional)",
+      "restorePasswordPlaceholder": "Backup password",
+      "unlock": "Decrypt"
     },
     "password": {
       "title": "Change password",
