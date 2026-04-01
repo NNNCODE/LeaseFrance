@@ -20,6 +20,7 @@ function run(cmd, args) {
 }
 
 console.log('\n📦 Building with electron-vite...\n')
+await run('node', [join(__dirname, 'generateAutoUpdateConfig.mjs')])
 await run('electron-vite', ['build'])
 
 console.log('\n🔒 Obfuscating output...\n')

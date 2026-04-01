@@ -56,25 +56,42 @@ export default function AttachmentPanel({
   const [attachments, setAttachments] = useState<Attachment[]>([])
   const [loading, setLoading] = useState(true)
   const [previewAttachment, setPreviewAttachment] = useState<Attachment | null>(null)
+  const [error, setError] = useState('')
 
   const load = useCallback(async () => {
     if (!entityId) return
     setLoading(true)
-    const rows = await window.api.attachments.getByEntity(entityType, entityId)
-    setAttachments(rows)
-    setLoading(false)
+    setError('')
+    try {
+      const rows = await window.api.attachments.getByEntity(entityType, entityId)
+      setAttachments(rows)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setLoading(false)
+    }
   }, [entityType, entityId])
 
   useEffect(() => { load() }, [load])
 
   async function handleUpload(slot: string | null) {
-    const uploaded = await window.api.attachments.upload(entityType, entityId, slot)
-    if (uploaded.length > 0) load()
+    setError('')
+    try {
+      const uploaded = await window.api.attachments.upload(entityType, entityId, slot)
+      if (uploaded.length > 0) await load()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    }
   }
 
   async function handleDelete(id: number) {
-    await window.api.attachments.delete(id)
-    load()
+    setError('')
+    try {
+      await window.api.attachments.delete(id)
+      await load()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    }
   }
 
   // Group by slot
@@ -106,6 +123,11 @@ export default function AttachmentPanel({
       </div>
 
       <div className={compact ? '' : 'px-4 pb-4 pt-2'}>
+        {error ? (
+          <div className={`mb-3 rounded-xl border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger ${compact ? '' : 'mt-2'}`}>
+            {error}
+          </div>
+        ) : null}
         {loading ? (
           <div className="py-4 text-xs text-textMuted text-center animate-pulse">{t('common.loading')}</div>
         ) : (

@@ -149,6 +149,17 @@ const api: RentFlowApi = {
       return () => { ipcRenderer.removeListener('backup:autoDone', listener) }
     },
   },
+  updates: {
+    getState: invoke('updates:getState'),
+    check: invoke('updates:check'),
+    download: invoke('updates:download'),
+    install: invoke('updates:install'),
+    onStateChanged: (cb) => {
+      const listener = (event: IpcRendererEvent, data: AutoUpdateState) => cb(event, data)
+      ipcRenderer.on('updates:stateChanged', listener)
+      return () => { ipcRenderer.removeListener('updates:stateChanged', listener) }
+    },
+  },
   irl: {
     getAll: invoke('irl:getAll'),
     getByQuarter: invoke('irl:getByQuarter'),

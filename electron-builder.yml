@@ -22,6 +22,10 @@ files:
   - out/**/*
   - package.json
 
+extraResources:
+  - from: build/auto-update.json
+    to: auto-update.json
+
 win:
   target:
     - target: nsis

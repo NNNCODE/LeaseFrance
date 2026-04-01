@@ -569,6 +569,25 @@ interface BackupPreviewResult {
   errors: string[]
 }
 
+type AutoUpdateStatus = 'disabled' | 'idle' | 'checking' | 'available' | 'downloading' | 'downloaded' | 'up_to_date' | 'error'
+type AutoUpdateDisabledReason = 'not-configured' | 'unsupported-platform' | 'development' | null
+
+interface AutoUpdateState {
+  enabled: boolean
+  status: AutoUpdateStatus
+  currentVersion: string
+  availableVersion: string | null
+  releaseName: string | null
+  releaseDate: string | null
+  releaseNotes: string[]
+  downloadPercent: number | null
+  lastCheckedAt: string | null
+  lastError: string | null
+  feedUrl: string | null
+  channel: string | null
+  disabledReason: AutoUpdateDisabledReason
+}
+
 interface Window {
   api: import('./shared/ipc').RentFlowApi
 }

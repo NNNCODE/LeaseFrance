@@ -14,6 +14,10 @@ export interface RentFlowBackupEventsApi {
   onAutoDone: (cb: (_e: unknown, data: BackupAutoDonePayload) => void) => () => void
 }
 
+export interface RentFlowUpdatesEventsApi {
+  onStateChanged: (cb: (_e: unknown, data: AutoUpdateState) => void) => () => void
+}
+
 export interface RentFlowInvokeApi {
   auth: {
     hasPassword: () => Promise<boolean>
@@ -136,6 +140,12 @@ export interface RentFlowInvokeApi {
     restoreFromPath: (filePath: string, password?: string) => Promise<{ restored: boolean; error?: string }>
     openDataFolder: () => Promise<void>
   }
+  updates: {
+    getState: () => Promise<AutoUpdateState>
+    check: () => Promise<AutoUpdateState>
+    download: () => Promise<AutoUpdateState>
+    install: () => Promise<AutoUpdateState>
+  }
   irl: {
     getAll: () => Promise<IrlIndex[]>
     getByQuarter: (year: number, quarter: number) => Promise<IrlIndex | null>
@@ -145,9 +155,10 @@ export interface RentFlowInvokeApi {
   }
 }
 
-export type RentFlowApi = Omit<RentFlowInvokeApi, 'backup'> & {
+export type RentFlowApi = Omit<RentFlowInvokeApi, 'backup' | 'updates'> & {
   window: RentFlowWindowApi
   backup: RentFlowInvokeApi['backup'] & RentFlowBackupEventsApi
+  updates: RentFlowInvokeApi['updates'] & RentFlowUpdatesEventsApi
 }
 
 type AnyFn = (...args: never[]) => unknown

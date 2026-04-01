@@ -1,6 +1,6 @@
 import { app, BrowserWindow, shell, ipcMain, dialog, session } from 'electron'
 import { writeFileSync, copyFileSync, existsSync, readFileSync, mkdirSync, unlinkSync, statSync } from 'fs'
-import { join, dirname, extname } from 'path'
+import { join } from 'path'
 import { randomBytes } from 'crypto'
 import { closeDb, getDb, getDbPath } from './db/database'
 import {
@@ -36,11 +36,15 @@ import { getDashboardSnapshot } from './services/dashboard'
 import { getDocumentGenerationAvailability, getDocumentGenerationSources } from './services/documents'
 import { getReminderFeed } from './services/reminders'
 import { querySearch } from './services/search'
+import { checkForUpdates, downloadUpdate, getAutoUpdateState, initAutoUpdates, installUpdate } from './autoUpdate'
 import type { RentFlowInvokeChannels, RentFlowWindowChannels } from '../src/shared/ipc'
+import { validateInvokeArgs } from '../src/shared/ipcValidation'
+import { ATTACHMENT_DIALOG_EXTENSIONS, validateAttachmentFileSelection } from './security/attachments'
 
 const isDev = process.env['ELECTRON_RENDERER_URL'] !== undefined
 
 let mainWindow: BrowserWindow | null = null
+let lastPreviewedRestorePath: string | null = null
 const sessionDataPath = join(app.getPath('temp'), 'rentflow', 'session-data', String(process.pid))
 
 function configureSessionDataPath(): void {
@@ -60,7 +64,10 @@ function handle<Channel extends keyof RentFlowInvokeChannels>(
     RentFlowInvokeChannels[Channel]['return']
     | Promise<RentFlowInvokeChannels[Channel]['return']>,
 ): void {
-  ipcMain.handle(channel, (_event, ...args: RentFlowInvokeChannels[Channel]['args']) => handler(...args))
+  ipcMain.handle(channel, (_event, ...rawArgs: unknown[]) => {
+    const args = validateInvokeArgs(channel, rawArgs)
+    return handler(...args)
+  })
 }
 
 function onWindow<Channel extends keyof RentFlowWindowChannels>(
@@ -257,15 +264,21 @@ handle('documents:savePdf', async (leaseId, fileName, buffer, docType) => {
 })
 handle('documents:updateStatus', (id, status) => documentsDb.updateStatus(id, status))
 handle('documents:readFile', (filePath) => {
+  const knownPath = resolveKnownDocumentPath(filePath)
+  if (!knownPath) {
+    return { data: null, mimeType: null, error: 'Document introuvable' }
+  }
   try {
-    const buffer = readFileSync(filePath)
+    const buffer = readFileSync(knownPath)
     return { data: buffer, mimeType: 'application/pdf', error: null }
   } catch {
     return { data: null, mimeType: null, error: 'Fichier introuvable' }
   }
 })
 handle('documents:openFile', (filePath) => {
-  shell.openPath(filePath)
+  const knownPath = resolveKnownDocumentPath(filePath)
+  if (!knownPath) return
+  shell.openPath(knownPath)
 })
 
 handle('exports:saveFile', async (fileName, buffer, filters) => {
@@ -300,14 +313,18 @@ function getAttachmentsDir(): string {
   return dir
 }
 
+function resolveKnownDocumentPath(filePath: string): string | null {
+  const document = documentsDb.getByFilePath(filePath)
+  return document?.file_path ?? null
+}
+
 handle('attachments:getByEntity', (entityType, entityId) => attachmentsDb.getByEntity(entityType, entityId))
 handle('attachments:getAll', () => attachmentsDb.getAll())
 handle('attachments:upload', async (entityType, entityId, slot) => {
-  const extensions = ['pdf', 'png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'tiff']
   const { filePaths, canceled } = await dialog.showOpenDialog({
     title: 'Ajouter un fichier',
     filters: [
-      { name: 'Documents et images', extensions },
+      { name: 'Documents et images', extensions: ATTACHMENT_DIALOG_EXTENSIONS },
     ],
     properties: ['openFile', 'multiSelections'],
   })
@@ -315,32 +332,27 @@ handle('attachments:upload', async (entityType, entityId, slot) => {
 
   const dir = getAttachmentsDir()
   const results: attachmentsDb.Attachment[] = []
-
-  for (const srcPath of filePaths) {
-    const ext = extname(srcPath).toLowerCase()
-    const storedName = `${Date.now()}_${randomBytes(6).toString('hex')}${ext}`
-    const destPath = join(dir, storedName)
-    copyFileSync(srcPath, destPath)
-    const fileSize = statSync(srcPath).size
-
-    const mimeMap: Record<string, string> = {
-      '.pdf': 'application/pdf',
-      '.png': 'image/png',
-      '.jpg': 'image/jpeg',
-      '.jpeg': 'image/jpeg',
-      '.webp': 'image/webp',
-      '.gif': 'image/gif',
-      '.bmp': 'image/bmp',
-      '.tiff': 'image/tiff',
+  const validatedSelections = filePaths.map((srcPath) => {
+    const validated = validateAttachmentFileSelection(srcPath)
+    return {
+      srcPath,
+      ...validated,
+      fileSize: statSync(srcPath).size,
     }
+  })
+
+  for (const selection of validatedSelections) {
+    const storedName = `${Date.now()}_${randomBytes(6).toString('hex')}${selection.extension}`
+    const destPath = join(dir, storedName)
+    copyFileSync(selection.srcPath, destPath)
 
     const record = attachmentsDb.create({
       entity_type: entityType,
       entity_id: entityId,
       slot: slot || null,
-      file_name: srcPath.split(/[/\\]/).pop() || storedName,
-      mime_type: mimeMap[ext] || 'application/octet-stream',
-      file_size: fileSize,
+      file_name: selection.fileName || storedName,
+      mime_type: selection.mimeType,
+      file_size: selection.fileSize,
       stored_name: storedName,
     })
     results.push(record)
@@ -444,11 +456,19 @@ handle('backup:preview', async (password?) => {
     ],
     properties: ['openFile'],
   })
-  if (canceled || filePaths.length === 0) return null
+  if (canceled || filePaths.length === 0) {
+    lastPreviewedRestorePath = null
+    return null
+  }
+  lastPreviewedRestorePath = filePaths[0]
   return previewBackupFile(filePaths[0], password || undefined)
 })
 
 handle('backup:restoreFromPath', async (filePath, password?) => {
+  if (filePath !== lastPreviewedRestorePath) {
+    return { restored: false, error: 'Sauvegarde non autorisee. Relancez la previsualisation avant de restaurer.' }
+  }
+  lastPreviewedRestorePath = null
   let payload: { dbBuffer: Buffer; authBuffer: Buffer }
   try {
     payload = readRestorePayload(filePath, password || undefined)
@@ -483,6 +503,11 @@ handle('backup:openDataFolder', () => {
   }
 })
 
+handle('updates:getState', () => getAutoUpdateState())
+handle('updates:check', () => checkForUpdates())
+handle('updates:download', () => downloadUpdate())
+handle('updates:install', () => installUpdate())
+
 // Window controls via IPC
 onWindow('window:minimize', () => mainWindow?.minimize())
 onWindow('window:maximize', () => {
@@ -502,6 +527,13 @@ app.whenReady()
     }
 
     createWindow()
+    initAutoUpdates((updateState) => {
+      for (const window of BrowserWindow.getAllWindows()) {
+        if (!window.isDestroyed()) {
+          window.webContents.send('updates:stateChanged', updateState)
+        }
+      }
+    })
     startAutoBackupTimer()
 
     app.on('activate', () => {

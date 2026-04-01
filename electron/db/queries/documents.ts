@@ -40,6 +40,12 @@ export function create(lease_id: number, type: string, file_path: string | null)
   return getAll().find((d) => d.id === result.lastInsertRowid)!
 }
 
+export function getByFilePath(filePath: string): DocumentRecord | undefined {
+  return getDb()
+    .prepare(`${SELECT} WHERE d.file_path = ?`)
+    .get(filePath) as DocumentRecord | undefined
+}
+
 export function updateStatus(id: number, status: string): boolean {
   return getDb().prepare('UPDATE documents SET status = ? WHERE id = ?').run(status, id).changes > 0
 }
