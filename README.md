@@ -1,27 +1,28 @@
 # RentFlow
 
-Application desktop Windows pour propriétaires bailleurs privés en France.
-面向法国个人房东的 Windows 桌面管理应用。
+Windows desktop application for private landlords in France.
 
-## Fonctionnalités / 功能
+## Features
 
-- 🔐 Authentification locale sécurisée (email + mot de passe)
-- 🏠 Gestion des biens immobiliers
-- 👤 Gestion des locataires
-- 📄 Gestion des baux (ALUR, meublé, mobilité)
-- 💶 Suivi des paiements et loyers
-- 📊 Tableau de bord avec KPIs
-- 📑 Génération de quittances PDF
-- 📈 Révision des loyers selon l'IRL (INSEE)
+- Local authentication with email and password
+- Property management
+- Tenant management
+- Lease management
+- Payment tracking
+- Dashboard with KPIs
+- PDF receipt generation
+- IRL-based rent revision support
 
-## Stack technique
+## Stack
 
-- **Electron** + **React 18** + **TypeScript**
-- **Tailwind CSS v3** — thème dark élégant
-- **SQLite** via `better-sqlite3` — données 100% locales
-- **Framer Motion** — animations fluides
-- **Zustand** — state management
-- **electron-vite** — build tool
+- Electron
+- React 18
+- TypeScript
+- Tailwind CSS v3
+- SQLite via `better-sqlite3`
+- Framer Motion
+- Zustand
+- electron-vite
 
 ## Installation
 
@@ -30,19 +31,39 @@ npm install
 npm run dev
 ```
 
-## Build (Windows .exe)
+## Build
 
 ```bash
 npm run dist
 ```
 
-## Sécurité / 安全
+## Auto-update
 
-- Données stockées localement, aucun serveur externe
-- Mot de passe haché avec `scrypt` + sel aléatoire
-- Code obfusqué en production
-- DevTools désactivés en production
+RentFlow includes a Windows auto-update client based on `electron-updater`.
 
-## Licence
+Enable it at build time with:
 
-Privé — usage personnel uniquement.
+```bash
+RENTFLOW_UPDATE_URL=https://updates.example.com/rentflow/
+RENTFLOW_UPDATE_CHANNEL=latest
+npm run dist
+```
+
+Notes:
+
+- `RENTFLOW_UPDATE_URL` is required to enable in-app updates.
+- `RENTFLOW_UPDATE_CHANNEL` is optional and defaults to `latest`.
+- Build generates `build/auto-update.json` and packages it as `resources/auto-update.json`.
+- Development mode keeps auto-update disabled unless `RENTFLOW_ENABLE_DEV_UPDATES=1`.
+- The Settings page exposes manual actions to check, download, and install updates.
+
+## Security
+
+- Data stays local by default
+- Passwords are hashed with `scrypt`
+- Production code is obfuscated
+- DevTools are disabled in production
+
+## License
+
+Private project. Personal use only.
