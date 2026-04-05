@@ -33,6 +33,7 @@ win:
     - target: nsis
       arch: [x64]
   icon: build/icon.ico
+  signAndEditExecutable: false
 
 nsis:
   oneClick: false
@@ -44,6 +45,7 @@ nsis:
   createStartMenuShortcut: true
   shortcutName: RentFlow
 
-# Ne pas inclure les devDependencies dans le build final
-npmRebuild: true
+# Skip rebuild during packaging because better-sqlite3 is already aligned in postinstall.
+# Rebuilding here is fragile on Windows when a local Electron process keeps the native module open.
+npmRebuild: false
 nodeGypRebuild: false

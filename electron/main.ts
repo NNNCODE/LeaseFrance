@@ -37,6 +37,7 @@ import { getDocumentGenerationAvailability, getDocumentGenerationSources } from 
 import { getReminderFeed } from './services/reminders'
 import { querySearch } from './services/search'
 import { checkForUpdates, downloadUpdate, getAutoUpdateState, initAutoUpdates, installUpdate } from './autoUpdate'
+import { exportDiagnosticsReport, openLogsFolder } from './diagnostics'
 import { activateLicense, getLicenseState, initLicenseRuntime, refreshLicense } from './license'
 import type { RentFlowInvokeChannels, RentFlowWindowChannels } from '../src/shared/ipc'
 import { validateInvokeArgs } from '../src/shared/ipcValidation'
@@ -503,6 +504,9 @@ handle('backup:openDataFolder', () => {
     shell.openPath(app.getPath('userData'))
   }
 })
+
+handle('diagnostics:exportReport', () => exportDiagnosticsReport())
+handle('diagnostics:openLogsFolder', () => openLogsFolder())
 
 handle('license:getState', () => getLicenseState())
 handle('license:activate', (billingEmail, activationCode) => activateLicense(billingEmail, activationCode))

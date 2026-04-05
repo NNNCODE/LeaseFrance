@@ -144,6 +144,10 @@ export interface RentFlowInvokeApi {
     restoreFromPath: (filePath: string, password?: string) => Promise<{ restored: boolean; error?: string }>
     openDataFolder: () => Promise<void>
   }
+  diagnostics: {
+    exportReport: () => Promise<{ saved: boolean; path: string | null }>
+    openLogsFolder: () => Promise<void>
+  }
   license: {
     getState: () => Promise<LicenseState>
     activate: (billingEmail: string, activationCode: string) => Promise<LicenseState>
@@ -164,9 +168,10 @@ export interface RentFlowInvokeApi {
   }
 }
 
-export type RentFlowApi = Omit<RentFlowInvokeApi, 'backup' | 'license' | 'updates'> & {
+export type RentFlowApi = Omit<RentFlowInvokeApi, 'backup' | 'diagnostics' | 'license' | 'updates'> & {
   window: RentFlowWindowApi
   backup: RentFlowInvokeApi['backup'] & RentFlowBackupEventsApi
+  diagnostics: RentFlowInvokeApi['diagnostics']
   license: RentFlowInvokeApi['license'] & RentFlowLicenseEventsApi
   updates: RentFlowInvokeApi['updates'] & RentFlowUpdatesEventsApi
 }

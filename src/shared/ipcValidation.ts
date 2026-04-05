@@ -257,6 +257,8 @@ const invokeArgSchemas = {
   'bankImports:findDuplicates': z.tuple([z.array(nonEmptyText)]),
   'bankImports:recordImported': z.tuple([z.array(bankImportEntry)]),
   'backup:create': optionalPasswordArg,
+  'diagnostics:exportReport': z.tuple([]),
+  'diagnostics:openLogsFolder': z.tuple([]),
   'license:getState': z.tuple([]),
   'license:activate': z.tuple([nonEmptyText, nonEmptyText]),
   'license:refresh': z.tuple([]),

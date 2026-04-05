@@ -70,9 +70,9 @@ export default function Activation() {
             <span>{t('license.activation.supportLogs', { path: license?.supportLogPath ?? '-' })}</span>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" size="sm" onClick={() => window.api.backup.openDataFolder()}>
+            <Button variant="secondary" size="sm" onClick={() => window.api.diagnostics.openLogsFolder()}>
               <LifeBuoy className="w-3.5 h-3.5" />
-              {t('license.activation.openDataFolder')}
+              {t('license.activation.openLogsFolder')}
             </Button>
             {license?.hasStoredToken ? (
               <Button variant="secondary" size="sm" onClick={handleRefreshRetry} disabled={loading}>

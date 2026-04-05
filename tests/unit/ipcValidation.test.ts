@@ -21,6 +21,11 @@ describe('validateInvokeArgs', () => {
     expect(password).toBeUndefined()
   })
 
+  it('accepts diagnostics IPC channels without arguments', () => {
+    expect(validateInvokeArgs('diagnostics:exportReport', [])).toEqual([])
+    expect(validateInvokeArgs('diagnostics:openLogsFolder', [])).toEqual([])
+  })
+
   it('normalizes lease contract detail payloads before they reach the main process', () => {
     const [, details] = validateInvokeArgs('leases:updateContractDetails', [
       7,

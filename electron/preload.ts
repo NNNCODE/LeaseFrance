@@ -149,6 +149,10 @@ const api: RentFlowApi = {
       return () => { ipcRenderer.removeListener('backup:autoDone', listener) }
     },
   },
+  diagnostics: {
+    exportReport: invoke('diagnostics:exportReport'),
+    openLogsFolder: invoke('diagnostics:openLogsFolder'),
+  },
   license: {
     getState: invoke('license:getState'),
     activate: invoke('license:activate'),
