@@ -143,6 +143,50 @@
       "confirmSavedSetup": "I have saved my recovery key in a safe place."
     }
   },
+  "license": {
+    "activation": {
+      "eyebrow": "Activation",
+      "title": "Activate your paid access.",
+      "description": "Enter the billing email and activation code you received after payment to unlock this installation.",
+      "footer": "The local token refreshes automatically every 24 hours when the network is available.",
+      "billingEmail": "Billing email",
+      "billingEmailPlaceholder": "buyer@example.com",
+      "activationCode": "Activation code",
+      "activationCodePlaceholder": "ABCD2345EF",
+      "emailRequired": "Enter your billing email.",
+      "codeRequired": "Enter your activation code.",
+      "submit": "Activate app",
+      "activating": "Activating...",
+      "retryRefresh": "Retry refresh",
+      "openDataFolder": "Open data folder",
+      "supportLogs": "Diagnostic logs: {{path}}",
+      "lastValidatedAt": "Last validation: {{date}}",
+      "offlineGraceUntil": "Offline access until {{date}}",
+      "currentPeriodEndsAt": "Current period ends {{date}}",
+      "trialEndsAt": "Trial ends {{date}}"
+    },
+    "status": {
+      "unlicensedTitle": "No active license on this device",
+      "unlicensedDesc": "Activate the app with the billing email from the purchase and the activation code sent after checkout.",
+      "activeTitle": "License validated",
+      "activeDesc": "This device is entitled. The local token will refresh automatically.",
+      "graceTitle": "Temporary offline mode",
+      "graceDesc": "The last refresh failed, but access stays open until the offline grace window ends.",
+      "inactiveTitle": "Subscription inactive",
+      "inactiveDesc": "The server reported that this subscription is no longer active. Reactivate access or verify billing.",
+      "expiredTitle": "Offline grace expired",
+      "expiredDesc": "This device could not refresh its license in time. Restore network access, retry refresh, or reactivate the app."
+    },
+    "errors": {
+      "licenseNotFound": "License not found. Check the billing email and activation code.",
+      "subscriptionInactive": "The subscription attached to this license is inactive.",
+      "network": "The app could not reach the license service.",
+      "timeout": "The license service did not respond in time.",
+      "tokenInvalid": "The local token is invalid or corrupted. Reactivate the app.",
+      "invalidResponse": "The license service returned an incomplete response.",
+      "notConfigured": "This build is not configured to talk to the license API."
+    }
+  },
   "dashboard": {
     "title": "Dashboard",
     "newPayment": "New payment",

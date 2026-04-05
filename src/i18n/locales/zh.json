@@ -143,6 +143,50 @@
       "confirmSavedSetup": "我已将恢复密钥保存在安全的地方。"
     }
   },
+  "license": {
+    "activation": {
+      "eyebrow": "激活",
+      "title": "激活付费访问权限。",
+      "description": "输入付款后收到的 billing email 和 activation code，以解锁当前这台设备上的应用。",
+      "footer": "只要网络可用，本地 token 会每 24 小时自动刷新一次。",
+      "billingEmail": "Billing email",
+      "billingEmailPlaceholder": "buyer@example.com",
+      "activationCode": "Activation code",
+      "activationCodePlaceholder": "ABCD2345EF",
+      "emailRequired": "请输入 billing email。",
+      "codeRequired": "请输入 activation code。",
+      "submit": "激活应用",
+      "activating": "激活中...",
+      "retryRefresh": "重试刷新",
+      "openDataFolder": "打开数据目录",
+      "supportLogs": "诊断日志：{{path}}",
+      "lastValidatedAt": "最近验证时间：{{date}}",
+      "offlineGraceUntil": "离线宽限到：{{date}}",
+      "currentPeriodEndsAt": "当前订阅周期结束于：{{date}}",
+      "trialEndsAt": "试用结束于：{{date}}"
+    },
+    "status": {
+      "unlicensedTitle": "此设备上还没有有效许可证",
+      "unlicensedDesc": "请使用付款时的 billing email 和 checkout 后收到的 activation code 激活应用。",
+      "activeTitle": "许可证已验证",
+      "activeDesc": "当前设备已获授权，本地 token 会自动刷新。",
+      "graceTitle": "临时离线模式",
+      "graceDesc": "上一次刷新失败，但在离线宽限期结束前仍可继续访问。",
+      "inactiveTitle": "订阅未激活",
+      "inactiveDesc": "服务器返回当前订阅已不再有效。请重新激活或检查计费状态。",
+      "expiredTitle": "离线宽限已过期",
+      "expiredDesc": "设备未能及时刷新许可证。请恢复网络后重试刷新，或重新激活应用。"
+    },
+    "errors": {
+      "licenseNotFound": "未找到许可证。请检查 billing email 和 activation code。",
+      "subscriptionInactive": "与该许可证关联的订阅当前未激活。",
+      "network": "应用暂时无法连接许可证服务。",
+      "timeout": "许可证服务响应超时。",
+      "tokenInvalid": "本地 token 无效或已损坏。请重新激活应用。",
+      "invalidResponse": "许可证服务返回的数据不完整。",
+      "notConfigured": "当前构建版本尚未配置许可证 API。"
+    }
+  },
   "dashboard": {
     "title": "仪表盘",
     "newPayment": "新建付款",

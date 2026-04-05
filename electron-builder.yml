@@ -25,6 +25,8 @@ files:
 extraResources:
   - from: build/auto-update.json
     to: auto-update.json
+  - from: build/license-runtime.json
+    to: license-runtime.json
 
 win:
   target:

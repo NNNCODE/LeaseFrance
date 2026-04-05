@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/useAuthStore'
+import { useLicenseStore } from '@/stores/useLicenseStore'
 import Layout from '@/components/layout/Layout'
+import Activation from '@/pages/Activation'
 import Dashboard from '@/pages/Dashboard'
 import Login from '@/pages/Login'
 import Setup from '@/pages/Setup'
@@ -22,12 +24,19 @@ import { useThemeStore } from '@/stores/useThemeStore'
 export default function App() {
   const { t } = useTranslation()
   const { status, init } = useAuthStore()
+  const { status: licenseStatus, license, init: initLicense } = useLicenseStore()
   const syncTheme = useThemeStore((state) => state.syncTheme)
   const [showRegister, setShowRegister] = useState(false)
   const [authNotice, setAuthNotice] = useState<string | null>(null)
   const [prefilledEmail, setPrefilledEmail] = useState('')
 
-  useEffect(() => { init() }, [init])
+  useEffect(() => { void initLicense() }, [initLicense])
+  useEffect(() => {
+    if (licenseStatus !== 'ready') return
+    if (status !== 'loading') return
+    if (license?.enabled && !license.accessGranted) return
+    void init()
+  }, [init, license?.accessGranted, license?.enabled, licenseStatus, status])
   useEffect(() => {
     syncTheme()
 
@@ -53,6 +62,8 @@ export default function App() {
     }
   }, [status])
 
+  if (licenseStatus === 'loading') return <Splash />
+  if (license?.enabled && !license.accessGranted) return <Activation />
   if (status === 'loading') return <Splash />
 
   if (status === 'setup') {

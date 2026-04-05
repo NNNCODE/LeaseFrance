@@ -37,6 +37,7 @@ import { getDocumentGenerationAvailability, getDocumentGenerationSources } from 
 import { getReminderFeed } from './services/reminders'
 import { querySearch } from './services/search'
 import { checkForUpdates, downloadUpdate, getAutoUpdateState, initAutoUpdates, installUpdate } from './autoUpdate'
+import { activateLicense, getLicenseState, initLicenseRuntime, refreshLicense } from './license'
 import type { RentFlowInvokeChannels, RentFlowWindowChannels } from '../src/shared/ipc'
 import { validateInvokeArgs } from '../src/shared/ipcValidation'
 import { ATTACHMENT_DIALOG_EXTENSIONS, validateAttachmentFileSelection } from './security/attachments'
@@ -503,6 +504,10 @@ handle('backup:openDataFolder', () => {
   }
 })
 
+handle('license:getState', () => getLicenseState())
+handle('license:activate', (billingEmail, activationCode) => activateLicense(billingEmail, activationCode))
+handle('license:refresh', () => refreshLicense())
+
 handle('updates:getState', () => getAutoUpdateState())
 handle('updates:check', () => checkForUpdates())
 handle('updates:download', () => downloadUpdate())
@@ -527,6 +532,13 @@ app.whenReady()
     }
 
     createWindow()
+    initLicenseRuntime((licenseState) => {
+      for (const window of BrowserWindow.getAllWindows()) {
+        if (!window.isDestroyed()) {
+          window.webContents.send('license:stateChanged', licenseState)
+        }
+      }
+    })
     initAutoUpdates((updateState) => {
       for (const window of BrowserWindow.getAllWindows()) {
         if (!window.isDestroyed()) {

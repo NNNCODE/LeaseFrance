@@ -14,6 +14,10 @@ export interface RentFlowBackupEventsApi {
   onAutoDone: (cb: (_e: unknown, data: BackupAutoDonePayload) => void) => () => void
 }
 
+export interface RentFlowLicenseEventsApi {
+  onStateChanged: (cb: (_e: unknown, data: LicenseState) => void) => () => void
+}
+
 export interface RentFlowUpdatesEventsApi {
   onStateChanged: (cb: (_e: unknown, data: AutoUpdateState) => void) => () => void
 }
@@ -140,6 +144,11 @@ export interface RentFlowInvokeApi {
     restoreFromPath: (filePath: string, password?: string) => Promise<{ restored: boolean; error?: string }>
     openDataFolder: () => Promise<void>
   }
+  license: {
+    getState: () => Promise<LicenseState>
+    activate: (billingEmail: string, activationCode: string) => Promise<LicenseState>
+    refresh: () => Promise<LicenseState>
+  }
   updates: {
     getState: () => Promise<AutoUpdateState>
     check: () => Promise<AutoUpdateState>
@@ -155,9 +164,10 @@ export interface RentFlowInvokeApi {
   }
 }
 
-export type RentFlowApi = Omit<RentFlowInvokeApi, 'backup' | 'updates'> & {
+export type RentFlowApi = Omit<RentFlowInvokeApi, 'backup' | 'license' | 'updates'> & {
   window: RentFlowWindowApi
   backup: RentFlowInvokeApi['backup'] & RentFlowBackupEventsApi
+  license: RentFlowInvokeApi['license'] & RentFlowLicenseEventsApi
   updates: RentFlowInvokeApi['updates'] & RentFlowUpdatesEventsApi
 }
 

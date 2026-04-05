@@ -569,6 +569,31 @@ interface BackupPreviewResult {
   errors: string[]
 }
 
+type LicenseStatus = 'disabled' | 'unlicensed' | 'checking' | 'activating' | 'active' | 'grace' | 'refreshing' | 'inactive' | 'expired'
+type LicenseDisabledReason = 'not-configured' | null
+
+interface LicenseState {
+  enabled: boolean
+  status: LicenseStatus
+  accessGranted: boolean
+  hasStoredToken: boolean
+  billingEmail: string | null
+  subscriptionStatus: string | null
+  refreshAfterSeconds: number | null
+  offlineGraceDays: number | null
+  nextRefreshAt: string | null
+  offlineGraceUntil: string | null
+  currentPeriodEndsAt: string | null
+  trialEndsAt: string | null
+  lastValidatedAt: string | null
+  lastRefreshAttemptAt: string | null
+  lastErrorCode: string | null
+  lastErrorMessage: string | null
+  disabledReason: LicenseDisabledReason
+  supportLogPath: string | null
+  endpointBaseUrl: string | null
+}
+
 type AutoUpdateStatus = 'disabled' | 'idle' | 'checking' | 'available' | 'downloading' | 'downloaded' | 'up_to_date' | 'error'
 type AutoUpdateDisabledReason = 'not-configured' | 'unsupported-platform' | 'development' | null
 

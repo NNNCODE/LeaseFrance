@@ -143,6 +143,50 @@
       "confirmSavedSetup": "J'ai note ma cle de recuperation en lieu sur."
     }
   },
+  "license": {
+    "activation": {
+      "eyebrow": "Activation",
+      "title": "Activez votre acces payant.",
+      "description": "Entrez le billing email et l activation code recus apres paiement pour deverrouiller cette installation.",
+      "footer": "Le token local est rafraichi automatiquement toutes les 24 heures quand le reseau est disponible.",
+      "billingEmail": "Billing email",
+      "billingEmailPlaceholder": "buyer@example.com",
+      "activationCode": "Activation code",
+      "activationCodePlaceholder": "ABCD2345EF",
+      "emailRequired": "Veuillez entrer votre billing email.",
+      "codeRequired": "Veuillez entrer votre activation code.",
+      "submit": "Activer l application",
+      "activating": "Activation...",
+      "retryRefresh": "Reessayer le rafraichissement",
+      "openDataFolder": "Ouvrir le dossier de donnees",
+      "supportLogs": "Logs de diagnostic : {{path}}",
+      "lastValidatedAt": "Derniere validation : {{date}}",
+      "offlineGraceUntil": "Hors ligne autorise jusqu au {{date}}",
+      "currentPeriodEndsAt": "Periode en cours jusqu au {{date}}",
+      "trialEndsAt": "Essai jusqu au {{date}}"
+    },
+    "status": {
+      "unlicensedTitle": "Aucune licence active sur ce poste",
+      "unlicensedDesc": "Activez l application avec le billing email du paiement et le code d activation recu apres checkout.",
+      "activeTitle": "Licence validee",
+      "activeDesc": "Le poste est autorise. Le token local sera rafraichi automatiquement.",
+      "graceTitle": "Mode hors ligne temporaire",
+      "graceDesc": "Le dernier rafraichissement a echoue, mais l acces reste ouvert jusqu a la fin de la periode de grace hors ligne.",
+      "inactiveTitle": "Abonnement inactif",
+      "inactiveDesc": "Le serveur a signale que l abonnement n est plus actif. Reactivez l acces ou verifiez la facturation.",
+      "expiredTitle": "Periode de grace expiree",
+      "expiredDesc": "Le poste n a pas pu rafraichir sa licence a temps. Retablissez le reseau puis reessayez le rafraichissement ou reactivez l application."
+    },
+    "errors": {
+      "licenseNotFound": "Licence introuvable. Verifiez le billing email et l activation code.",
+      "subscriptionInactive": "L abonnement attache a cette licence est inactif.",
+      "network": "Impossible de joindre le service de licence.",
+      "timeout": "Le service de licence n a pas repondu a temps.",
+      "tokenInvalid": "Le token local est invalide ou corrompu. Reactivez l application.",
+      "invalidResponse": "La reponse du service de licence est incomplete.",
+      "notConfigured": "Le build actuel n est pas configure pour parler a l API de licence."
+    }
+  },
   "dashboard": {
     "title": "Tableau de bord",
     "newPayment": "Nouveau paiement",
