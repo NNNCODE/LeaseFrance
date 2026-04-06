@@ -1,4 +1,4 @@
 {
-  "enabled": false,
-  "baseUrl": null
+  "enabled": true,
+  "baseUrl": "https://rentflowapp.eu"
 }
