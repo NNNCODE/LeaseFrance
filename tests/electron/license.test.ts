@@ -1,10 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { join } from 'path'
-import { mkdirSync, rmSync, writeFileSync } from 'fs'
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs'
 import { randomBytes } from 'crypto'
 import { tmpdir } from 'os'
 
 const TEST_DIR = join(tmpdir(), `rentflow-license-test-${randomBytes(4).toString('hex')}`)
+let secureStorageAvailable = false
+let secureStorageDecryptFails = false
 
 vi.mock('electron', () => ({
   app: {
@@ -13,9 +15,12 @@ vi.mock('electron', () => ({
     getVersion: () => '0.1.0',
   },
   safeStorage: {
-    isEncryptionAvailable: () => false,
-    encryptString: (value: string) => Buffer.from(value, 'utf8'),
-    decryptString: (value: Buffer) => value.toString('utf8'),
+    isEncryptionAvailable: () => secureStorageAvailable,
+    encryptString: (value: string) => Buffer.from(`enc:${value}`, 'utf8'),
+    decryptString: (value: Buffer) => {
+      if (secureStorageDecryptFails) throw new Error('decrypt failed')
+      return value.toString('utf8').replace(/^enc:/, '')
+    },
   },
 }))
 
@@ -56,6 +61,8 @@ describe('license runtime', () => {
     vi.setSystemTime(new Date('2026-04-05T09:00:00.000Z'))
     mkdirSync(TEST_DIR, { recursive: true })
     process.env.RENTFLOW_LICENSE_API_URL = 'https://licenses.example.com'
+    secureStorageAvailable = false
+    secureStorageDecryptFails = false
   })
 
   afterEach(() => {
@@ -90,6 +97,46 @@ describe('license runtime', () => {
     expect(state.accessGranted).toBe(true)
     expect(state.hasStoredToken).toBe(true)
     expect(state.billingEmail).toBe('buyer@example.com')
+  })
+
+  it('keeps the token readable across restart even if secure storage is unavailable later', async () => {
+    secureStorageAvailable = true
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      ok: true,
+      billingEmail: 'buyer@example.com',
+      subscriptionStatus: 'active',
+      licenseToken: makeToken(),
+      refreshAfterSeconds: 86400,
+      offlineGraceDays: 7,
+      currentPeriodEndsAt: '2026-04-30T10:00:00.000Z',
+      trialEndsAt: null,
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    })))
+
+    vi.resetModules()
+    const firstRun = await import('../../electron/license')
+    firstRun.initLicenseRuntime(() => {})
+    await firstRun.activateLicense('buyer@example.com', 'ABCD2345EF')
+
+    const persisted = JSON.parse(readFileSync(join(TEST_DIR, 'license-state.json'), 'utf8')) as {
+      tokenPlaintext: string | null
+      tokenCiphertext: string | null
+    }
+
+    expect(persisted.tokenPlaintext).toBeTruthy()
+    expect(persisted.tokenCiphertext).toBeNull()
+
+    secureStorageDecryptFails = true
+    vi.resetModules()
+    const secondRun = await import('../../electron/license')
+    secondRun.initLicenseRuntime(() => {})
+    const nextState = secondRun.getLicenseState()
+
+    expect(nextState.status).toBe('active')
+    expect(nextState.accessGranted).toBe(true)
+    expect(nextState.hasStoredToken).toBe(true)
   })
 
   it('keeps access in grace mode when refresh fails offline', async () => {
@@ -194,5 +241,42 @@ describe('license runtime', () => {
     expect(state.accessGranted).toBe(false)
     expect(state.hasStoredToken).toBe(true)
     expect(state.offlineGraceUntil).toBeTruthy()
+  })
+
+  it('migrates a legacy encrypted token record to plaintext storage on startup', async () => {
+    secureStorageAvailable = true
+    const encryptedToken = Buffer.from(`enc:${makeToken()}`, 'utf8').toString('base64')
+
+    writeFileSync(join(TEST_DIR, 'license-state.json'), JSON.stringify({
+      version: 1,
+      billingEmail: 'buyer@example.com',
+      subscriptionStatus: 'active',
+      refreshAfterSeconds: 86400,
+      offlineGraceDays: 7,
+      currentPeriodEndsAt: null,
+      trialEndsAt: null,
+      activatedAt: '2026-04-01T09:00:00.000Z',
+      lastValidatedAt: '2026-04-05T09:00:00.000Z',
+      lastRefreshAttemptAt: '2026-04-05T09:00:00.000Z',
+      lastErrorCode: null,
+      lastErrorMessage: null,
+      tokenCiphertext: encryptedToken,
+      tokenPlaintext: null,
+    }), 'utf8')
+
+    vi.stubGlobal('fetch', vi.fn())
+    vi.resetModules()
+    const license = await import('../../electron/license')
+    license.initLicenseRuntime(() => {})
+
+    const nextState = license.getLicenseState()
+    const persisted = JSON.parse(readFileSync(join(TEST_DIR, 'license-state.json'), 'utf8')) as {
+      tokenPlaintext: string | null
+      tokenCiphertext: string | null
+    }
+
+    expect(nextState.status).toBe('active')
+    expect(persisted.tokenPlaintext).toBeTruthy()
+    expect(persisted.tokenCiphertext).toBeNull()
   })
 })

@@ -54,6 +54,12 @@ interface DecodedLicenseToken {
   offlineGraceExpiresAt: number
 }
 
+interface PersistedTokenReadResult {
+  token: string | null
+  source: 'plaintext' | 'ciphertext' | null
+  hadDecryptFailure: boolean
+}
+
 let runtimeConfig: LicenseRuntimeConfig = disabledLicenseRuntimeConfig()
 let onStateChanged: ((state: LicenseState) => void) | null = null
 let refreshTimer: NodeJS.Timeout | null = null
@@ -168,28 +174,36 @@ function saveStoredRecord(nextRecord: StoredLicenseRecord | null): void {
 }
 
 function encryptPersistedToken(token: string): Pick<StoredLicenseRecord, 'tokenCiphertext' | 'tokenPlaintext'> {
-  if (safeStorage.isEncryptionAvailable()) {
-    return {
-      tokenCiphertext: safeStorage.encryptString(token).toString('base64'),
-      tokenPlaintext: null,
-    }
-  }
+  // For paid beta reliability, keep the token in plain JSON under the user's profile.
+  // The token is already portable until device binding exists, and restart safety is more
+  // important here than a soft local obfuscation layer.
   return {
     tokenCiphertext: null,
     tokenPlaintext: token,
   }
 }
 
-function readPersistedToken(record: StoredLicenseRecord | null): string | null {
-  if (!record) return null
+function readPersistedToken(record: StoredLicenseRecord | null): PersistedTokenReadResult {
+  if (!record) return { token: null, source: null, hadDecryptFailure: false }
+  if (record.tokenPlaintext) {
+    return { token: record.tokenPlaintext, source: 'plaintext', hadDecryptFailure: false }
+  }
+
+  if (!record.tokenCiphertext) {
+    return { token: null, source: null, hadDecryptFailure: false }
+  }
+
   try {
-    if (record.tokenCiphertext) return safeStorage.decryptString(Buffer.from(record.tokenCiphertext, 'base64'))
-    return record.tokenPlaintext || null
+    return {
+      token: safeStorage.decryptString(Buffer.from(record.tokenCiphertext, 'base64')),
+      source: 'ciphertext',
+      hadDecryptFailure: false,
+    }
   } catch (error) {
     logLicense('ERROR', 'Failed to decrypt persisted license token.', {
       error: error instanceof Error ? error.message : String(error),
     })
-    return null
+    return { token: null, source: null, hadDecryptFailure: true }
   }
 }
 
@@ -472,12 +486,25 @@ function clearCorruptedStoredToken(): void {
   decryptedToken = null
 }
 
+function migrateLegacyCiphertextToken(token: string): void {
+  if (!storedRecord || storedRecord.tokenPlaintext === token) return
+  saveStoredRecord({
+    ...storedRecord,
+    tokenCiphertext: null,
+    tokenPlaintext: token,
+  })
+}
+
 export function initLicenseRuntime(listener: (nextState: LicenseState) => void): void {
   onStateChanged = listener
   runtimeConfig = resolveLicenseRuntimeConfig({ envUrl: process.env[LICENSE_URL_ENV] ?? null, fileContents: readConfigFile() })
   storedRecord = loadStoredRecord()
-  decryptedToken = readPersistedToken(storedRecord)
-  if (storedRecord && !decryptedToken && (storedRecord.tokenCiphertext || storedRecord.tokenPlaintext)) clearCorruptedStoredToken()
+  const persistedToken = readPersistedToken(storedRecord)
+  decryptedToken = persistedToken.token
+  if (storedRecord && decryptedToken && persistedToken.source === 'ciphertext') {
+    migrateLegacyCiphertextToken(decryptedToken)
+  }
+  if (storedRecord && !decryptedToken && persistedToken.hadDecryptFailure) clearCorruptedStoredToken()
   refreshDerivedState()
   if (runtimeConfig.enabled && decryptedToken) scheduleStartupRefreshIfDue()
   logLicense('INFO', 'Initialized license runtime.', { enabled: runtimeConfig.enabled, status: state.status })
