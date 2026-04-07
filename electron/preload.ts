@@ -6,6 +6,70 @@ import type {
   RentFlowWindowChannels,
 } from '../src/shared/ipc'
 
+function normalizeRuntimeError(error: unknown): {
+  name: string | null
+  message: string
+  stack: string | null
+} {
+  if (error instanceof Error) {
+    return {
+      name: error.name,
+      message: error.message || error.name || 'Unknown error',
+      stack: typeof error.stack === 'string' ? error.stack : null,
+    }
+  }
+
+  if (typeof error === 'string') {
+    return {
+      name: null,
+      message: error,
+      stack: null,
+    }
+  }
+
+  try {
+    return {
+      name: null,
+      message: JSON.stringify(error) || String(error),
+      stack: null,
+    }
+  } catch {
+    return {
+      name: null,
+      message: String(error),
+      stack: null,
+    }
+  }
+}
+
+function installRendererRuntimeObservers(): void {
+  window.addEventListener('error', (event) => {
+    const normalized = normalizeRuntimeError(event.error)
+    ipcRenderer.send('app-runtime:renderer-event', {
+      kind: 'error',
+      message: normalized.message || event.message || 'Unknown renderer error',
+      name: normalized.name,
+      stack: normalized.stack,
+      source: event.filename || null,
+      lineno: Number.isFinite(event.lineno) ? event.lineno : null,
+      colno: Number.isFinite(event.colno) ? event.colno : null,
+    })
+  })
+
+  window.addEventListener('unhandledrejection', (event) => {
+    const normalized = normalizeRuntimeError(event.reason)
+    ipcRenderer.send('app-runtime:renderer-event', {
+      kind: 'unhandledrejection',
+      message: normalized.message,
+      name: normalized.name,
+      stack: normalized.stack,
+      source: null,
+      lineno: null,
+      colno: null,
+    })
+  })
+}
+
 function invoke<Channel extends keyof RentFlowInvokeChannels>(channel: Channel) {
   return (...args: RentFlowInvokeChannels[Channel]['args']) =>
     ipcRenderer.invoke(channel, ...args) as Promise<RentFlowInvokeChannels[Channel]['return']>
@@ -184,3 +248,4 @@ const api: RentFlowApi = {
 }
 
 contextBridge.exposeInMainWorld('api', api)
+installRendererRuntimeObservers()

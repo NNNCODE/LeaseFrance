@@ -37,6 +37,20 @@ import { getDocumentGenerationAvailability, getDocumentGenerationSources } from 
 import { getReminderFeed } from './services/reminders'
 import { querySearch } from './services/search'
 import { checkForUpdates, downloadUpdate, getAutoUpdateState, initAutoUpdates, installUpdate } from './autoUpdate'
+import {
+  getAppRuntimeLogPath,
+  initAppRuntimeTracking,
+  markAppExitClean,
+  markAppExitUnclean,
+  normalizeRendererRuntimeEventPayload,
+  recordAppBootstrapFailure,
+  recordMainUncaughtException,
+  recordMainUnhandledRejection,
+  recordPreloadError,
+  recordRendererLoadFailure,
+  recordRendererProcessGone,
+  recordRendererRuntimeError,
+} from './appRuntime'
 import { exportDiagnosticsReport, openLogsFolder } from './diagnostics'
 import { activateLicense, getLicenseState, initLicenseRuntime, refreshLicense } from './license'
 import type { RentFlowInvokeChannels, RentFlowWindowChannels } from '../src/shared/ipc'
@@ -47,6 +61,7 @@ const isDev = process.env['ELECTRON_RENDERER_URL'] !== undefined
 
 let mainWindow: BrowserWindow | null = null
 let lastPreviewedRestorePath: string | null = null
+let isHandlingFatalMainError = false
 const sessionDataPath = join(app.getPath('temp'), 'rentflow', 'session-data', String(process.pid))
 
 function configureSessionDataPath(): void {
@@ -55,6 +70,73 @@ function configureSessionDataPath(): void {
 }
 
 configureSessionDataPath()
+initAppRuntimeTracking()
+
+function showSupportError(title: string, message: string): void {
+  if (isDev) return
+  try {
+    dialog.showErrorBox(title, `${message}\n\nLog file: ${getAppRuntimeLogPath()}`)
+  } catch {
+    // Ignore dialog failures on degraded startup paths.
+  }
+}
+
+function handleFatalMainProcessError(error: unknown): void {
+  if (isHandlingFatalMainError) return
+  isHandlingFatalMainError = true
+  recordMainUncaughtException(error)
+  markAppExitUnclean('main-uncaughtException')
+  showSupportError(
+    'Lease France encountered a fatal error',
+    'The app needs to close. Restart it, then export Diagnostics or send the logs folder if the problem happens again.',
+  )
+  app.exit(1)
+}
+
+function attachWindowRuntimeObservers(window: BrowserWindow): void {
+  window.webContents.on('render-process-gone', (_event, details) => {
+    recordRendererProcessGone({
+      reason: details.reason,
+      exitCode: details.exitCode,
+      windowId: window.id,
+      webContentsId: window.webContents.id,
+      url: window.webContents.getURL() || null,
+    })
+    showSupportError(
+      'Lease France window crashed',
+      'The application window stopped unexpectedly. Restart the app and send Diagnostics or the logs folder if this repeats.',
+    )
+  })
+
+  window.webContents.on('preload-error', (_event, preloadPath, error) => {
+    recordPreloadError({
+      preloadPath,
+      error,
+      windowId: window.id,
+      webContentsId: window.webContents.id,
+      url: window.webContents.getURL() || null,
+    })
+    showSupportError(
+      'Lease France failed to initialize',
+      'A preload error prevented the window from starting correctly. Restart the app and send Diagnostics or the logs folder if this repeats.',
+    )
+  })
+
+  window.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL, isMainFrame) => {
+    if (!isMainFrame || errorCode === -3) return
+    recordRendererLoadFailure({
+      errorCode,
+      errorDescription,
+      validatedURL,
+      windowId: window.id,
+      webContentsId: window.webContents.id,
+    })
+    showSupportError(
+      'Lease France could not open the app window',
+      'The app window failed to load. Restart the app and send Diagnostics or the logs folder if this repeats.',
+    )
+  })
+}
 
 function toNodeBuffer(data: Uint8Array): Buffer {
   return Buffer.from(data)
@@ -78,6 +160,31 @@ function onWindow<Channel extends keyof RentFlowWindowChannels>(
 ): void {
   ipcMain.on(channel, () => listener())
 }
+
+process.on('uncaughtException', (error) => {
+  handleFatalMainProcessError(error)
+})
+
+process.on('unhandledRejection', (reason) => {
+  recordMainUnhandledRejection(reason)
+})
+
+app.once('before-quit', () => {
+  markAppExitClean('before-quit')
+})
+
+ipcMain.on('app-runtime:renderer-event', (event, payload: unknown) => {
+  const normalizedPayload = normalizeRendererRuntimeEventPayload(payload)
+  if (!normalizedPayload) return
+
+  const ownerWindow = BrowserWindow.fromWebContents(event.sender)
+  recordRendererRuntimeError({
+    payload: normalizedPayload,
+    windowId: ownerWindow?.id ?? null,
+    webContentsId: event.sender.id,
+    url: event.sender.getURL() || null,
+  })
+})
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -104,6 +211,7 @@ function createWindow(): void {
       devTools: isDev,
     },
   })
+  attachWindowRuntimeObservers(mainWindow)
 
   // Bloquer l'ouverture des DevTools en production
   if (!isDev) {
@@ -557,8 +665,13 @@ app.whenReady()
     })
   })
   .catch((error: unknown) => {
-    console.error('Failed to initialize the Electron main process.', error)
-    app.quit()
+    recordAppBootstrapFailure(error)
+    markAppExitUnclean('app-bootstrap-failure')
+    showSupportError(
+      'Lease France failed to start',
+      'The app could not finish startup. Restart it, then send Diagnostics or the logs folder if the problem happens again.',
+    )
+    app.exit(1)
   })
 
 app.on('window-all-closed', () => {

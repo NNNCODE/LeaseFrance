@@ -4,6 +4,7 @@ import { join } from 'path'
 import { getBackupSettings } from './backupManager'
 import { getCurrentAccountStorageDir, getProfile, hasPassword } from './auth'
 import { getAutoUpdateState } from './autoUpdate'
+import { getAppRuntimeLogPath, getAppRuntimeState, getAppRuntimeStatePath } from './appRuntime'
 import { getLicenseState } from './license'
 
 interface DiagnosticsReport {
@@ -20,6 +21,8 @@ interface DiagnosticsReport {
   paths: {
     userData: string
     logsDir: string
+    appRuntimeLogPath: string
+    appRuntimeStatePath: string
     licenseLogPath: string
     currentAccountStorageDir: string | null
   }
@@ -31,7 +34,12 @@ interface DiagnosticsReport {
   license: LicenseState
   updates: AutoUpdateState
   backup: BackupSettings | null
+  appRuntime: ReturnType<typeof getAppRuntimeState>
   logs: {
+    appRuntime: {
+      exists: boolean
+      tail: string[]
+    }
     licenseRuntime: {
       exists: boolean
       tail: string[]
@@ -73,6 +81,8 @@ function getBackupSettingsSafe(): BackupSettings | null {
 
 export function buildDiagnosticsReport(): DiagnosticsReport {
   const logsDir = getLogsDir()
+  const appRuntimeLogPath = getAppRuntimeLogPath()
+  const appRuntimeStatePath = getAppRuntimeStatePath()
   const licenseLogPath = getLicenseLogPath()
   const profile = getProfile()
 
@@ -90,6 +100,8 @@ export function buildDiagnosticsReport(): DiagnosticsReport {
     paths: {
       userData: app.getPath('userData'),
       logsDir,
+      appRuntimeLogPath,
+      appRuntimeStatePath,
       licenseLogPath,
       currentAccountStorageDir: getCurrentAccountStorageDirSafe(),
     },
@@ -101,7 +113,12 @@ export function buildDiagnosticsReport(): DiagnosticsReport {
     license: getLicenseState(),
     updates: getAutoUpdateState(),
     backup: getBackupSettingsSafe(),
+    appRuntime: getAppRuntimeState(),
     logs: {
+      appRuntime: {
+        exists: existsSync(appRuntimeLogPath),
+        tail: readLogTail(appRuntimeLogPath),
+      },
       licenseRuntime: {
         exists: existsSync(licenseLogPath),
         tail: readLogTail(licenseLogPath),

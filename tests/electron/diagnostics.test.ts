@@ -13,6 +13,7 @@ const mockGetCurrentAccountStorageDir = vi.fn()
 const mockGetProfile = vi.fn()
 const mockHasPassword = vi.fn()
 const mockGetAutoUpdateState = vi.fn()
+const mockGetAppRuntimeState = vi.fn()
 const mockGetLicenseState = vi.fn()
 
 vi.mock('electron', () => ({
@@ -44,6 +45,12 @@ vi.mock('../../electron/auth', () => ({
 
 vi.mock('../../electron/autoUpdate', () => ({
   getAutoUpdateState: (...args: unknown[]) => mockGetAutoUpdateState(...args),
+}))
+
+vi.mock('../../electron/appRuntime', () => ({
+  getAppRuntimeLogPath: () => join(TEST_DIR, 'logs', 'app-runtime.log'),
+  getAppRuntimeStatePath: () => join(TEST_DIR, 'app-runtime-state.json'),
+  getAppRuntimeState: (...args: unknown[]) => mockGetAppRuntimeState(...args),
 }))
 
 vi.mock('../../electron/license', () => ({
@@ -95,6 +102,52 @@ function makeUpdateState(): AutoUpdateState {
   }
 }
 
+function makeAppRuntimeState() {
+  return {
+    version: 1 as const,
+    currentRun: {
+      startedAt: '2026-04-06T18:00:00.000Z',
+      pid: 9012,
+    },
+    lastExit: {
+      wasClean: false,
+      at: '2026-04-06T17:55:00.000Z',
+      reason: 'main-uncaughtException',
+    },
+    lastAbnormalExit: {
+      detectedAt: '2026-04-06T18:00:00.000Z',
+      previousStartedAt: '2026-04-06T17:45:00.000Z',
+      previousPid: 8877,
+    },
+    lastFatalError: {
+      at: '2026-04-06T17:54:59.000Z',
+      severity: 'error' as const,
+      source: 'renderer' as const,
+      kind: 'render-process-gone',
+      message: 'Renderer process exited unexpectedly (crashed).',
+      stackPreview: [],
+      details: {
+        reason: 'crashed',
+        exitCode: 139,
+      },
+    },
+    recentIssues: [
+      {
+        at: '2026-04-06T17:54:59.000Z',
+        severity: 'error' as const,
+        source: 'renderer' as const,
+        kind: 'render-process-gone',
+        message: 'Renderer process exited unexpectedly (crashed).',
+        stackPreview: [],
+        details: {
+          reason: 'crashed',
+          exitCode: 139,
+        },
+      },
+    ],
+  }
+}
+
 beforeEach(() => {
   vi.useFakeTimers()
   vi.setSystemTime(new Date('2026-04-06T18:15:04.000Z'))
@@ -107,6 +160,7 @@ beforeEach(() => {
   mockGetProfile.mockReset()
   mockHasPassword.mockReset()
   mockGetAutoUpdateState.mockReset()
+  mockGetAppRuntimeState.mockReset()
   mockGetLicenseState.mockReset()
 
   mockGetBackupSettings.mockReturnValue({
@@ -123,6 +177,7 @@ beforeEach(() => {
   mockGetProfile.mockReturnValue({ name: 'Alice Martin', email: 'alice@example.com' })
   mockHasPassword.mockReturnValue(true)
   mockGetAutoUpdateState.mockReturnValue(makeUpdateState())
+  mockGetAppRuntimeState.mockReturnValue(makeAppRuntimeState())
   mockGetLicenseState.mockReturnValue(makeLicenseState())
 })
 
@@ -135,6 +190,11 @@ describe('diagnostics report', () => {
   it('builds a report with auth, license, backup, update, and log-tail details', () => {
     const logsDir = join(TEST_DIR, 'logs')
     mkdirSync(logsDir, { recursive: true })
+    writeFileSync(
+      join(logsDir, 'app-runtime.log'),
+      '2026-04-06T18:10:00.000Z [ERROR] renderer:render-process-gone Renderer process exited unexpectedly (crashed).\n',
+      'utf8',
+    )
     writeFileSync(
       join(logsDir, 'license-runtime.log'),
       '2026-04-06T18:14:00.000Z [WARN] refresh failed\n2026-04-06T18:14:49.000Z [INFO] refresh succeeded\n',
@@ -149,9 +209,16 @@ describe('diagnostics report', () => {
     expect(report.auth.profileEmail).toBe('alice@example.com')
     expect(report.paths.userData).toBe(TEST_DIR)
     expect(report.paths.currentAccountStorageDir).toContain('acct_1')
+    expect(report.paths.appRuntimeLogPath).toBe(join(TEST_DIR, 'logs', 'app-runtime.log'))
+    expect(report.paths.appRuntimeStatePath).toBe(join(TEST_DIR, 'app-runtime-state.json'))
     expect(report.license.status).toBe('active')
     expect(report.updates.status).toBe('disabled')
     expect(report.backup?.destinationFolder).toBe('D:\\Backups')
+    expect(report.appRuntime.lastFatalError?.kind).toBe('render-process-gone')
+    expect(report.logs.appRuntime.exists).toBe(true)
+    expect(report.logs.appRuntime.tail).toEqual([
+      '2026-04-06T18:10:00.000Z [ERROR] renderer:render-process-gone Renderer process exited unexpectedly (crashed).',
+    ])
     expect(report.logs.licenseRuntime.exists).toBe(true)
     expect(report.logs.licenseRuntime.tail).toEqual([
       '2026-04-06T18:14:00.000Z [WARN] refresh failed',
