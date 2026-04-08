@@ -12,12 +12,12 @@ function readEnv(name) {
   return value ? value : null
 }
 
-const licenseApiUrl = readEnv('RENTFLOW_LICENSE_API_URL')
+const licenseApiUrl = readEnv('BAILLIO_LICENSE_API_URL') ?? readEnv('RENTFLOW_LICENSE_API_URL')
 
 if (licenseApiUrl) {
   const parsed = new URL(licenseApiUrl)
   if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-    throw new Error(`RENTFLOW_LICENSE_API_URL must use http or https. Received: ${licenseApiUrl}`)
+    throw new Error(`BAILLIO_LICENSE_API_URL must use http or https. Received: ${licenseApiUrl}`)
   }
 }
 
@@ -37,5 +37,5 @@ writeFileSync(outputPath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8')
 if (licenseApiUrl) {
   console.log(`[license] Configured ${licenseApiUrl}`)
 } else {
-  console.log('[license] Disabled. Set RENTFLOW_LICENSE_API_URL to enable packaged activation.')
+  console.log('[license] Disabled. Set BAILLIO_LICENSE_API_URL to enable packaged activation.')
 }

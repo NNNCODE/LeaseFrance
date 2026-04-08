@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { RentFlowInvokeChannels } from './ipc'
+import type { BaillioInvokeChannels } from './ipc'
 import { normalizeLeaseContractDetails } from './leaseContract'
 
 const nonEmptyText = z.string().trim().min(1)
@@ -292,7 +292,7 @@ const invokeArgSchemas = {
   'irl:getLatestForQuarter': z.tuple([z.number().int().min(1).max(4)]),
   'irl:upsert': z.tuple([z.number().int().min(2000).max(2100), z.number().int().min(1).max(4), nonNegativeNumber]),
   'irl:delete': z.tuple([positiveInt]),
-} satisfies Partial<Record<keyof RentFlowInvokeChannels, z.ZodTypeAny>>
+} satisfies Partial<Record<keyof BaillioInvokeChannels, z.ZodTypeAny>>
 
 function formatIssuePath(path: Array<string | number>): string {
   if (path.length === 0) return 'args'
@@ -307,13 +307,13 @@ function formatZodError(error: z.ZodError): string {
     .join('; ')
 }
 
-export function validateInvokeArgs<Channel extends keyof RentFlowInvokeChannels>(
+export function validateInvokeArgs<Channel extends keyof BaillioInvokeChannels>(
   channel: Channel,
   rawArgs: unknown[],
-): RentFlowInvokeChannels[Channel]['args'] {
+): BaillioInvokeChannels[Channel]['args'] {
   const schema = invokeArgSchemas[channel]
   if (!schema) {
-    if (rawArgs.length === 0) return [] as RentFlowInvokeChannels[Channel]['args']
+    if (rawArgs.length === 0) return [] as BaillioInvokeChannels[Channel]['args']
     throw new Error(`Missing IPC runtime validation schema for "${channel}".`)
   }
 
@@ -322,5 +322,5 @@ export function validateInvokeArgs<Channel extends keyof RentFlowInvokeChannels>
     throw new Error(`Invalid IPC payload for "${channel}": ${formatZodError(parsed.error)}`)
   }
 
-  return parsed.data as RentFlowInvokeChannels[Channel]['args']
+  return parsed.data as BaillioInvokeChannels[Channel]['args']
 }

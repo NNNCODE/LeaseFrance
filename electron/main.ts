@@ -2,6 +2,7 @@ import { app, BrowserWindow, shell, ipcMain, dialog, session } from 'electron'
 import { writeFileSync, copyFileSync, existsSync, readFileSync, mkdirSync, unlinkSync, statSync } from 'fs'
 import { join } from 'path'
 import { randomBytes } from 'crypto'
+import { configureUserDataPath } from './appIdentity'
 import { closeDb, getDb, getDbPath } from './db/database'
 import {
   deleteAccount, exportCurrentAccountAuth,
@@ -55,7 +56,7 @@ import {
 } from './appRuntime'
 import { exportDiagnosticsReport, openLogsFolder } from './diagnostics'
 import { activateLicense, getLicenseState, initLicenseRuntime, refreshLicense } from './license'
-import type { RentFlowInvokeChannels, RentFlowWindowChannels } from '../src/shared/ipc'
+import type { BaillioInvokeChannels, BaillioWindowChannels } from '../src/shared/ipc'
 import { validateInvokeArgs } from '../src/shared/ipcValidation'
 import { ATTACHMENT_DIALOG_EXTENSIONS, validateAttachmentFileSelection } from './security/attachments'
 
@@ -64,7 +65,7 @@ const isDev = process.env['ELECTRON_RENDERER_URL'] !== undefined
 let mainWindow: BrowserWindow | null = null
 let lastPreviewedRestorePath: string | null = null
 let isHandlingFatalMainError = false
-const sessionDataPath = join(app.getPath('temp'), 'rentflow', 'session-data', String(process.pid))
+const sessionDataPath = join(app.getPath('temp'), 'baillio', 'session-data', String(process.pid))
 
 function configureSessionDataPath(): void {
   mkdirSync(sessionDataPath, { recursive: true })
@@ -72,6 +73,7 @@ function configureSessionDataPath(): void {
 }
 
 configureSessionDataPath()
+configureUserDataPath()
 initAppRuntimeTracking()
 
 function showSupportError(title: string, message: string): void {
@@ -89,7 +91,7 @@ function handleFatalMainProcessError(error: unknown): void {
   recordMainUncaughtException(error)
   markAppExitUnclean('main-uncaughtException')
   showSupportError(
-    'Lease France encountered a fatal error',
+    'Baillio encountered a fatal error',
     'The app needs to close. Restart it, then export Diagnostics or send the logs folder if the problem happens again.',
   )
   app.exit(1)
@@ -105,7 +107,7 @@ function attachWindowRuntimeObservers(window: BrowserWindow): void {
       url: window.webContents.getURL() || null,
     })
     showSupportError(
-      'Lease France window crashed',
+      'Baillio window crashed',
       'The application window stopped unexpectedly. Restart the app and send Diagnostics or the logs folder if this repeats.',
     )
   })
@@ -119,7 +121,7 @@ function attachWindowRuntimeObservers(window: BrowserWindow): void {
       url: window.webContents.getURL() || null,
     })
     showSupportError(
-      'Lease France failed to initialize',
+      'Baillio failed to initialize',
       'A preload error prevented the window from starting correctly. Restart the app and send Diagnostics or the logs folder if this repeats.',
     )
   })
@@ -134,7 +136,7 @@ function attachWindowRuntimeObservers(window: BrowserWindow): void {
       webContentsId: window.webContents.id,
     })
     showSupportError(
-      'Lease France could not open the app window',
+      'Baillio could not open the app window',
       'The app window failed to load. Restart the app and send Diagnostics or the logs folder if this repeats.',
     )
   })
@@ -144,11 +146,11 @@ function toNodeBuffer(data: Uint8Array): Buffer {
   return Buffer.from(data)
 }
 
-function handle<Channel extends keyof RentFlowInvokeChannels>(
+function handle<Channel extends keyof BaillioInvokeChannels>(
   channel: Channel,
-  handler: (...args: RentFlowInvokeChannels[Channel]['args']) =>
-    RentFlowInvokeChannels[Channel]['return']
-    | Promise<RentFlowInvokeChannels[Channel]['return']>,
+  handler: (...args: BaillioInvokeChannels[Channel]['args']) =>
+    BaillioInvokeChannels[Channel]['return']
+    | Promise<BaillioInvokeChannels[Channel]['return']>,
 ): void {
   ipcMain.handle(channel, (_event, ...rawArgs: unknown[]) => {
     const args = validateInvokeArgs(channel, rawArgs)
@@ -156,7 +158,7 @@ function handle<Channel extends keyof RentFlowInvokeChannels>(
   })
 }
 
-function onWindow<Channel extends keyof RentFlowWindowChannels>(
+function onWindow<Channel extends keyof BaillioWindowChannels>(
   channel: Channel,
   listener: () => void,
 ): void {
@@ -517,8 +519,8 @@ handle('backup:create', async (password?) => {
   const timestamp = new Date().toISOString().slice(0, 10)
   const { filePath, canceled } = await dialog.showSaveDialog({
     title: 'Sauvegarder les donnees',
-    defaultPath: `rentflow_backup_${timestamp}${BACKUP_EXTENSION}`,
-    filters: [{ name: 'RentFlow Backup', extensions: [BACKUP_EXTENSION.slice(1)] }],
+    defaultPath: `baillio_backup_${timestamp}${BACKUP_EXTENSION}`,
+    filters: [{ name: 'Baillio Backup', extensions: [BACKUP_EXTENSION.slice(1)] }],
   })
   if (canceled || !filePath) return { saved: false, path: null }
 
@@ -559,7 +561,7 @@ handle('backup:pickFolder', async () => {
 handle('backup:verify', async (password?) => {
   const { filePaths, canceled } = await dialog.showOpenDialog({
     title: 'Verifier une sauvegarde',
-    filters: [{ name: 'RentFlow Backup', extensions: [BACKUP_EXTENSION.slice(1)] }],
+    filters: [{ name: 'Baillio Backup', extensions: [BACKUP_EXTENSION.slice(1)] }],
     properties: ['openFile'],
   })
   if (canceled || filePaths.length === 0) return null
@@ -570,7 +572,7 @@ handle('backup:preview', async (password?) => {
   const { filePaths, canceled } = await dialog.showOpenDialog({
     title: 'Selectionner une sauvegarde a restaurer',
     filters: [
-      { name: 'RentFlow Backup', extensions: [BACKUP_EXTENSION.slice(1)] },
+      { name: 'Baillio Backup', extensions: [BACKUP_EXTENSION.slice(1)] },
       { name: 'SQLite Database (legacy)', extensions: ['db'] },
     ],
     properties: ['openFile'],
@@ -677,7 +679,7 @@ app.whenReady()
     recordAppBootstrapFailure(error)
     markAppExitUnclean('app-bootstrap-failure')
     showSupportError(
-      'Lease France failed to start',
+      'Baillio failed to start',
       'The app could not finish startup. Restart it, then send Diagnostics or the logs folder if the problem happens again.',
     )
     app.exit(1)

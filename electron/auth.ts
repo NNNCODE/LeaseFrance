@@ -4,18 +4,39 @@ import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writ
 import { mkdir as mkdirAsync } from 'fs/promises'
 import { randomBytes, scryptSync, timingSafeEqual } from 'crypto'
 
-const USER_DATA_PATH = app.getPath('userData')
-const ACCOUNTS_FILE = join(USER_DATA_PATH, 'accounts.json')
-const ACCOUNTS_LOCK_DIR = join(USER_DATA_PATH, 'accounts.lock')
-const ACCOUNTS_DIR = join(USER_DATA_PATH, 'accounts')
-const LEGACY_AUTH_FILE = join(USER_DATA_PATH, 'auth.json')
-// DB filename kept as 'leasefrance.db' for backward compatibility with existing installs.
-// TODO(rebrand): add migration to rename to 'rentflow.db' when safe to break compat.
-const LEGACY_DB_FILE = join(USER_DATA_PATH, 'leasefrance.db')
-const LEGACY_ATTACHMENTS_DIR = join(USER_DATA_PATH, 'attachments')
+const CURRENT_DB_FILE_NAME = 'baillio.db'
+const LEGACY_DB_FILE_NAMES = ['leasefrance.db']
 const LOCK_WAIT_MS = 50
 const LOCK_TIMEOUT_MS = 15_000
 const LOCK_STALE_MS = 60_000
+
+function userDataPath(): string {
+  return app.getPath('userData')
+}
+
+function accountsFilePath(): string {
+  return join(userDataPath(), 'accounts.json')
+}
+
+function accountsLockDirPath(): string {
+  return join(userDataPath(), 'accounts.lock')
+}
+
+function accountsDirPath(): string {
+  return join(userDataPath(), 'accounts')
+}
+
+function legacyAuthFilePath(): string {
+  return join(userDataPath(), 'auth.json')
+}
+
+function legacyDbRootPath(fileName = LEGACY_DB_FILE_NAMES[0]): string {
+  return join(userDataPath(), fileName)
+}
+
+function legacyAttachmentsDirPath(): string {
+  return join(userDataPath(), 'attachments')
+}
 
 interface LegacyAuthData {
   hash: string
@@ -73,12 +94,12 @@ interface OwnerProfilesStore {
 let activeAccountId: string | null = null
 
 function ensureUserDataDir(): void {
-  mkdirSync(USER_DATA_PATH, { recursive: true })
+  mkdirSync(userDataPath(), { recursive: true })
 }
 
 function ensureAccountsDir(): void {
   ensureUserDataDir()
-  mkdirSync(ACCOUNTS_DIR, { recursive: true })
+  mkdirSync(accountsDirPath(), { recursive: true })
 }
 
 function delay(ms: number): Promise<void> {
@@ -87,21 +108,21 @@ function delay(ms: number): Promise<void> {
 
 function isLockStale(): boolean {
   try {
-    return Date.now() - statSync(ACCOUNTS_LOCK_DIR).mtimeMs > LOCK_STALE_MS
+    return Date.now() - statSync(accountsLockDirPath()).mtimeMs > LOCK_STALE_MS
   } catch {
     return false
   }
 }
 
 function releaseStoreLock(): void {
-  rmSync(ACCOUNTS_LOCK_DIR, { recursive: true, force: true })
+  rmSync(accountsLockDirPath(), { recursive: true, force: true })
 }
 
 function tryAcquireStoreLockSync(): (() => void) | null {
   ensureUserDataDir()
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
-      mkdirSync(ACCOUNTS_LOCK_DIR)
+      mkdirSync(accountsLockDirPath())
       return releaseStoreLock
     } catch (error) {
       const code = (error as NodeJS.ErrnoException).code
@@ -125,7 +146,7 @@ async function acquireStoreLock(): Promise<() => void> {
 
   while (true) {
     try {
-      await mkdirAsync(ACCOUNTS_LOCK_DIR)
+      await mkdirAsync(accountsLockDirPath())
       return releaseStoreLock
     } catch (error) {
       const code = (error as NodeJS.ErrnoException).code
@@ -346,7 +367,7 @@ function generateAccountId(): string {
 
 function accountStorageDir(accountId: string): string {
   ensureAccountsDir()
-  return join(ACCOUNTS_DIR, accountId)
+  return join(accountsDirPath(), accountId)
 }
 
 function moveIfExists(srcPath: string, destPath: string): void {
@@ -354,22 +375,41 @@ function moveIfExists(srcPath: string, destPath: string): void {
   renameSync(srcPath, destPath)
 }
 
+function migrateLegacyAccountDbFiles(accountDir: string): void {
+  const targetDbPath = join(accountDir, CURRENT_DB_FILE_NAME)
+  if (existsSync(targetDbPath)) return
+
+  for (const legacyFileName of LEGACY_DB_FILE_NAMES) {
+    const legacyDbPath = join(accountDir, legacyFileName)
+    if (!existsSync(legacyDbPath)) continue
+    moveIfExists(legacyDbPath, targetDbPath)
+    moveIfExists(`${legacyDbPath}-wal`, `${targetDbPath}-wal`)
+    moveIfExists(`${legacyDbPath}-shm`, `${targetDbPath}-shm`)
+    return
+  }
+}
+
 function migrateLegacyStorage(accountId: string): void {
   const targetDir = accountStorageDir(accountId)
   mkdirSync(targetDir, { recursive: true })
 
-  moveIfExists(LEGACY_DB_FILE, join(targetDir, 'leasefrance.db'))
-  moveIfExists(`${LEGACY_DB_FILE}-wal`, join(targetDir, 'leasefrance.db-wal'))
-  moveIfExists(`${LEGACY_DB_FILE}-shm`, join(targetDir, 'leasefrance.db-shm'))
-  moveIfExists(LEGACY_ATTACHMENTS_DIR, join(targetDir, 'attachments'))
+  for (const legacyFileName of LEGACY_DB_FILE_NAMES) {
+    const legacyDbPath = legacyDbRootPath(legacyFileName)
+    moveIfExists(legacyDbPath, join(targetDir, CURRENT_DB_FILE_NAME))
+    moveIfExists(`${legacyDbPath}-wal`, join(targetDir, `${CURRENT_DB_FILE_NAME}-wal`))
+    moveIfExists(`${legacyDbPath}-shm`, join(targetDir, `${CURRENT_DB_FILE_NAME}-shm`))
+  }
+  moveIfExists(legacyAttachmentsDirPath(), join(targetDir, 'attachments'))
+  migrateLegacyAccountDbFiles(targetDir)
 }
 
 function saveStore(store: AccountsStore): void {
   ensureUserDataDir()
-  const tempFile = `${ACCOUNTS_FILE}.${process.pid}.${Date.now()}.tmp`
+  const accountsFile = accountsFilePath()
+  const tempFile = `${accountsFile}.${process.pid}.${Date.now()}.tmp`
   try {
     writeFileSync(tempFile, JSON.stringify(store), 'utf-8')
-    renameSync(tempFile, ACCOUNTS_FILE)
+    renameSync(tempFile, accountsFile)
   } finally {
     if (existsSync(tempFile)) {
       rmSync(tempFile, { force: true })
@@ -378,9 +418,11 @@ function saveStore(store: AccountsStore): void {
 }
 
 function migrateLegacyAuthIfNeededLocked(): void {
-  if (existsSync(ACCOUNTS_FILE) || !existsSync(LEGACY_AUTH_FILE)) return
+  const accountsFile = accountsFilePath()
+  const legacyAuthFile = legacyAuthFilePath()
+  if (existsSync(accountsFile) || !existsSync(legacyAuthFile)) return
 
-  const legacy = JSON.parse(readFileSync(LEGACY_AUTH_FILE, 'utf-8')) as LegacyAuthData
+  const legacy = JSON.parse(readFileSync(legacyAuthFile, 'utf-8')) as LegacyAuthData
   const id = generateAccountId()
   const now = new Date().toISOString()
 
@@ -407,11 +449,11 @@ function migrateLegacyAuthIfNeededLocked(): void {
 
   saveStore(store)
   migrateLegacyStorage(id)
-  rmSync(LEGACY_AUTH_FILE, { force: true })
+  rmSync(legacyAuthFile, { force: true })
 }
 
 function migrateLegacyAuthIfNeeded(): void {
-  if (existsSync(ACCOUNTS_FILE) || !existsSync(LEGACY_AUTH_FILE)) return
+  if (existsSync(accountsFilePath()) || !existsSync(legacyAuthFilePath())) return
   const release = tryAcquireStoreLockSync()
   if (!release) return
   try {
@@ -428,11 +470,12 @@ function loadStore(): AccountsStore {
 
 function loadStoreFromDisk(): AccountsStore {
   try {
-    if (!existsSync(ACCOUNTS_FILE)) {
+    const accountsFile = accountsFilePath()
+    if (!existsSync(accountsFile)) {
       return defaultStore()
     }
 
-    const parsed = JSON.parse(readFileSync(ACCOUNTS_FILE, 'utf-8')) as Partial<AccountsStore>
+    const parsed = JSON.parse(readFileSync(accountsFile, 'utf-8')) as Partial<AccountsStore>
     if (!Array.isArray(parsed.accounts)) {
       return defaultStore()
     }
@@ -531,7 +574,8 @@ function findAccountByRecoveryKey(store: AccountsStore, key: string): AuthAccoun
 export function getAccountDbPathById(accountId: string): string {
   const dir = accountStorageDir(accountId)
   mkdirSync(dir, { recursive: true })
-  return join(dir, 'leasefrance.db')
+  migrateLegacyAccountDbFiles(dir)
+  return join(dir, CURRENT_DB_FILE_NAME)
 }
 
 export function getCurrentAccountStorageDir(): string {

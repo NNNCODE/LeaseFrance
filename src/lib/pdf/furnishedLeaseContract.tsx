@@ -343,7 +343,7 @@ function PageFrame({
       {children}
 
       <View style={s.footer} fixed>
-        <Text>RentFlow - contrat location meublee</Text>
+        <Text>Baillio - contrat location meublee</Text>
         <Text render={({ pageNumber, totalPages }) => `Page ${pageNumber} / ${totalPages}`} />
       </View>
     </Page>

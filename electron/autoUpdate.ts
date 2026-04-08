@@ -6,9 +6,9 @@ import { resolveAutoUpdateRuntimeConfig } from './updateRuntimeConfig'
 
 const AUTO_UPDATE_CONFIG_FILE = 'auto-update.json'
 const STARTUP_CHECK_DELAY_MS = 7_500
-const DEV_UPDATES_FLAG = 'RENTFLOW_ENABLE_DEV_UPDATES'
-const UPDATE_URL_ENV = 'RENTFLOW_UPDATE_URL'
-const UPDATE_CHANNEL_ENV = 'RENTFLOW_UPDATE_CHANNEL'
+const DEV_UPDATES_FLAGS = ['BAILLIO_ENABLE_DEV_UPDATES', 'RENTFLOW_ENABLE_DEV_UPDATES'] as const
+const UPDATE_URL_ENVS = ['BAILLIO_UPDATE_URL', 'RENTFLOW_UPDATE_URL'] as const
+const UPDATE_CHANNEL_ENVS = ['BAILLIO_UPDATE_CHANNEL', 'RENTFLOW_UPDATE_CHANNEL'] as const
 
 const updaterLogger = {
   info(message?: unknown) {
@@ -62,7 +62,17 @@ function setState(next: Partial<AutoUpdateState>): void {
 }
 
 function isDevelopmentUpdateEnabled(): boolean {
-  return process.env[DEV_UPDATES_FLAG] === '1'
+  return DEV_UPDATES_FLAGS.some((key) => process.env[key] === '1')
+}
+
+function readFirstEnv(keys: readonly string[]): string | null {
+  for (const key of keys) {
+    const value = process.env[key]
+    if (typeof value === 'string' && value.trim().length > 0) {
+      return value
+    }
+  }
+  return null
 }
 
 function readUpdateConfigFile(): string | null {
@@ -120,8 +130,8 @@ function resolveRuntimeState(): AutoUpdateState {
 
   try {
     const config = resolveAutoUpdateRuntimeConfig({
-      envUrl: process.env[UPDATE_URL_ENV] ?? null,
-      envChannel: process.env[UPDATE_CHANNEL_ENV] ?? null,
+      envUrl: readFirstEnv(UPDATE_URL_ENVS),
+      envChannel: readFirstEnv(UPDATE_CHANNEL_ENVS),
       fileContents: readUpdateConfigFile(),
     })
 

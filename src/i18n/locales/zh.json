@@ -247,7 +247,7 @@
     "statusLate": "逾期",
     "statusPending": "待付",
     "onboarding": {
-      "title": "开始使用 RentFlow",
+      "title": "开始使用 Baillio",
       "stepsCompleted": "{{completed}} / {{total}} 步已完成",
       "addProperty": "添加房产",
       "addPropertyDesc": "登记您的第一处房产。",
@@ -1053,7 +1053,7 @@
       "rentalUnit": "出租房屋",
       "generalInformation": "基本信息",
       "roomsAndEquipment": "房间与设备",
-      "legalNote": "该文档由 RentFlow 生成。当前版本包含房东签名，并为租户保留签名位置。",
+      "legalNote": "该文档由 Baillio 生成。当前版本包含房东签名，并为租户保留签名位置。",
       "noDetails": "暂无说明"
     }
   },
@@ -1185,7 +1185,7 @@
         "error": "上次检查失败"
       },
       "disabledReason": {
-        "notConfigured": "请在构建时配置 RENTFLOW_UPDATE_URL 以启用内置更新。",
+        "notConfigured": "请在构建时配置 BAILLIO_UPDATE_URL 以启用内置更新。",
         "unsupportedPlatform": "当前仅在 Windows 上支持内置更新。",
         "development": "开发模式下默认禁用自动更新。"
       },

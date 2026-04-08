@@ -4,7 +4,7 @@ import { join } from 'path'
 import { tmpdir } from 'os'
 import { randomBytes } from 'crypto'
 
-const TEST_DIR = join(tmpdir(), `rentflow-diagnostics-test-${randomBytes(4).toString('hex')}`)
+const TEST_DIR = join(tmpdir(), `baillio-diagnostics-test-${randomBytes(4).toString('hex')}`)
 
 const mockShowSaveDialog = vi.fn()
 const mockOpenPath = vi.fn().mockResolvedValue('')
@@ -170,7 +170,7 @@ beforeEach(() => {
     maxBackups: 5,
     encryptionPassword: null,
     lastBackupAt: '2026-04-05T18:00:00.000Z',
-    lastBackupPath: 'D:\\Backups\\rentflow_auto_2026-04-05.lfbackup',
+    lastBackupPath: 'D:\\Backups\\baillio_auto_2026-04-05.lfbackup',
     lastBackupSizeBytes: 4096,
   } satisfies BackupSettings)
   mockGetCurrentAccountStorageDir.mockReturnValue(join(TEST_DIR, 'accounts', 'acct_1'))
@@ -227,7 +227,7 @@ describe('diagnostics report', () => {
   })
 
   it('exports a JSON report without leaking a raw license token field', async () => {
-    const targetPath = join(TEST_DIR, 'rentflow_diagnostics_2026-04-06T18-15-04.json')
+    const targetPath = join(TEST_DIR, 'baillio_diagnostics_2026-04-06T18-15-04.json')
     mockShowSaveDialog.mockResolvedValue({ canceled: false, filePath: targetPath })
 
     const result = await exportDiagnosticsReport()

@@ -4,7 +4,7 @@ import { join } from 'path'
 import { tmpdir } from 'os'
 import { randomBytes } from 'crypto'
 
-const TEST_DIR = join(tmpdir(), `rentflow-backup-test-${randomBytes(4).toString('hex')}`)
+const TEST_DIR = join(tmpdir(), `baillio-backup-test-${randomBytes(4).toString('hex')}`)
 
 vi.mock('electron', () => ({
   app: {

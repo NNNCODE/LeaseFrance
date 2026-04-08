@@ -1,6 +1,6 @@
 # Security Decisions
 
-This document records deliberate security trade-offs in RentFlow
+This document records deliberate security trade-offs in Baillio
 and the mitigations that keep them safe.
 
 ## 1. sandbox: false in BrowserWindow
@@ -69,7 +69,7 @@ code. Do not rely on obfuscation to protect secrets or logic.
 
 ## 4. Local-Only Architecture
 
-RentFlow makes no network requests to external services (except Google
+Baillio makes no network requests to external services (except Google
 Fonts CDN for typography). All data stays on the user's machine in
 `app.getPath('userData')`. There is no telemetry, analytics, or cloud sync.
 

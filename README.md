@@ -1,4 +1,4 @@
-# RentFlow
+# Baillio
 
 Windows desktop application for private landlords in France.
 
@@ -39,22 +39,23 @@ npm run dist
 
 ## Auto-update
 
-RentFlow includes a Windows auto-update client based on `electron-updater`.
+Baillio includes a Windows auto-update client based on `electron-updater`.
 
 Enable it at build time with:
 
 ```bash
-RENTFLOW_UPDATE_URL=https://updates.example.com/rentflow/
-RENTFLOW_UPDATE_CHANNEL=latest
+BAILLIO_UPDATE_URL=https://updates.example.com/baillio/
+BAILLIO_UPDATE_CHANNEL=latest
 npm run dist
 ```
 
 Notes:
 
-- `RENTFLOW_UPDATE_URL` is required to enable in-app updates.
-- `RENTFLOW_UPDATE_CHANNEL` is optional and defaults to `latest`.
+- `BAILLIO_UPDATE_URL` is required to enable in-app updates.
+- `BAILLIO_UPDATE_CHANNEL` is optional and defaults to `latest`.
 - Build generates `build/auto-update.json` and packages it as `resources/auto-update.json`.
-- Development mode keeps auto-update disabled unless `RENTFLOW_ENABLE_DEV_UPDATES=1`.
+- Development mode keeps auto-update disabled unless `BAILLIO_ENABLE_DEV_UPDATES=1`.
+- Legacy `RENTFLOW_*` environment variables are still accepted for backward compatibility.
 - The Settings page exposes manual actions to check, download, and install updates.
 
 ## Security

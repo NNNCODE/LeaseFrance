@@ -1,9 +1,9 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
 import type {
   BackupAutoDonePayload,
-  RentFlowApi,
-  RentFlowInvokeChannels,
-  RentFlowWindowChannels,
+  BaillioApi,
+  BaillioInvokeChannels,
+  BaillioWindowChannels,
 } from '../src/shared/ipc'
 
 function normalizeRuntimeError(error: unknown): {
@@ -70,18 +70,18 @@ function installRendererRuntimeObservers(): void {
   })
 }
 
-function invoke<Channel extends keyof RentFlowInvokeChannels>(channel: Channel) {
-  return (...args: RentFlowInvokeChannels[Channel]['args']) =>
-    ipcRenderer.invoke(channel, ...args) as Promise<RentFlowInvokeChannels[Channel]['return']>
+function invoke<Channel extends keyof BaillioInvokeChannels>(channel: Channel) {
+  return (...args: BaillioInvokeChannels[Channel]['args']) =>
+    ipcRenderer.invoke(channel, ...args) as Promise<BaillioInvokeChannels[Channel]['return']>
 }
 
-function send<Channel extends keyof RentFlowWindowChannels>(channel: Channel) {
-  return (...args: RentFlowWindowChannels[Channel]['args']) => {
+function send<Channel extends keyof BaillioWindowChannels>(channel: Channel) {
+  return (...args: BaillioWindowChannels[Channel]['args']) => {
     ipcRenderer.send(channel, ...args)
   }
 }
 
-const api: RentFlowApi = {
+const api: BaillioApi = {
   window: {
     minimize: send('window:minimize'),
     maximize: send('window:maximize'),

@@ -49,7 +49,7 @@ export default function Sidebar({ onSearchClick }: { onSearchClick?: () => void 
           <Home className="w-4 h-4 text-primary" />
         </div>
         <span className="font-semibold text-textPrimary text-sm tracking-wide no-drag">
-          RentFlow
+          Baillio
         </span>
       </div>
 

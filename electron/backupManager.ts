@@ -123,7 +123,7 @@ export function removeSqliteSidecars(dbPath: string): void {
 export async function buildBackupArchive(): Promise<BackupArchiveV1> {
   const tempDbPath = join(
     app.getPath('temp'),
-    `rentflow_backup_${Date.now()}_${randomBytes(6).toString('hex')}.db`,
+    `baillio_backup_${Date.now()}_${randomBytes(6).toString('hex')}.db`,
   )
   try {
     await getDb().backup(tempDbPath)
@@ -265,8 +265,8 @@ export function recordBackupDone(filePath: string, sizeBytes: number): BackupSet
 
 // ── Auto-backup timer & rotation ─────────────────────────────────────────────
 
-const AUTO_PREFIX = 'rentflow_auto_'
-const LEGACY_AUTO_PREFIX = 'leasefrance_auto_' // keep for rotation of pre-rebrand backups
+const AUTO_PREFIX = 'baillio_auto_'
+const LEGACY_AUTO_PREFIXES = ['rentflow_auto_', 'leasefrance_auto_']
 let autoTimer: ReturnType<typeof setInterval> | null = null
 
 export function startAutoBackupTimer(): void {
@@ -284,7 +284,10 @@ export function stopAutoBackupTimer(): void {
 function rotateAutoBackups(folder: string, maxKeep: number): void {
   if (!existsSync(folder)) return
   const files = readdirSync(folder)
-    .filter(f => (f.startsWith(AUTO_PREFIX) || f.startsWith(LEGACY_AUTO_PREFIX)) && f.endsWith(BACKUP_EXTENSION))
+    .filter((fileName) => {
+      if (!fileName.endsWith(BACKUP_EXTENSION)) return false
+      return fileName.startsWith(AUTO_PREFIX) || LEGACY_AUTO_PREFIXES.some((prefix) => fileName.startsWith(prefix))
+    })
     .map(f => ({ name: f, path: join(folder, f), mtime: statSync(join(folder, f)).mtimeMs }))
     .sort((a, b) => b.mtime - a.mtime)
   for (let i = maxKeep; i < files.length; i++) {

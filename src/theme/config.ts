@@ -1,4 +1,5 @@
-export const THEME_STORAGE_KEY = 'leaseFrance.theme'
+export const THEME_STORAGE_KEY = 'baillio.theme'
+const LEGACY_THEME_STORAGE_KEYS = ['leaseFrance.theme']
 
 const THEME_OPTIONS = ['light', 'auto', 'dark'] as const
 const DARK_MEDIA_QUERY = '(prefers-color-scheme: dark)'
@@ -28,7 +29,17 @@ export function resolveTheme(theme: ThemePreference): ResolvedTheme {
 
 export function getStoredThemePreference(): ThemePreference {
   if (typeof window === 'undefined') return 'dark'
-  return resolveThemePreference(window.localStorage.getItem(THEME_STORAGE_KEY))
+  const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY)
+  if (storedTheme) return resolveThemePreference(storedTheme)
+
+  for (const legacyKey of LEGACY_THEME_STORAGE_KEYS) {
+    const legacyTheme = window.localStorage.getItem(legacyKey)
+    if (!legacyTheme) continue
+    window.localStorage.setItem(THEME_STORAGE_KEY, legacyTheme)
+    return resolveThemePreference(legacyTheme)
+  }
+
+  return 'dark'
 }
 
 export function applyThemePreference(theme: ThemePreference): ResolvedTheme {

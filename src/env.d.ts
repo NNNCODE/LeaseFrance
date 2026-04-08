@@ -641,5 +641,5 @@ interface AutoUpdateState {
 }
 
 interface Window {
-  api: import('./shared/ipc').RentFlowApi
+  api: import('./shared/ipc').BaillioApi
 }

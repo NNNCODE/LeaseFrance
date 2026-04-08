@@ -12,7 +12,7 @@ export default function Topbar({ onSearchClick }: { onSearchClick?: () => void }
           <Home className="w-4 h-4 text-primary" />
         </div>
         <div>
-          <p className="text-sm font-semibold text-textPrimary">RentFlow</p>
+          <p className="text-sm font-semibold text-textPrimary">Baillio</p>
           <p className="text-[11px] uppercase tracking-[0.22em] text-textMuted">{t('topbar.ownerSpace')}</p>
         </div>
       </div>

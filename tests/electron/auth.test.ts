@@ -5,7 +5,7 @@ import { tmpdir } from 'os'
 import { randomBytes } from 'crypto'
 
 // Create a unique temp dir for each test run
-const TEST_DIR = join(tmpdir(), `rentflow-auth-test-${randomBytes(4).toString('hex')}`)
+const TEST_DIR = join(tmpdir(), `baillio-auth-test-${randomBytes(4).toString('hex')}`)
 
 // Mock electron before importing auth module
 vi.mock('electron', () => ({

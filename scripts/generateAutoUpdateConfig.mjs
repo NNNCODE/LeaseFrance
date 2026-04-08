@@ -12,13 +12,13 @@ function readEnv(name) {
   return value ? value : null
 }
 
-const updateUrl = readEnv('RENTFLOW_UPDATE_URL')
-const updateChannel = readEnv('RENTFLOW_UPDATE_CHANNEL') ?? 'latest'
+const updateUrl = readEnv('BAILLIO_UPDATE_URL') ?? readEnv('RENTFLOW_UPDATE_URL')
+const updateChannel = readEnv('BAILLIO_UPDATE_CHANNEL') ?? readEnv('RENTFLOW_UPDATE_CHANNEL') ?? 'latest'
 
 if (updateUrl) {
   const parsed = new URL(updateUrl)
   if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-    throw new Error(`RENTFLOW_UPDATE_URL must use http or https. Received: ${updateUrl}`)
+    throw new Error(`BAILLIO_UPDATE_URL must use http or https. Received: ${updateUrl}`)
   }
 }
 
@@ -42,5 +42,5 @@ writeFileSync(outputPath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8')
 if (updateUrl) {
   console.log(`[auto-update] Configured ${updateUrl} (${updateChannel})`)
 } else {
-  console.log('[auto-update] Disabled. Set RENTFLOW_UPDATE_URL to enable packaged updates.')
+  console.log('[auto-update] Disabled. Set BAILLIO_UPDATE_URL to enable packaged updates.')
 }

@@ -65,7 +65,7 @@ function makeLicenseState(
     lastErrorCode: null,
     lastErrorMessage: null,
     disabledReason: null,
-    supportLogPath: 'C:\\Users\\test\\AppData\\Roaming\\lease-france\\logs\\license-runtime.log',
+    supportLogPath: 'C:\\Users\\test\\AppData\\Roaming\\Baillio\\logs\\license-runtime.log',
     endpointBaseUrl: 'https://rentflowapp.eu',
     ...overrides,
   }

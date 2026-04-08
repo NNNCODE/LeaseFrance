@@ -196,7 +196,7 @@ export function ReminderLetterPDF({ data }: { data: ReminderLetterData }) {
         </View>
 
         <Text style={s.legalNote}>
-          Ce document correspond a une relance amiable generee via RentFlow. Il ne remplace pas un acte delivre par un commissaire de justice.
+          Ce document correspond a une relance amiable generee via Baillio. Il ne remplace pas un acte delivre par un commissaire de justice.
         </Text>
       </Page>
     </Document>

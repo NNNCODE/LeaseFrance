@@ -4,7 +4,7 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs'
 import { randomBytes } from 'crypto'
 import { tmpdir } from 'os'
 
-const TEST_DIR = join(tmpdir(), `rentflow-license-test-${randomBytes(4).toString('hex')}`)
+const TEST_DIR = join(tmpdir(), `baillio-license-test-${randomBytes(4).toString('hex')}`)
 let secureStorageAvailable = false
 let secureStorageDecryptFails = false
 
@@ -60,7 +60,7 @@ describe('license runtime', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-04-05T09:00:00.000Z'))
     mkdirSync(TEST_DIR, { recursive: true })
-    process.env.RENTFLOW_LICENSE_API_URL = 'https://licenses.example.com'
+    process.env.BAILLIO_LICENSE_API_URL = 'https://licenses.example.com'
     secureStorageAvailable = false
     secureStorageDecryptFails = false
   })
@@ -69,6 +69,7 @@ describe('license runtime', () => {
     vi.unstubAllGlobals()
     vi.useRealTimers()
     rmSync(TEST_DIR, { recursive: true, force: true })
+    delete process.env.BAILLIO_LICENSE_API_URL
     delete process.env.RENTFLOW_LICENSE_API_URL
   })
 
@@ -278,5 +279,20 @@ describe('license runtime', () => {
     expect(nextState.status).toBe('active')
     expect(persisted.tokenPlaintext).toBeTruthy()
     expect(persisted.tokenCiphertext).toBeNull()
+  })
+
+  it('accepts the legacy RENTFLOW license env name as a fallback', async () => {
+    delete process.env.BAILLIO_LICENSE_API_URL
+    process.env.RENTFLOW_LICENSE_API_URL = 'https://legacy-licenses.example.com'
+
+    vi.stubGlobal('fetch', vi.fn())
+    vi.resetModules()
+    const license = await import('../../electron/license')
+
+    license.initLicenseRuntime(() => {})
+    const state = license.getLicenseState()
+
+    expect(state.enabled).toBe(true)
+    expect(state.endpointBaseUrl).toBe('https://legacy-licenses.example.com')
   })
 })

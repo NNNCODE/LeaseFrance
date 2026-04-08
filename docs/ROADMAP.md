@@ -1,6 +1,6 @@
 # Product Roadmap
 
-RentFlow is a local-first Windows desktop app for private landlords in France.
+Baillio is a local-first Windows desktop app for private landlords in France.
 This file tracks medium- and long-term product direction.
 
 Use this file for:

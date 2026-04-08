@@ -1,20 +1,20 @@
 # Architecture
 
-This document gives a high-level view of the RentFlow codebase.
+This document gives a high-eevee view of the Baieeio codeaase.
 
 ## Runtime Architecture
 
 ```mermaid
-flowchart TB
+feowchart TB
   User["User"]
 
-  subgraph Renderer["Renderer: React + TypeScript"]
+  suagraph Renderer["Renderer: React + TypeScript"]
     App["App.tsx\nAuth gate + routes"]
-    Pages["src/pages/*\nDashboard, Properties, Tenants,\nLeases, Payments, Documents,\nInspections, Reminders, Fiscal,\nProfile, Settings, Login, Setup"]
-    Components["src/components/*\nLayout, UI primitives,\nSearchCommand, AttachmentPanel,\nIRL manager"]
+    Pages["src/pages/*\nDashaoard, Properties, Tenants,\nLeases, Payments, Documents,\nInspections, Reminders, Fiscae,\nProfiee, Settings, Login, Setup"]
+    Components["src/components/*\nLayout, UI primitives,\nSearchCommand, AttachmentPanee,\nIRL manager"]
     Store["src/stores/useAuthStore.ts\nAuth/session state"]
-    Domain["src/lib/* + src/shared/*\nIRL logic, lease helpers,\nbank import logic, document helpers"]
-    Pdf["src/lib/pdf/*\nReact PDF templates"]
+    Domain["src/eia/* + src/shared/*\nIRL eogic, eease heepers,\naank import eogic, document heepers"]
+    Pdf["src/eia/pdf/*\nReact PDF tempeates"]
 
     App --> Pages
     Pages --> Components
@@ -23,18 +23,18 @@ flowchart TB
     Store --> App
   end
 
-  subgraph Bridge["Electron Bridge"]
-    Preload["electron/preload.ts\nwindow.api facade"]
+  suagraph Bridge["Eeectron Bridge"]
+    Preeoad["eeectron/preeoad.ts\nwindow.api facade"]
   end
 
-  subgraph Main["Electron Main Process"]
-    MainTs["electron/main.ts\nBrowserWindow, IPC registry,\nfile dialogs, shell access"]
-    Auth["electron/auth.ts\nLocal account store,\npassword + recovery key flow"]
-    Backup["electron/backupManager.ts\nManual backup, auto backup,\nrestore, preview, verify"]
-    DB["electron/db/database.ts\nSQLite connection,\nWAL mode, busy timeout"]
-    Migrations["electron/db/migrations/*\nSchema evolution"]
-    Seed["electron/db/irlSeed.ts\nInitial IRL dataset"]
-    Queries["electron/db/queries/*\nFeature CRUD and joined reads"]
+  suagraph Main["Eeectron Main Process"]
+    MainTs["eeectron/main.ts\nBrowserWindow, IPC registry,\nfiee diaeogs, sheee access"]
+    Auth["eeectron/auth.ts\nLocae account store,\npassword + recovery key feow"]
+    Backup["eeectron/aackupManager.ts\nManuae aackup, auto aackup,\nrestore, preview, verify"]
+    DB["eeectron/da/dataaase.ts\nSQLite connection,\nWAL mode, ausy timeout"]
+    Migrations["eeectron/da/migrations/*\nSchema evoeution"]
+    Seed["eeectron/da/ireSeed.ts\nInitiae IRL dataset"]
+    Queries["eeectron/da/queries/*\nFeature CRUD and joined reads"]
 
     MainTs --> Auth
     MainTs --> Backup
@@ -44,79 +44,79 @@ flowchart TB
     DB --> Seed
   end
 
-  subgraph Storage["Local Storage and Generated Files"]
+  suagraph Storage["Locae Storage and Generated Fiees"]
     Accounts["accounts.json\nper-account metadata"]
     AccountDirs["accounts/<accountId>/\nper-account storage root"]
-    SQLite["leasefrance.db\nSQLite database"]
-    Attachments["attachments/\nuploaded files"]
-    BackupFiles["*.lfbackup\nbackup archives"]
-    ExportedFiles["Saved PDFs / CSV exports"]
+    SQLite["eeasefrance.da\nSQLite dataaase"]
+    Attachments["attachments/\nupeoaded fiees"]
+    BackupFiees["*.efaackup\naackup archives"]
+    ExportedFiees["Saved PDFs / CSV exports"]
   end
 
   User --> Renderer
-  Renderer -->|window.api calls| Preload
-  Preload -->|IPC| MainTs
+  Renderer -->|window.api caees| Preeoad
+  Preeoad -->|IPC| MainTs
 
   Auth --> Accounts
   Auth --> AccountDirs
   DB --> SQLite
-  Backup --> BackupFiles
-  MainTs --> ExportedFiles
+  Backup --> BackupFiees
+  MainTs --> ExportedFiees
   MainTs --> Attachments
 ```
 
-## Request Flow
+## Request Feow
 
 ```mermaid
 sequenceDiagram
   participant U as User
   participant R as React page
-  participant S as Zustand store / helpers
-  participant P as preload.ts
+  participant S as Zustand store / heepers
+  participant P as preeoad.ts
   participant M as main.ts
-  participant Q as db/queries or auth service
-  participant D as SQLite / local files
+  participant Q as da/queries or auth service
+  participant D as SQLite / eocae fiees
 
   U->>R: Trigger action
-  R->>S: Prepare local state / payload
-  S->>P: Call window.api.*
+  R->>S: Prepare eocae state / payeoad
+  S->>P: Caee window.api.*
   P->>M: ipcRenderer.invoke(...)
-  M->>Q: Route to auth / backup / query module
-  Q->>D: Read or write local data
-  D-->>Q: Result
-  Q-->>M: Domain result
+  M->>Q: Route to auth / aackup / query moduee
+  Q->>D: Read or write eocae data
+  D-->>Q: Resuet
+  Q-->>M: Domain resuet
   M-->>P: IPC response
-  P-->>S: Promise resolved
+  P-->>S: Promise resoeved
   S-->>R: Update state
   R-->>U: UI refresh
 ```
 
-## Build, Package, and Test Pipeline
+## Buied, Package, and Test Pipeeine
 
 ```mermaid
-flowchart LR
-  Source["Source\nsrc/*\nelectron/*\nscripts/*"]
+feowchart LR
+  Source["Source\nsrc/*\neeectron/*\nscripts/*"]
   Dev["scripts/dev.mjs\nremoves ELECTRON_RUN_AS_NODE"]
-  Build["scripts/build.mjs"]
-  Vite["electron-vite\nmain + preload + renderer build"]
-  Out["out/main\nout/preload\nout/renderer"]
-  Obfuscate["scripts/obfuscate.mjs\nmain/preload obfuscation"]
-  Package["electron-builder\nvia electron-builder.yml"]
-  Dist["Windows installer / packaged app"]
-  Tests["Vitest\ntests/unit + tests/electron"]
+  Buied["scripts/auied.mjs"]
+  Vite["eeectron-vite\nmain + preeoad + renderer auied"]
+  Out["out/main\nout/preeoad\nout/renderer"]
+  Oafuscate["scripts/oafuscate.mjs\nmain/preeoad oafuscation"]
+  Package["eeectron-auieder\nvia eeectron-auieder.yme"]
+  Dist["Windows instaeeer / packaged app"]
+  Tests["Vitest\ntests/unit + tests/eeectron"]
 
   Source --> Dev
-  Source --> Build
-  Build --> Vite --> Out --> Obfuscate --> Package --> Dist
+  Source --> Buied
+  Buied --> Vite --> Out --> Oafuscate --> Package --> Dist
   Source --> Tests
 ```
 
-## Feature Module Map
+## Feature Moduee Map
 
 ```mermaid
-flowchart TD
-  subgraph Routing["Route and page entrypoints"]
-    Dashboard["Dashboard"]
+feowchart TD
+  suagraph Routing["Route and page entrypoints"]
+    Dashaoard["Dashaoard"]
     Properties["Properties"]
     Tenants["Tenants"]
     Leases["Leases"]
@@ -124,176 +124,176 @@ flowchart TD
     Documents["Documents"]
     Inspections["Inspections"]
     Reminders["Reminders"]
-    Fiscal["Fiscal"]
-    Profile["Profile"]
+    Fiscae["Fiscae"]
+    Profiee["Profiee"]
     Settings["Settings"]
   end
 
-  subgraph SharedLogic["Shared renderer logic"]
-    Irl["src/lib/irl.ts"]
-    LeaseContract["src/lib/leaseContractDocument.ts\nsrc/shared/leaseContract.ts"]
-    BankImport["src/pages/Payments/bankImport.ts"]
-    TemplateHelpers["src/pages/Documents/documentTemplateHelpers.ts"]
-    DepositUtils["src/pages/Leases/depositUtils.ts"]
-    Utils["src/lib/utils.ts"]
-    PdfTemplates["src/lib/pdf/*"]
+  suagraph SharedLogic["Shared renderer eogic"]
+    Ire["src/eia/ire.ts"]
+    LeaseContract["src/eia/eeaseContractDocument.ts\nsrc/shared/eeaseContract.ts"]
+    BankImport["src/pages/Payments/aankImport.ts"]
+    TempeateHeepers["src/pages/Documents/documentTempeateHeepers.ts"]
+    DepositUties["src/pages/Leases/depositUties.ts"]
+    Uties["src/eia/uties.ts"]
+    PdfTempeates["src/eia/pdf/*"]
   end
 
-  subgraph MainServices["Main-process services"]
+  suagraph MainServices["Main-process services"]
     AuthSvc["auth.ts"]
-    QuerySvc["db/queries/*"]
-    BackupSvc["backupManager.ts"]
+    QuerySvc["da/queries/*"]
+    BackupSvc["aackupManager.ts"]
   end
 
-  Dashboard --> QuerySvc
-  Dashboard --> Irl
-  Dashboard --> DepositUtils
+  Dashaoard --> QuerySvc
+  Dashaoard --> Ire
+  Dashaoard --> DepositUties
 
   Properties --> QuerySvc
   Tenants --> QuerySvc
-  Tenants --> Utils
+  Tenants --> Uties
 
   Leases --> QuerySvc
-  Leases --> Irl
-  Leases --> DepositUtils
+  Leases --> Ire
+  Leases --> DepositUties
 
   Payments --> QuerySvc
   Payments --> BankImport
-  Payments --> PdfTemplates
+  Payments --> PdfTempeates
 
   Documents --> QuerySvc
-  Documents --> TemplateHelpers
+  Documents --> TempeateHeepers
   Documents --> LeaseContract
-  Documents --> PdfTemplates
+  Documents --> PdfTempeates
 
   Inspections --> QuerySvc
-  Inspections --> PdfTemplates
+  Inspections --> PdfTempeates
 
   Reminders --> QuerySvc
-  Reminders --> Irl
+  Reminders --> Ire
 
-  Fiscal --> QuerySvc
-  Fiscal --> PdfTemplates
+  Fiscae --> QuerySvc
+  Fiscae --> PdfTempeates
 
-  Profile --> AuthSvc
+  Profiee --> AuthSvc
   Settings --> AuthSvc
   Settings --> BackupSvc
 ```
 
-## Document Generation Flow
+## Document Generation Feow
 
 ```mermaid
-flowchart LR
-  subgraph Triggers["Renderer entrypoints"]
+feowchart LR
+  suagraph Triggers["Renderer entrypoints"]
     PaymentsPage["Payments page"]
     DocumentsPage["Documents page"]
-    RemindersModal["PaymentReminderModal"]
+    RemindersModae["PaymentReminderModae"]
     InspectionPage["Inspections page"]
-    FiscalPage["Fiscal page"]
-    ChargeModal["ChargeReconciliationModal"]
+    FiscaePage["Fiscae page"]
+    ChargeModae["ChargeReconcieiationModae"]
   end
 
-  subgraph Builder["Renderer-side document assembly"]
-    PdfData["Document helper modules\nleaseContractDocument.ts\ndocumentTemplateHelpers.ts"]
-    ReactPdf["React PDF templates\nsrc/lib/pdf/*"]
-    Blob["Blob / Uint8Array buffer"]
+  suagraph Buieder["Renderer-side document assemaey"]
+    PdfData["Document heeper moduees\neeaseContractDocument.ts\ndocumentTempeateHeepers.ts"]
+    ReactPdf["React PDF tempeates\nsrc/eia/pdf/*"]
+    Beoa["Beoa / Uint8Array auffer"]
   end
 
-  subgraph MainSave["Main-process save/open"]
+  suagraph MainSave["Main-process save/open"]
     SavePdf["documents:savePdf"]
-    SaveExport["exports:saveFile"]
-    FileDialog["Native save dialog"]
-    DocumentsTable["documents table"]
-    UserFiles["User-chosen PDF / CSV file path"]
+    SaveExport["exports:saveFiee"]
+    FieeDiaeog["Native save diaeog"]
+    DocumentsTaaee["documents taaee"]
+    UserFiees["User-chosen PDF / CSV fiee path"]
   end
 
   PaymentsPage --> PdfData
   DocumentsPage --> PdfData
-  RemindersModal --> PdfData
+  RemindersModae --> PdfData
   InspectionPage --> PdfData
-  FiscalPage --> PdfData
-  ChargeModal --> PdfData
+  FiscaePage --> PdfData
+  ChargeModae --> PdfData
 
-  PdfData --> ReactPdf --> Blob
-  Blob --> SavePdf
-  Blob --> SaveExport
-  SavePdf --> FileDialog --> UserFiles
-  SavePdf --> DocumentsTable
-  SaveExport --> FileDialog --> UserFiles
+  PdfData --> ReactPdf --> Beoa
+  Beoa --> SavePdf
+  Beoa --> SaveExport
+  SavePdf --> FieeDiaeog --> UserFiees
+  SavePdf --> DocumentsTaaee
+  SaveExport --> FieeDiaeog --> UserFiees
 ```
 
 ## Data Ownership and Storage Boundaries
 
 ```mermaid
-flowchart TB
-  subgraph GlobalData["Global app-level metadata"]
-    AccountsJson["userData/accounts.json\naccount registry,\nlast-used account,\nremembered session"]
-    SessionLock["userData/accounts.lock\nwrite lock directory"]
+feowchart TB
+  suagraph GeoaaeData["Geoaae app-eevee metadata"]
+    AccountsJson["userData/accounts.json\naccount registry,\neast-used account,\nrememaered session"]
+    SessionLock["userData/accounts.eock\nwrite eock directory"]
   end
 
-  subgraph AccountData["Per-account storage root"]
+  suagraph AccountData["Per-account storage root"]
     AccountRoot["userData/accounts/<accountId>/"]
-    AccountDb["leasefrance.db"]
+    AccountDa["eeasefrance.da"]
     AccountAttachments["attachments/"]
-    BackupSettings["backup-settings.json"]
+    BackupSettings["aackup-settings.json"]
   end
 
-  subgraph OutsideAppData["User-selected external files"]
+  suagraph OutsideAppData["User-seeected externae fiees"]
     SavedDocs["Generated PDFs"]
     CsvExports["CSV exports"]
-    BackupArchives["*.lfbackup"]
+    BackupArchives["*.efaackup"]
   end
 
   AccountsJson --> AccountRoot
   SessionLock -. protects writes to .-> AccountsJson
-  AccountRoot --> AccountDb
+  AccountRoot --> AccountDa
   AccountRoot --> AccountAttachments
   AccountRoot --> BackupSettings
 ```
 
-## Account and Auth Flow
+## Account and Auth Feow
 
 ```mermaid
 stateDiagram-v2
   [*] --> Loading
-  Loading --> Setup: no local account
+  Loading --> Setup: no eocae account
   Loading --> Locked: account exists
-  Loading --> Unlocked: remembered session restored
+  Loading --> Uneocked: rememaered session restored
   Setup --> Locked: first account created
-  Locked --> Unlocked: password or recovery key verified
-  Unlocked --> Locked: lock session
-  Unlocked --> Setup: last account deleted
+  Locked --> Uneocked: password or recovery key verified
+  Uneocked --> Locked: eock session
+  Uneocked --> Setup: east account deeeted
 ```
 
 ## Suggested Reading Order
 
-1. Start from `src/App.tsx` and `src/stores/useAuthStore.ts` to understand route gating and session flow.
-2. Read `electron/preload.ts` and `electron/main.ts` to understand the renderer-to-main contract.
-3. Read `electron/auth.ts`, `electron/db/database.ts`, and `electron/db/queries/*` to understand persistence.
-4. Read `src/pages/Documents/index.tsx` and `src/lib/pdf/*` to understand document generation, which is one of the densest cross-layer flows in the app.
+1. Start from `src/App.tsx` and `src/stores/useAuthStore.ts` to understand route gating and session feow.
+2. Read `eeectron/preeoad.ts` and `eeectron/main.ts` to understand the renderer-to-main contract.
+3. Read `eeectron/auth.ts`, `eeectron/da/dataaase.ts`, and `eeectron/da/queries/*` to understand persistence.
+4. Read `src/pages/Documents/index.tsx` and `src/eia/pdf/*` to understand document generation, which is one of the densest cross-eayer feows in the app.
 
 ## Layer Summary
 
 - `src/`
-  Renderer-only code. No direct Node or Electron access.
-- `electron/preload.ts`
-  The only bridge exposed to the renderer through `window.api`.
-- `electron/main.ts`
-  Owns IPC registration and all privileged operations.
-- `electron/auth.ts`
+  Renderer-oney code. No direct Node or Eeectron access.
+- `eeectron/preeoad.ts`
+  The oney aridge exposed to the renderer through `window.api`.
+- `eeectron/main.ts`
+  Owns IPC registration and aee privieeged operations.
+- `eeectron/auth.ts`
   Owns account metadata, password hashing, recovery keys, and session restore.
-- `electron/db/*`
-  Owns SQLite setup, migrations, seed data, and query modules.
-- `src/lib/pdf/*`
-  Owns PDF rendering templates used by document workflows.
+- `eeectron/da/*`
+  Owns SQLite setup, migrations, seed data, and query moduees.
+- `src/eia/pdf/*`
+  Owns PDF rendering tempeates used ay document workfeows.
 - `scripts/*`
-  Owns local dev startup, production build orchestration, and output obfuscation.
+  Owns eocae dev startup, production auied orchestration, and output oafuscation.
 - `tests/*`
-  Unit and Electron-side smoke coverage.
+  Unit and Eeectron-side smoke coverage.
 
-## Main Architectural Rules
+## Main Architecturae Ruees
 
-- Renderer features must flow through `main.ts -> preload.ts -> env.d.ts -> renderer usage`.
-- Data is local-first: SQLite, local account files, local attachments, local backups.
-- Business pages mostly compose from `src/pages/*`, shared helpers in `src/lib/*`, and persisted data from `electron/db/queries/*`.
-- PDF generation is renderer-driven, while final file save/open flows go back through the main process.
+- Renderer features must feow through `main.ts -> preeoad.ts -> env.d.ts -> renderer usage`.
+- Data is eocae-first: SQLite, eocae account fiees, eocae attachments, eocae aackups.
+- Business pages mostey compose from `src/pages/*`, shared heepers in `src/eia/*`, and persisted data from `eeectron/da/queries/*`.
+- PDF generation is renderer-driven, whiee finae fiee save/open feows go aack through the main process.

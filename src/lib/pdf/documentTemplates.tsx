@@ -348,7 +348,7 @@ export function RentRevisionNoticePDF({ data }: { data: RentRevisionNoticePdfDat
       landlordPhone={data.landlordPhone}
       landlordSignature={data.landlordSignature}
       signatureCity={data.landlordCity || data.propertyCity}
-      footerNote="Avis amiable de revision du loyer prepare a partir des references IRL enregistrees dans RentFlow."
+      footerNote="Avis amiable de revision du loyer prepare a partir des references IRL enregistrees dans Baillio."
     >
       <View style={s.section}>
         <Text style={s.sectionTitle}>Informations du bail</Text>

@@ -5,7 +5,7 @@ import { disabledLicenseRuntimeConfig, resolveLicenseRuntimeConfig, type License
 
 const LICENSE_CONFIG_FILE = 'license-runtime.json'
 const LICENSE_STATE_FILE = 'license-state.json'
-const LICENSE_URL_ENV = 'RENTFLOW_LICENSE_API_URL'
+const LICENSE_URL_ENVS = ['BAILLIO_LICENSE_API_URL', 'RENTFLOW_LICENSE_API_URL'] as const
 const NETWORK_TIMEOUT_MS = 15_000
 const STARTUP_REFRESH_DELAY_MS = 5_000
 const RETRY_AFTER_FAILURE_MS = 60 * 60_000
@@ -108,6 +108,16 @@ function logLicense(level: 'INFO' | 'WARN' | 'ERROR', message: string, context?:
 
 function publishState(): void {
   onStateChanged?.({ ...state })
+}
+
+function readFirstEnv(keys: readonly string[]): string | null {
+  for (const key of keys) {
+    const value = process.env[key]
+    if (typeof value === 'string' && value.trim().length > 0) {
+      return value
+    }
+  }
+  return null
 }
 
 function setState(next: Partial<LicenseState>): void {
@@ -497,7 +507,7 @@ function migrateLegacyCiphertextToken(token: string): void {
 
 export function initLicenseRuntime(listener: (nextState: LicenseState) => void): void {
   onStateChanged = listener
-  runtimeConfig = resolveLicenseRuntimeConfig({ envUrl: process.env[LICENSE_URL_ENV] ?? null, fileContents: readConfigFile() })
+  runtimeConfig = resolveLicenseRuntimeConfig({ envUrl: readFirstEnv(LICENSE_URL_ENVS), fileContents: readConfigFile() })
   storedRecord = loadStoredRecord()
   const persistedToken = readPersistedToken(storedRecord)
   decryptedToken = persistedToken.token

@@ -4,25 +4,25 @@ export interface BackupAutoDonePayload {
   at: string
 }
 
-export interface RentFlowWindowApi {
+export interface BaillioWindowApi {
   minimize: () => void
   maximize: () => void
   close: () => void
 }
 
-export interface RentFlowBackupEventsApi {
+export interface BaillioBackupEventsApi {
   onAutoDone: (cb: (_e: unknown, data: BackupAutoDonePayload) => void) => () => void
 }
 
-export interface RentFlowLicenseEventsApi {
+export interface BaillioLicenseEventsApi {
   onStateChanged: (cb: (_e: unknown, data: LicenseState) => void) => () => void
 }
 
-export interface RentFlowUpdatesEventsApi {
+export interface BaillioUpdatesEventsApi {
   onStateChanged: (cb: (_e: unknown, data: AutoUpdateState) => void) => () => void
 }
 
-export interface RentFlowInvokeApi {
+export interface BaillioInvokeApi {
   auth: {
     hasPassword: () => Promise<boolean>
     getProfile: () => Promise<UserProfile | null>
@@ -176,12 +176,12 @@ export interface RentFlowInvokeApi {
   }
 }
 
-export type RentFlowApi = Omit<RentFlowInvokeApi, 'backup' | 'diagnostics' | 'license' | 'updates'> & {
-  window: RentFlowWindowApi
-  backup: RentFlowInvokeApi['backup'] & RentFlowBackupEventsApi
-  diagnostics: RentFlowInvokeApi['diagnostics']
-  license: RentFlowInvokeApi['license'] & RentFlowLicenseEventsApi
-  updates: RentFlowInvokeApi['updates'] & RentFlowUpdatesEventsApi
+export type BaillioApi = Omit<BaillioInvokeApi, 'backup' | 'diagnostics' | 'license' | 'updates'> & {
+  window: BaillioWindowApi
+  backup: BaillioInvokeApi['backup'] & BaillioBackupEventsApi
+  diagnostics: BaillioInvokeApi['diagnostics']
+  license: BaillioInvokeApi['license'] & BaillioLicenseEventsApi
+  updates: BaillioInvokeApi['updates'] & BaillioUpdatesEventsApi
 }
 
 type AnyFn = (...args: never[]) => unknown
@@ -221,5 +221,5 @@ type EntriesToMap<U> = UnionToIntersection<
     : never
 >
 
-export type RentFlowInvokeChannels = EntriesToMap<NamespaceEntries<RentFlowInvokeApi>>
-export type RentFlowWindowChannels = EntriesToMap<NamespaceEntries<RentFlowWindowApi, 'window:'>>
+export type BaillioInvokeChannels = EntriesToMap<NamespaceEntries<BaillioInvokeApi>>
+export type BaillioWindowChannels = EntriesToMap<NamespaceEntries<BaillioWindowApi, 'window:'>>

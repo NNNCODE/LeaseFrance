@@ -440,7 +440,7 @@ export function RecuPDF({ data }: { data: RecuData }) {
 
         {/* ── Document footer ── */}
         <View style={s.docFooter} fixed>
-          <Text style={s.docFooterText}>{'Reçu de loyer généré le '}{genDate}{' via RentFlow'}</Text>
+          <Text style={s.docFooterText}>{'Reçu de loyer généré le '}{genDate}{' via Baillio'}</Text>
           <Text style={s.docFooterText}>{'Document non fiscal — à conserver'}</Text>
         </View>
 

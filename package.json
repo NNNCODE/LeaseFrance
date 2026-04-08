@@ -1,5 +1,5 @@
 {
-  "name": "lease-france",
+  "name": "baillio-desktop",
   "version": "0.1.1",
   "description": "Gestion locative pour propriétaires privés en France",
   "main": "out/main/main.js",

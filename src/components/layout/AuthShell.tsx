@@ -57,7 +57,7 @@ export default function AuthShell({
             <Home className="h-4 w-4 text-primary" />
           </div>
           <div>
-            <p className="text-[11px] uppercase tracking-[0.24em] text-textMuted">RentFlow Desktop</p>
+            <p className="text-[11px] uppercase tracking-[0.24em] text-textMuted">Baillio Desktop</p>
             <p className="text-sm font-semibold text-textPrimary">{t('authShell.subtitle')}</p>
           </div>
         </div>

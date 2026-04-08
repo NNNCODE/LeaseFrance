@@ -247,7 +247,7 @@
     "statusLate": "En retard",
     "statusPending": "En attente",
     "onboarding": {
-      "title": "Démarrer avec RentFlow",
+      "title": "Démarrer avec Baillio",
       "stepsCompleted": "{{completed}} / {{total}} étapes complétées",
       "addProperty": "Ajouter un bien",
       "addPropertyDesc": "Enregistrez votre premier logement.",
@@ -1053,7 +1053,7 @@
       "rentalUnit": "Logement loue",
       "generalInformation": "Informations generales",
       "roomsAndEquipment": "Pieces et equipements",
-      "legalNote": "Document genere via RentFlow. Cette version MVP prevoit une signature du proprietaire et un emplacement de signature pour le locataire.",
+      "legalNote": "Document genere via Baillio. Cette version MVP prevoit une signature du proprietaire et un emplacement de signature pour le locataire.",
       "noDetails": "Aucune precision"
     }
   },
@@ -1185,7 +1185,7 @@
         "error": "Dernier controle en erreur"
       },
       "disabledReason": {
-        "notConfigured": "Configurez RENTFLOW_UPDATE_URL au build pour activer les mises a jour integrees.",
+        "notConfigured": "Configurez BAILLIO_UPDATE_URL au build pour activer les mises a jour integrees.",
         "unsupportedPlatform": "Les mises a jour integrees ne sont prises en charge que sous Windows.",
         "development": "Les mises a jour sont desactivees par defaut en developpement."
       },

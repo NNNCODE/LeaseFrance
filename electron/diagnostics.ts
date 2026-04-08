@@ -131,7 +131,7 @@ export async function exportDiagnosticsReport(): Promise<{ saved: boolean; path:
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
   const { filePath, canceled } = await dialog.showSaveDialog({
     title: 'Exporter le diagnostic',
-    defaultPath: `rentflow_diagnostics_${timestamp}.json`,
+    defaultPath: `baillio_diagnostics_${timestamp}.json`,
     filters: [{ name: 'JSON', extensions: ['json'] }],
   })
 
