@@ -8,6 +8,7 @@ import { formatCurrency } from '@/lib/utils'
 import { QuittancePDF, type QuittanceData } from '@/lib/pdf/quittance'
 import { RecuPDF, type RecuData } from '@/lib/pdf/recu'
 import { useAuthStore } from '@/stores/useAuthStore'
+import { useOwnerStore } from '@/stores/useOwnerStore'
 import PaymentBankImportModal from './PaymentBankImportModal'
 import PaymentDeleteModal from './PaymentDeleteModal'
 import PaymentEmptyState from './PaymentEmptyState'
@@ -19,6 +20,8 @@ import { monthLabel, today } from './paymentPageUtils'
 export default function Payments() {
   const { t } = useTranslation()
   const { profile } = useAuthStore()
+  const activeOwner = useOwnerStore((state) => state.activeOwner)
+  const ownerProfile = activeOwner ?? profile
   const [payments, setPayments] = useState<Payment[]>([])
   const [leases, setLeases] = useState<Lease[]>([])
   const [loading, setLoading] = useState(true)
@@ -131,11 +134,11 @@ export default function Payments() {
       && payment.charges_amount >= payment.lease_charges_amount
 
     const baseData = {
-      landlordName: profile?.name ?? t('nav.profile'),
-      landlordAddress: profile?.address,
-      landlordCity: profile?.city,
-      landlordPhone: profile?.phone,
-      landlordSignature: profile?.signatureImage,
+      landlordName: ownerProfile?.name ?? t('nav.profile'),
+      landlordAddress: ownerProfile?.address,
+      landlordCity: ownerProfile?.city,
+      landlordPhone: ownerProfile?.phone,
+      landlordSignature: ownerProfile?.signatureImage,
       tenantFirstName: payment.tenant_first_name,
       tenantLastName: payment.tenant_last_name,
       propertyName: payment.property_name,
@@ -361,7 +364,7 @@ export default function Payments() {
         {reminding && (
           <PaymentReminderModal
             payment={reminding}
-            profile={profile}
+            profile={ownerProfile}
             onClose={() => setReminding(null)}
             onSaved={load}
           />

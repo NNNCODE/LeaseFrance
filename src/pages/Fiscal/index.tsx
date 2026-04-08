@@ -24,6 +24,7 @@ import { Input } from '@/components/ui/input'
 import { FiscalSummaryPDF } from '@/lib/pdf/fiscalSummary'
 import { formatCurrency } from '@/lib/utils'
 import { useAuthStore } from '@/stores/useAuthStore'
+import { useOwnerStore } from '@/stores/useOwnerStore'
 import {
   availableFiscalYears,
   buildFiscalCsv,
@@ -47,6 +48,8 @@ function exportFileName(kind: 'csv' | 'pdf', year: number) {
 export default function Fiscal() {
   const { t } = useTranslation()
   const { profile } = useAuthStore()
+  const activeOwner = useOwnerStore((state) => state.activeOwner)
+  const ownerProfile = activeOwner ?? profile
   const [properties, setProperties] = useState<Property[]>([])
   const [leases, setLeases] = useState<Lease[]>([])
   const [payments, setPayments] = useState<Payment[]>([])
@@ -143,11 +146,11 @@ export default function Fiscal() {
       const blob = await pdf(
         <FiscalSummaryPDF
           data={{
-            landlordName: profile?.name ?? 'Proprietaire',
-            landlordAddress: profile?.address,
-            landlordCity: profile?.city,
-            landlordPhone: profile?.phone,
-            landlordSignature: profile?.signatureImage,
+            landlordName: ownerProfile?.name ?? 'Proprietaire',
+            landlordAddress: ownerProfile?.address,
+            landlordCity: ownerProfile?.city,
+            landlordPhone: ownerProfile?.phone,
+            landlordSignature: ownerProfile?.signatureImage,
             summary,
           }}
         />

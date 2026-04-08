@@ -18,6 +18,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { InspectionPDF, type InspectionPdfData } from '@/lib/pdf/inspection'
 import { formatDate } from '@/lib/utils'
 import { useAuthStore } from '@/stores/useAuthStore'
+import { useOwnerStore } from '@/stores/useOwnerStore'
 import InspectionModal from './InspectionModal'
 
 type InspectionKind = Inspection['kind']
@@ -70,6 +71,8 @@ function buildInspectionPdfData(
 export default function Inspections() {
   const { t } = useTranslation()
   const { profile } = useAuthStore()
+  const activeOwner = useOwnerStore((state) => state.activeOwner)
+  const ownerProfile = activeOwner ?? profile
   const [inspections, setInspections] = useState<Inspection[]>([])
   const [leases, setLeases] = useState<Lease[]>([])
   const [loading, setLoading] = useState(true)
@@ -164,7 +167,7 @@ export default function Inspections() {
     setError('')
 
     try {
-      const data = buildInspectionPdfData(inspection, profile, t('nav.profile'))
+      const data = buildInspectionPdfData(inspection, ownerProfile, t('nav.profile'))
       const blob = await pdf(<InspectionPDF data={data} />).toBlob()
       const buffer = new Uint8Array(await blob.arrayBuffer())
       const result = await window.api.documents.savePdf(

@@ -8,6 +8,7 @@ interface AuthState {
   error:   string | null
 
   init:          () => Promise<void>
+  refreshProfile: () => Promise<void>
   login:         (email: string, password: string, remember: boolean) => Promise<boolean>
   setup:         (password: string, name: string, email: string) => Promise<string | null>
   completeSetup: () => void
@@ -36,6 +37,15 @@ export const useAuthStore = create<AuthState>((set) => ({
     } else {
       set({ status: 'setup', profile: null, error: null })
     }
+  },
+
+  refreshProfile: async () => {
+    const profile = await window.api.auth.getProfile()
+    set((state) => ({
+      profile,
+      status: profile ? (state.status === 'setup' ? 'locked' : state.status) : state.status,
+      error: null,
+    }))
   },
 
   login: async (email, password, remember) => {

@@ -207,6 +207,89 @@ describe('updateProfile', () => {
   })
 })
 
+describe('owner profiles', () => {
+  it('seeds a primary owner profile from the auth account', async () => {
+    await auth.setupPassword('pass', 'Owner User', 'owner@test.com')
+
+    const owners = auth.listOwnerProfiles()
+    const activeOwner = auth.getActiveOwnerProfile()
+
+    expect(owners).toHaveLength(1)
+    expect(owners[0].isPrimary).toBe(true)
+    expect(owners[0].name).toBe('Owner User')
+    expect(owners[0].email).toBe('owner@test.com')
+    expect(owners[0].legalType).toBe('personne_physique')
+    expect(activeOwner?.id).toBe(owners[0].id)
+  })
+
+  it('creates and activates a secondary owner profile', async () => {
+    await auth.setupPassword('pass', 'Owner User', 'owner@test.com')
+
+    const created = await auth.createOwnerProfile({
+      name: 'SCI Test',
+      legalType: 'personne_morale',
+      familySci: true,
+    })
+
+    expect(created.isPrimary).toBe(false)
+    expect(created.legalType).toBe('personne_morale')
+    expect(created.familySci).toBe(true)
+    expect(auth.listOwnerProfiles()).toHaveLength(2)
+    expect(auth.getActiveOwnerProfile()?.id).toBe(created.id)
+  })
+
+  it('updates the primary owner and syncs the auth profile', async () => {
+    await auth.setupPassword('pass', 'Owner User', 'owner@test.com')
+    const primary = auth.getActiveOwnerProfile()!
+
+    const updated = await auth.updateOwnerProfile(primary.id, {
+      name: 'Updated Owner',
+      email: 'UPDATED@TEST.COM',
+      address: '12 Rue de Paris',
+      city: 'Paris',
+      phone: '0612345678',
+      legalType: 'personne_morale',
+      familySci: true,
+    })
+
+    const profile = auth.getProfile()
+    expect(updated?.name).toBe('Updated Owner')
+    expect(updated?.email).toBe('updated@test.com')
+    expect(updated?.legalType).toBe('personne_morale')
+    expect(updated?.familySci).toBe(true)
+    expect(profile?.name).toBe('Updated Owner')
+    expect(profile?.email).toBe('updated@test.com')
+    expect(profile?.address).toBe('12 Rue de Paris')
+    expect(profile?.city).toBe('Paris')
+    expect(profile?.phone).toBe('0612345678')
+  })
+
+  it('rejects blank credentials for the primary owner', async () => {
+    await auth.setupPassword('pass', 'Owner User', 'owner@test.com')
+    const primary = auth.getActiveOwnerProfile()!
+
+    await expect(auth.updateOwnerProfile(primary.id, { email: '' })).resolves.toBeNull()
+    await expect(auth.updateOwnerProfile(primary.id, { name: '' })).resolves.toBeNull()
+
+    const profile = auth.getProfile()
+    expect(profile?.name).toBe('Owner User')
+    expect(profile?.email).toBe('owner@test.com')
+  })
+
+  it('deletes a secondary owner and falls back to the primary owner', async () => {
+    await auth.setupPassword('pass', 'Owner User', 'owner@test.com')
+    const secondary = await auth.createOwnerProfile({ name: 'Secondary Owner' })
+
+    expect(auth.getActiveOwnerProfile()?.id).toBe(secondary.id)
+    await expect(auth.deleteOwnerProfile(secondary.id)).resolves.toBe(true)
+    expect(auth.getActiveOwnerProfile()?.isPrimary).toBe(true)
+    expect(auth.listOwnerProfiles()).toHaveLength(1)
+
+    const primary = auth.getActiveOwnerProfile()!
+    await expect(auth.deleteOwnerProfile(primary.id)).resolves.toBe(false)
+  })
+})
+
 // ── Multi-Account ────────────────────────────────────────────────────────────
 
 describe('multi-account', () => {
@@ -283,10 +366,17 @@ describe('export and import', () => {
     expect(data.email).toBe('user@test.com')
     expect(data.hash).toBeTruthy()
     expect(data.salt).toBeTruthy()
+    expect(data.ownerProfiles).toBeTruthy()
   })
 
   it('imports account from backup payload', async () => {
     await auth.setupPassword('pass', 'Original', 'original@test.com')
+    await auth.createOwnerProfile({
+      name: 'Backup SCI',
+      email: 'sci@test.com',
+      legalType: 'personne_morale',
+      familySci: true,
+    })
     const exported = auth.exportCurrentAccountAuth()
 
     // Clear and reimport
@@ -300,6 +390,11 @@ describe('export and import', () => {
     // Can log in with original password
     auth.clearActiveAccount()
     await expect(auth.verifyPassword('original@test.com', 'pass')).resolves.toBe(true)
+
+    const owners = auth.listOwnerProfiles()
+    expect(owners).toHaveLength(2)
+    expect(owners.some((owner) => owner.name === 'Backup SCI' && owner.familySci)).toBe(true)
+    expect(auth.getActiveOwnerProfile()?.name).toBe('Backup SCI')
   })
 
   it('throws on invalid import payload', async () => {

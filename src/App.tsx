@@ -20,12 +20,15 @@ import Fiscal from '@/pages/Fiscal'
 import Profile from '@/pages/Profile'
 import { SYSTEM_THEME_QUERY } from '@/theme/config'
 import { useThemeStore } from '@/stores/useThemeStore'
+import { useOwnerStore } from '@/stores/useOwnerStore'
 
 export default function App() {
   const { t } = useTranslation()
   const { status, init } = useAuthStore()
   const { status: licenseStatus, license, init: initLicense } = useLicenseStore()
   const syncTheme = useThemeStore((state) => state.syncTheme)
+  const initOwners = useOwnerStore((state) => state.init)
+  const clearOwners = useOwnerStore((state) => state.clear)
   const [showRegister, setShowRegister] = useState(false)
   const [authNotice, setAuthNotice] = useState<string | null>(null)
   const [prefilledEmail, setPrefilledEmail] = useState('')
@@ -61,6 +64,15 @@ export default function App() {
       setAuthNotice(null)
     }
   }, [status])
+
+  useEffect(() => {
+    if (status === 'unlocked') {
+      void initOwners()
+      return
+    }
+
+    clearOwners()
+  }, [clearOwners, initOwners, status])
 
   if (licenseStatus === 'loading') return <Splash />
   if (license?.enabled && !license.accessGranted) return <Activation />

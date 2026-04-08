@@ -5,11 +5,13 @@ import { randomBytes } from 'crypto'
 import { closeDb, getDb, getDbPath } from './db/database'
 import {
   deleteAccount, exportCurrentAccountAuth,
+  createOwnerProfile, deleteOwnerProfile,
   getAccountDbPathById, getCurrentAccountStorageDir, getProfile,
+  getActiveOwnerProfile, listOwnerProfiles,
   lockCurrentSession, restoreRememberedSession,
   hasRecoveryKey, verifyRecoveryKey, resetWithRecoveryKey, regenerateRecoveryKey,
   hasPassword, importAccountFromBackup, setupPassword, verifyPassword,
-  changePassword, updateProfile,
+  changePassword, setActiveOwnerProfile, updateOwnerProfile, updateProfile,
 } from './auth'
 import {
   BACKUP_EXTENSION, buildBackupArchive, ensureBackupPath,
@@ -278,6 +280,13 @@ handle('auth:hasRecoveryKey', () => hasRecoveryKey())
 handle('auth:verifyRecoveryKey', (key) => verifyRecoveryKey(key))
 handle('auth:resetWithRecoveryKey', (key, newPwd) => resetWithRecoveryKey(key, newPwd))
 handle('auth:regenerateRecoveryKey', (pwd) => regenerateRecoveryKey(pwd))
+
+handle('owners:list', () => listOwnerProfiles())
+handle('owners:getActive', () => getActiveOwnerProfile())
+handle('owners:create', (draft) => createOwnerProfile(draft))
+handle('owners:update', (id, patch) => updateOwnerProfile(id, patch))
+handle('owners:setActive', (id) => setActiveOwnerProfile(id))
+handle('owners:delete', (id) => deleteOwnerProfile(id))
 
 // Properties IPC
 handle('properties:getAll', () => propertiesDb.getAll())

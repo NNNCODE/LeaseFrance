@@ -18,6 +18,7 @@ import { Input } from '@/components/ui/input'
 import { ChargeReconciliationPDF, type ChargeReconciliationPdfData } from '@/lib/pdf/chargeReconciliation'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { useAuthStore } from '@/stores/useAuthStore'
+import { useOwnerStore } from '@/stores/useOwnerStore'
 
 interface ChargeReconciliationFormState {
   year: number
@@ -115,6 +116,8 @@ export default function ChargeReconciliationModal({
   onClose: () => void
 }) {
   const { profile } = useAuthStore()
+  const activeOwner = useOwnerStore((state) => state.activeOwner)
+  const ownerProfile = activeOwner ?? profile
   const [rows, setRows] = useState<ChargeReconciliation[]>([])
   const [payments, setPayments] = useState<Payment[]>([])
   const [form, setForm] = useState<ChargeReconciliationFormState>(buildDefaultForm())
@@ -265,7 +268,7 @@ export default function ChargeReconciliationModal({
     setError('')
 
     try {
-      const blob = await pdf(<ChargeReconciliationPDF data={buildPdfData(lease, row, payments, profile)} />).toBlob()
+      const blob = await pdf(<ChargeReconciliationPDF data={buildPdfData(lease, row, payments, ownerProfile)} />).toBlob()
       const buffer = new Uint8Array(await blob.arrayBuffer())
       const result = await window.api.documents.savePdf(
         lease.id,

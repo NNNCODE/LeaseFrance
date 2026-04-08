@@ -163,7 +163,11 @@ export function prepareLeaseContractDetails(
 ): LeaseContractDetails {
   const base = lease.contract_details
     ? normalizeLeaseContractDetails(lease.contract_details)
-    : createDefaultLeaseContractDetails()
+    : {
+        ...createDefaultLeaseContractDetails(),
+        landlordType: profile?.legalType === 'personne_morale' ? 'personne_morale' : 'personne_physique',
+        landlordFamilySci: profile?.familySci ?? false,
+      }
 
   return {
     ...base,

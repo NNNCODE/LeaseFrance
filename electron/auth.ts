@@ -51,6 +51,23 @@ export interface UserProfile {
   phone: string
   signatureImage: string
   createdAt: string
+  legalType?: 'personne_physique' | 'personne_morale'
+  familySci?: boolean
+  updatedAt?: string
+}
+
+export interface OwnerProfile extends UserProfile {
+  id: string
+  legalType: 'personne_physique' | 'personne_morale'
+  familySci: boolean
+  updatedAt: string
+  isPrimary: boolean
+}
+
+interface OwnerProfilesStore {
+  version: 1
+  activeOwnerId: string | null
+  profiles: OwnerProfile[]
 }
 
 let activeAccountId: string | null = null
@@ -170,7 +187,157 @@ function accountProfile(account: AuthAccount): UserProfile {
     phone: account.phone ?? '',
     signatureImage: account.signatureImage ?? '',
     createdAt: account.createdAt,
+    legalType: 'personne_physique',
+    familySci: false,
+    updatedAt: account.lastUsedAt ?? account.createdAt,
   }
+}
+
+function ownerProfilesPath(accountId: string): string {
+  return join(accountStorageDir(accountId), 'owner-profiles.json')
+}
+
+function primaryOwnerId(accountId: string): string {
+  return `primary_${accountId}`
+}
+
+function createPrimaryOwnerProfile(account: AuthAccount): OwnerProfile {
+  return {
+    id: primaryOwnerId(account.id),
+    name: account.name,
+    email: account.email,
+    address: account.address ?? '',
+    city: account.city ?? '',
+    phone: account.phone ?? '',
+    signatureImage: account.signatureImage ?? '',
+    createdAt: account.createdAt,
+    updatedAt: account.lastUsedAt ?? account.createdAt,
+    legalType: 'personne_physique',
+    familySci: false,
+    isPrimary: true,
+  }
+}
+
+function normalizeOwnerProfile(
+  value: unknown,
+  fallbackPrimary: OwnerProfile,
+): OwnerProfile | null {
+  if (!value || typeof value !== 'object') return null
+  const profile = value as Partial<OwnerProfile>
+  if (typeof profile.id !== 'string') return null
+
+  return {
+    id: profile.id,
+    name: typeof profile.name === 'string' ? profile.name : '',
+    email: typeof profile.email === 'string' ? normalizeEmail(profile.email) : '',
+    address: typeof profile.address === 'string' ? profile.address : '',
+    city: typeof profile.city === 'string' ? profile.city : '',
+    phone: typeof profile.phone === 'string' ? profile.phone : '',
+    signatureImage: typeof profile.signatureImage === 'string' ? profile.signatureImage : '',
+    createdAt: typeof profile.createdAt === 'string' ? profile.createdAt : fallbackPrimary.createdAt,
+    updatedAt: typeof profile.updatedAt === 'string' ? profile.updatedAt : fallbackPrimary.updatedAt,
+    legalType: profile.legalType === 'personne_morale' ? 'personne_morale' : 'personne_physique',
+    familySci: typeof profile.familySci === 'boolean' ? profile.familySci : false,
+    isPrimary: typeof profile.isPrimary === 'boolean' ? profile.isPrimary : false,
+  }
+}
+
+function saveOwnerProfilesStore(accountId: string, nextStore: OwnerProfilesStore): void {
+  const filePath = ownerProfilesPath(accountId)
+  mkdirSync(accountStorageDir(accountId), { recursive: true })
+  const tempFile = `${filePath}.${process.pid}.${Date.now()}.tmp`
+  try {
+    writeFileSync(tempFile, JSON.stringify(nextStore), 'utf-8')
+    renameSync(tempFile, filePath)
+  } finally {
+    if (existsSync(tempFile)) {
+      rmSync(tempFile, { force: true })
+    }
+  }
+}
+
+function defaultOwnerProfilesStore(account: AuthAccount): OwnerProfilesStore {
+  const primary = createPrimaryOwnerProfile(account)
+  return {
+    version: 1,
+    activeOwnerId: primary.id,
+    profiles: [primary],
+  }
+}
+
+function normalizeOwnerProfilesStore(raw: unknown, account: AuthAccount): OwnerProfilesStore {
+  const primary = createPrimaryOwnerProfile(account)
+  if (!raw || typeof raw !== 'object') {
+    return defaultOwnerProfilesStore(account)
+  }
+
+  const parsed = raw as Partial<OwnerProfilesStore>
+  const profiles = Array.isArray(parsed.profiles)
+    ? parsed.profiles
+      .map((entry) => normalizeOwnerProfile(entry, primary))
+      .filter((entry): entry is OwnerProfile => entry !== null)
+    : []
+
+  const primaryFromStore = profiles.find((profile) => profile.isPrimary) ?? profiles.find((profile) => profile.id === primary.id)
+  const secondaryProfiles = profiles.filter((profile) => profile.id !== primary.id && !profile.isPrimary)
+  const syncedPrimary: OwnerProfile = {
+    ...(primaryFromStore ?? primary),
+    ...primary,
+    legalType: primaryFromStore?.legalType ?? primary.legalType,
+    familySci: primaryFromStore?.familySci ?? primary.familySci,
+    isPrimary: true,
+  }
+  const normalizedProfiles = [syncedPrimary, ...secondaryProfiles]
+  const activeOwnerId = typeof parsed.activeOwnerId === 'string'
+    && normalizedProfiles.some((profile) => profile.id === parsed.activeOwnerId)
+    ? parsed.activeOwnerId
+    : syncedPrimary.id
+
+  return {
+    version: 1,
+    activeOwnerId,
+    profiles: normalizedProfiles,
+  }
+}
+
+function loadOwnerProfilesStoreForAccount(account: AuthAccount): OwnerProfilesStore {
+  const filePath = ownerProfilesPath(account.id)
+  let nextStore = defaultOwnerProfilesStore(account)
+
+  try {
+    if (existsSync(filePath)) {
+      const parsed = JSON.parse(readFileSync(filePath, 'utf-8')) as Partial<OwnerProfilesStore>
+      nextStore = normalizeOwnerProfilesStore(parsed, account)
+    }
+  } catch {
+    nextStore = defaultOwnerProfilesStore(account)
+  }
+
+  saveOwnerProfilesStore(account.id, nextStore)
+  return nextStore
+}
+
+function loadOwnerProfilesStore(store: AccountsStore): OwnerProfilesStore | null {
+  const account = getActiveAccount(store) ?? getLastUsedOrFirstAccount(store)
+  if (!account) return null
+  return loadOwnerProfilesStoreForAccount(account)
+}
+
+function getActiveOwnerFromStore(ownerStore: OwnerProfilesStore): OwnerProfile | null {
+  return ownerStore.profiles.find((profile) => profile.id === ownerStore.activeOwnerId) ?? ownerStore.profiles[0] ?? null
+}
+
+function updatePrimaryOwnerFromAccount(ownerStore: OwnerProfilesStore, account: AuthAccount): OwnerProfilesStore {
+  const primary = createPrimaryOwnerProfile(account)
+  return normalizeOwnerProfilesStore(ownerStore, {
+    ...account,
+    name: primary.name,
+    email: primary.email,
+    address: primary.address,
+    city: primary.city,
+    phone: primary.phone,
+    signatureImage: primary.signatureImage,
+  })
 }
 
 function generateAccountId(): string {
@@ -425,6 +592,17 @@ export function getProfile(): UserProfile | null {
   return account ? accountProfile(account) : null
 }
 
+export function listOwnerProfiles(): OwnerProfile[] {
+  const ownerStore = loadOwnerProfilesStore(loadStore())
+  return ownerStore ? ownerStore.profiles.map((profile) => ({ ...profile })) : []
+}
+
+export function getActiveOwnerProfile(): OwnerProfile | null {
+  const ownerStore = loadOwnerProfilesStore(loadStore())
+  const active = ownerStore ? getActiveOwnerFromStore(ownerStore) : null
+  return active ? { ...active } : null
+}
+
 export async function restoreRememberedSession(): Promise<UserProfile | null> {
   const store = loadStore()
   const account = getRememberedAccount(store)
@@ -578,6 +756,110 @@ export function updateProfile(name: string, email: string, address?: string, cit
     if (phone !== undefined) account.phone = phone.trim()
     if (signatureImage !== undefined) account.signatureImage = signatureImage
     saveStore(store)
+
+    const ownerStore = loadOwnerProfilesStoreForAccount(account)
+    const syncedOwnerStore = updatePrimaryOwnerFromAccount(ownerStore, account)
+    saveOwnerProfilesStore(account.id, syncedOwnerStore)
+    return true
+  })
+}
+
+export function createOwnerProfile(
+  initial: Partial<Pick<OwnerProfile, 'name' | 'email' | 'address' | 'city' | 'phone' | 'signatureImage' | 'legalType' | 'familySci'>> = {},
+): Promise<OwnerProfile> {
+  return withLockedStore((store) => {
+    const account = requireCurrentAccount(store)
+    const ownerStore = loadOwnerProfilesStoreForAccount(account)
+    const now = new Date().toISOString()
+    const nextProfile: OwnerProfile = {
+      id: `owner_${randomBytes(8).toString('hex')}`,
+      name: typeof initial.name === 'string' ? initial.name.trim() : '',
+      email: typeof initial.email === 'string' ? normalizeEmail(initial.email) : '',
+      address: typeof initial.address === 'string' ? initial.address.trim() : '',
+      city: typeof initial.city === 'string' ? initial.city.trim() : '',
+      phone: typeof initial.phone === 'string' ? initial.phone.trim() : '',
+      signatureImage: typeof initial.signatureImage === 'string' ? initial.signatureImage : '',
+      createdAt: now,
+      updatedAt: now,
+      legalType: initial.legalType === 'personne_morale' ? 'personne_morale' : 'personne_physique',
+      familySci: typeof initial.familySci === 'boolean' ? initial.familySci : false,
+      isPrimary: false,
+    }
+
+    ownerStore.profiles.push(nextProfile)
+    ownerStore.activeOwnerId = nextProfile.id
+    saveOwnerProfilesStore(account.id, ownerStore)
+    return { ...nextProfile }
+  })
+}
+
+export function updateOwnerProfile(
+  id: string,
+  patch: Partial<Pick<OwnerProfile, 'name' | 'email' | 'address' | 'city' | 'phone' | 'signatureImage' | 'legalType' | 'familySci'>>,
+): Promise<OwnerProfile | null> {
+  return withLockedStore((store) => {
+    const account = requireCurrentAccount(store)
+    const ownerStore = loadOwnerProfilesStoreForAccount(account)
+    const owner = ownerStore.profiles.find((entry) => entry.id === id)
+    if (!owner) return null
+
+    const normalizedEmail = patch.email !== undefined ? normalizeEmail(patch.email) : owner.email
+    if (owner.isPrimary) {
+      const normalizedName = patch.name !== undefined ? patch.name.trim() : owner.name
+      if (!normalizedName || !normalizedEmail) return null
+      const duplicate = store.accounts.find((entry) => entry.id !== account.id && entry.email === normalizedEmail)
+      if (duplicate) return null
+    }
+
+    if (patch.name !== undefined) owner.name = patch.name.trim()
+    if (patch.email !== undefined) owner.email = normalizedEmail
+    if (patch.address !== undefined) owner.address = patch.address.trim()
+    if (patch.city !== undefined) owner.city = patch.city.trim()
+    if (patch.phone !== undefined) owner.phone = patch.phone.trim()
+    if (patch.signatureImage !== undefined) owner.signatureImage = patch.signatureImage
+    if (patch.legalType !== undefined) owner.legalType = patch.legalType === 'personne_morale' ? 'personne_morale' : 'personne_physique'
+    if (patch.familySci !== undefined) owner.familySci = Boolean(patch.familySci)
+    owner.updatedAt = new Date().toISOString()
+
+    if (owner.isPrimary) {
+      account.name = owner.name
+      account.email = owner.email
+      account.address = owner.address
+      account.city = owner.city
+      account.phone = owner.phone
+      account.signatureImage = owner.signatureImage
+      saveStore(store)
+    }
+
+    saveOwnerProfilesStore(account.id, ownerStore)
+    return { ...owner }
+  })
+}
+
+export function setActiveOwnerProfile(ownerId: string): Promise<OwnerProfile | null> {
+  return withLockedStore((store) => {
+    const account = requireCurrentAccount(store)
+    const ownerStore = loadOwnerProfilesStoreForAccount(account)
+    const owner = ownerStore.profiles.find((entry) => entry.id === ownerId)
+    if (!owner) return null
+    ownerStore.activeOwnerId = owner.id
+    saveOwnerProfilesStore(account.id, ownerStore)
+    return { ...owner }
+  })
+}
+
+export function deleteOwnerProfile(ownerId: string): Promise<boolean> {
+  return withLockedStore((store) => {
+    const account = requireCurrentAccount(store)
+    const ownerStore = loadOwnerProfilesStoreForAccount(account)
+    const owner = ownerStore.profiles.find((entry) => entry.id === ownerId)
+    if (!owner || owner.isPrimary) return false
+
+    ownerStore.profiles = ownerStore.profiles.filter((entry) => entry.id !== ownerId)
+    if (ownerStore.activeOwnerId === ownerId) {
+      ownerStore.activeOwnerId = ownerStore.profiles[0]?.id ?? null
+    }
+    saveOwnerProfilesStore(account.id, ownerStore)
     return true
   })
 }
@@ -603,11 +885,14 @@ export async function deleteAccount(password: string): Promise<boolean> {
 
 export function exportCurrentAccountAuth(): string {
   const account = requireCurrentAccount(loadStore())
-  return JSON.stringify(account)
+  return JSON.stringify({
+    ...account,
+    ownerProfiles: loadOwnerProfilesStoreForAccount(account),
+  })
 }
 
 export async function importAccountFromBackup(payload: string): Promise<{ accountId: string }> {
-  let raw: Partial<AuthAccount>
+  let raw: Partial<AuthAccount> & { ownerProfiles?: Partial<OwnerProfilesStore> }
   try {
     raw = JSON.parse(payload) as Partial<AuthAccount>
   } catch {
@@ -656,5 +941,11 @@ export async function importAccountFromBackup(payload: string): Promise<{ accoun
   })
 
   mkdirSync(accountStorageDir(accountId), { recursive: true })
+  const importedAccountStore = loadStoreFromDisk()
+  const importedAccount = importedAccountStore.accounts.find((account) => account.id === accountId)
+  if (importedAccount) {
+    const ownerStore = normalizeOwnerProfilesStore(raw.ownerProfiles, importedAccount)
+    saveOwnerProfilesStore(accountId, ownerStore)
+  }
   return { accountId }
 }

@@ -38,6 +38,14 @@ export interface RentFlowInvokeApi {
     resetWithRecoveryKey: (key: string, newPwd: string) => Promise<string | null>
     regenerateRecoveryKey: (pwd: string) => Promise<string | null>
   }
+  owners: {
+    list: () => Promise<OwnerProfile[]>
+    getActive: () => Promise<OwnerProfile | null>
+    create: (draft?: OwnerProfileDraft) => Promise<OwnerProfile>
+    update: (id: string, patch: OwnerProfileDraft) => Promise<OwnerProfile | null>
+    setActive: (id: string) => Promise<OwnerProfile | null>
+    delete: (id: string) => Promise<boolean>
+  }
   properties: {
     getAll: () => Promise<Property[]>
     count: () => Promise<number>

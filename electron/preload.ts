@@ -102,6 +102,14 @@ const api: RentFlowApi = {
     resetWithRecoveryKey: invoke('auth:resetWithRecoveryKey'),
     regenerateRecoveryKey: invoke('auth:regenerateRecoveryKey'),
   },
+  owners: {
+    list: invoke('owners:list'),
+    getActive: invoke('owners:getActive'),
+    create: invoke('owners:create'),
+    update: invoke('owners:update'),
+    setActive: invoke('owners:setActive'),
+    delete: invoke('owners:delete'),
+  },
   properties: {
     getAll: invoke('properties:getAll'),
     count: invoke('properties:count'),

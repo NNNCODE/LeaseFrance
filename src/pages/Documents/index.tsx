@@ -18,6 +18,7 @@ import { FurnishedLeaseContractPDF } from '@/lib/pdf/furnishedLeaseContract'
 import { QuittancePDF, type QuittanceData } from '@/lib/pdf/quittance'
 import { RecuPDF, type RecuData } from '@/lib/pdf/recu'
 import { useAuthStore } from '@/stores/useAuthStore'
+import { useOwnerStore } from '@/stores/useOwnerStore'
 import DocumentDeleteModal from './DocumentDeleteModal'
 import DocumentRow from './DocumentRow'
 import {
@@ -42,6 +43,8 @@ const TEMPLATE_PARAMS_KEY = 'lf_doc_template_params'
 export default function Documents() {
   const { t } = useTranslation()
   const { profile } = useAuthStore()
+  const activeOwner = useOwnerStore((state) => state.activeOwner)
+  const ownerProfile = activeOwner ?? profile
   const [docs, setDocs] = useState<DocumentRecord[]>([])
   const [payments, setPayments] = useState<Payment[]>([])
   const [leases, setLeases] = useState<Lease[]>([])
@@ -160,11 +163,11 @@ export default function Documents() {
 
   async function handleGenerate(request: GenerateDocumentRequest): Promise<boolean> {
     const landlord = {
-      landlordName: profile?.name ?? 'Proprietaire',
-      landlordAddress: profile?.address,
-      landlordCity: profile?.city,
-      landlordPhone: profile?.phone,
-      landlordSignature: profile?.signatureImage,
+      landlordName: ownerProfile?.name ?? 'Proprietaire',
+      landlordAddress: ownerProfile?.address,
+      landlordCity: ownerProfile?.city,
+      landlordPhone: ownerProfile?.phone,
+      landlordSignature: ownerProfile?.signatureImage,
     }
 
     switch (request.kind) {
@@ -286,7 +289,7 @@ export default function Documents() {
           current.map((entry) => (entry.id === persistedLease.id ? persistedLease : entry)),
         )
 
-        const data = buildFurnishedLeaseContractPdfData(persistedLease, profile, request.contractDetails)
+        const data = buildFurnishedLeaseContractPdfData(persistedLease, ownerProfile, request.contractDetails)
         const blob = await pdf(<FurnishedLeaseContractPDF data={data} />).toBlob()
         return saveGeneratedPdf(
           persistedLease.id,
@@ -544,7 +547,7 @@ export default function Documents() {
       <AnimatePresence>
         {showForm && sourcesLoaded && (
           <GenerateDocumentModal
-            profile={profile}
+            profile={ownerProfile}
             payments={paidPayments}
             leases={leases}
             irlIndices={irlIndices}

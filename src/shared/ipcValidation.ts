@@ -174,6 +174,18 @@ const backupSettingsPatch = z.object({
   encryptionPassword: z.string().nullable().optional(),
 })
 
+const ownerLegalType = z.enum(['personne_physique', 'personne_morale'])
+const ownerProfileDraft = z.object({
+  name: z.string().optional(),
+  email: z.string().optional(),
+  address: z.string().optional(),
+  city: z.string().optional(),
+  phone: z.string().optional(),
+  signatureImage: z.string().optional(),
+  legalType: ownerLegalType.optional(),
+  familySci: z.boolean().optional(),
+})
+
 const authUpdateProfileArgs = z.union([
   z.tuple([nonEmptyText, nonEmptyText]),
   z.tuple([nonEmptyText, nonEmptyText, optionalText]),
@@ -211,6 +223,10 @@ const invokeArgSchemas = {
   'auth:verifyRecoveryKey': z.tuple([nonEmptyText]),
   'auth:resetWithRecoveryKey': z.tuple([nonEmptyText, z.string().min(8)]),
   'auth:regenerateRecoveryKey': z.tuple([nonEmptyText]),
+  'owners:create': z.union([z.tuple([]), z.tuple([ownerProfileDraft])]),
+  'owners:update': z.tuple([nonEmptyText, ownerProfileDraft]),
+  'owners:setActive': z.tuple([nonEmptyText]),
+  'owners:delete': z.tuple([nonEmptyText]),
   'properties:create': z.tuple([propertyInput]),
   'properties:update': z.tuple([positiveInt, propertyInput, versionToken]),
   'properties:delete': z.tuple([positiveInt]),
