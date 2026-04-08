@@ -3,12 +3,14 @@ import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Plus, Building2, MapPin, Ruler, Pencil, Trash2,
-  X, Save, AlertTriangle, Home, Warehouse, Car,
+  X, Save, AlertTriangle, Home, Warehouse, Car, UserCircle2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { formatOwnerDisplayName, resolveOwnerProfileById } from '@/lib/ownerProfiles'
+import { useOwnerStore } from '@/stores/useOwnerStore'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -23,13 +25,15 @@ const PROPERTY_TYPES = [
 type PropertyType = typeof PROPERTY_TYPES[number]['value']
 
 const emptyForm: PropertyInput = {
-  name: '', address: '', city: '', zip: '', type: 'appartement', area_m2: null,
+  name: '', address: '', city: '', zip: '', type: 'appartement', area_m2: null, owner_profile_id: null,
 }
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function Properties() {
   const { t } = useTranslation()
+  const owners = useOwnerStore((state) => state.owners)
+  const activeOwner = useOwnerStore((state) => state.activeOwner)
   const [properties, setProperties] = useState<Property[]>([])
   const [loading, setLoading]       = useState(true)
   const [showForm, setShowForm]     = useState(false)
@@ -114,6 +118,10 @@ export default function Properties() {
             <PropertyCard
               key={p.id}
               property={p}
+              ownerLabel={formatOwnerDisplayName(
+                resolveOwnerProfileById(owners, p.owner_profile_id),
+                t('properties.ownerDefaultNone'),
+              )}
               onEdit={() => openEdit(p)}
               onDelete={() => setDeleting(p)}
             />
@@ -125,6 +133,8 @@ export default function Properties() {
         {showForm && (
           <PropertyFormModal
             initial={editing}
+            owners={owners}
+            defaultOwnerId={activeOwner?.id ?? null}
             onSave={handleSave}
             onClose={closeForm}
           />
@@ -166,9 +176,10 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
 }
 
 function PropertyCard({
-  property, onEdit, onDelete,
+  property, ownerLabel, onEdit, onDelete,
 }: {
   property: Property
+  ownerLabel: string
   onEdit: () => void
   onDelete: () => void
 }) {
@@ -220,6 +231,10 @@ function PropertyCard({
               <MapPin className="w-3.5 h-3.5 shrink-0 opacity-0" />
               <span>{property.zip} {property.city}</span>
             </div>
+            <div className="flex items-center gap-1.5 text-xs text-textMuted">
+              <UserCircle2 className="w-3.5 h-3.5 shrink-0" />
+              <span>{t('properties.ownerDefaultLabel', { owner: ownerLabel })}</span>
+            </div>
             {property.area_m2 && (
               <div className="flex items-center gap-1.5 text-xs text-textMuted">
                 <Ruler className="w-3.5 h-3.5 shrink-0" />
@@ -234,17 +249,27 @@ function PropertyCard({
 }
 
 function PropertyFormModal({
-  initial, onSave, onClose,
+  initial, owners, defaultOwnerId, onSave, onClose,
 }: {
   initial: Property | null
+  owners: OwnerProfile[]
+  defaultOwnerId: string | null
   onSave: (data: PropertyInput) => Promise<void>
   onClose: () => void
 }) {
   const { t } = useTranslation()
   const [form, setForm] = useState<PropertyInput>(
     initial
-      ? { name: initial.name, address: initial.address, city: initial.city, zip: initial.zip, type: initial.type, area_m2: initial.area_m2 }
-      : emptyForm
+      ? {
+          name: initial.name,
+          address: initial.address,
+          city: initial.city,
+          zip: initial.zip,
+          type: initial.type,
+          area_m2: initial.area_m2,
+          owner_profile_id: initial.owner_profile_id,
+        }
+      : { ...emptyForm, owner_profile_id: defaultOwnerId }
   )
   const [error, setError]   = useState('')
   const [saving, setSaving] = useState(false)
@@ -345,6 +370,23 @@ function PropertyFormModal({
               onChange={(e) => set('area_m2', e.target.value ? parseFloat(e.target.value) : null)}
               placeholder={t('properties.areaPlaceholder')}
             />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-textMuted">{t('properties.ownerDefault')}</label>
+            <select
+              value={form.owner_profile_id ?? ''}
+              onChange={(e) => set('owner_profile_id', e.target.value || null)}
+              className="h-10 rounded-lg border border-border bg-surface px-3 text-sm text-textPrimary focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="">{t('properties.ownerDefaultNone')}</option>
+              {owners.map((owner) => (
+                <option key={owner.id} value={owner.id}>
+                  {formatOwnerDisplayName(owner, t('profile.unnamedOwner'))}
+                </option>
+              ))}
+            </select>
+            <p className="text-[10px] text-textMuted">{t('properties.ownerDefaultHelp')}</p>
           </div>
 
           {error && (

@@ -42,6 +42,7 @@ export type GenerateDocumentRequest =
 
 interface GenerateDocumentModalProps {
   profile: UserProfile | null
+  resolveLeaseProfile: (lease: Lease) => UserProfile | OwnerProfile | null
   payments: Payment[]
   leases: Lease[]
   irlIndices: IrlIndex[]
@@ -65,6 +66,7 @@ function today() {
 
 export default function GenerateDocumentModal({
   profile,
+  resolveLeaseProfile,
   payments,
   leases,
   irlIndices,
@@ -211,11 +213,25 @@ export default function GenerateDocumentModal({
   const selectedFurnishedLease = furnishedContractLeases.find((lease) => lease.id === selectedId) ?? null
   const selectedDepositReceiptLease = depositReceiptLeases.find((lease) => lease.id === selectedId) ?? null
   const selectedDepositSettlementLease = depositSettlementLeases.find((lease) => lease.id === selectedId) ?? null
+  const selectedPaymentLease = selectedPayment
+    ? leases.find((lease) => lease.id === selectedPayment.lease_id) ?? null
+    : null
+  const selectedLeaseProfile = selectedFurnishedLease
+    ? resolveLeaseProfile(selectedFurnishedLease)
+    : selectedRevisable
+      ? resolveLeaseProfile(selectedRevisable.lease)
+      : selectedDepositReceiptLease
+        ? resolveLeaseProfile(selectedDepositReceiptLease)
+        : selectedDepositSettlementLease
+          ? resolveLeaseProfile(selectedDepositSettlementLease)
+          : selectedPaymentLease
+            ? resolveLeaseProfile(selectedPaymentLease)
+            : profile
 
   useEffect(() => {
     if (template !== 'furnished_lease_contract' || !selectedFurnishedLease) return
-    setContractDetails(prepareLeaseContractDetails(selectedFurnishedLease, profile))
-  }, [template, selectedFurnishedLease, profile])
+    setContractDetails(prepareLeaseContractDetails(selectedFurnishedLease, selectedLeaseProfile))
+  }, [template, selectedFurnishedLease, selectedLeaseProfile])
 
   useEffect(() => {
     if (template !== 'rent_revision_notice' || !selectedRevisable) return
@@ -224,9 +240,9 @@ export default function GenerateDocumentModal({
 
   const contractBlockingIssues = useMemo(
     () => template === 'furnished_lease_contract' && selectedFurnishedLease && contractDetails
-      ? getFurnishedLeaseContractBlockingIssues(selectedFurnishedLease, contractDetails, profile)
+      ? getFurnishedLeaseContractBlockingIssues(selectedFurnishedLease, contractDetails, selectedLeaseProfile)
       : [],
-    [template, selectedFurnishedLease, contractDetails, profile],
+    [template, selectedFurnishedLease, contractDetails, selectedLeaseProfile],
   )
   const contractAdvisories = useMemo(
     () => template === 'furnished_lease_contract' && selectedFurnishedLease && contractDetails

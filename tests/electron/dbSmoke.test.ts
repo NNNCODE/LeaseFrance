@@ -87,10 +87,10 @@ describe.skipIf(!!loadError)('Database migration smoke tests', () => {
     }
   })
 
-  it('sets user_version to 3 after migrations', () => {
+  it('sets user_version to 4 after migrations', () => {
     runMigrations!(db)
     const version = db.pragma('user_version', { simple: true }) as number
-    expect(version).toBe(3)
+    expect(version).toBe(4)
   })
 
   it('is idempotent — running migrations twice does not throw', () => {
@@ -98,7 +98,7 @@ describe.skipIf(!!loadError)('Database migration smoke tests', () => {
     expect(() => runMigrations!(db)).not.toThrow()
 
     const version = db.pragma('user_version', { simple: true }) as number
-    expect(version).toBe(3)
+    expect(version).toBe(4)
   })
 
   it('creates the expected secondary indexes', () => {
@@ -238,7 +238,12 @@ describe.skipIf(!!loadError)('Database migration smoke tests', () => {
     expect(leaseCols).toContain('deposit_received_date')
     expect(leaseCols).toContain('deposit_notes')
     expect(leaseCols).toContain('contract_details')
+    expect(leaseCols).toContain('owner_profile_id')
     expect(leaseCols).toContain('updated_at')
+
+    const propertyCols = (db.prepare('PRAGMA table_info(properties)').all() as Array<{ name: string }>)
+      .map((c) => c.name)
+    expect(propertyCols).toContain('owner_profile_id')
 
     const tenantCols = (db.prepare('PRAGMA table_info(tenants)').all() as Array<{ name: string }>)
       .map((c) => c.name)
@@ -246,7 +251,7 @@ describe.skipIf(!!loadError)('Database migration smoke tests', () => {
     expect(tenantCols).toContain('dossier_id_document')
 
     // user_version stamped
-    expect(db.pragma('user_version', { simple: true })).toBe(3)
+    expect(db.pragma('user_version', { simple: true })).toBe(4)
   })
 
   it('deduplicates payments when upgrading a pre-migration DB with duplicates', () => {

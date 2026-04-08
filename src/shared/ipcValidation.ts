@@ -49,6 +49,7 @@ const propertyInput = z.object({
   zip: nonEmptyText,
   type: propertyType,
   area_m2: nonNegativeNumber.nullable().optional(),
+  owner_profile_id: optionalNullableText,
 })
 
 const tenantInput = z.object({
@@ -76,6 +77,7 @@ const leaseContractDetails = z.object({}).passthrough().transform((value) => nor
 const leaseInput = z.object({
   property_id: positiveInt,
   tenant_id: positiveInt,
+  owner_profile_id: optionalNullableText,
   type: leaseType,
   start_date: isoDate,
   end_date: isoDate.nullable().optional(),

@@ -17,6 +17,7 @@ import {
 import { FurnishedLeaseContractPDF } from '@/lib/pdf/furnishedLeaseContract'
 import { QuittancePDF, type QuittanceData } from '@/lib/pdf/quittance'
 import { RecuPDF, type RecuData } from '@/lib/pdf/recu'
+import { resolveOwnerProfileForLease } from '@/lib/ownerProfiles'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useOwnerStore } from '@/stores/useOwnerStore'
 import DocumentDeleteModal from './DocumentDeleteModal'
@@ -43,8 +44,9 @@ const TEMPLATE_PARAMS_KEY = 'lf_doc_template_params'
 export default function Documents() {
   const { t } = useTranslation()
   const { profile } = useAuthStore()
+  const owners = useOwnerStore((state) => state.owners)
   const activeOwner = useOwnerStore((state) => state.activeOwner)
-  const ownerProfile = activeOwner ?? profile
+  const fallbackOwnerProfile = activeOwner ?? profile
   const [docs, setDocs] = useState<DocumentRecord[]>([])
   const [payments, setPayments] = useState<Payment[]>([])
   const [leases, setLeases] = useState<Lease[]>([])
@@ -162,13 +164,8 @@ export default function Documents() {
   }
 
   async function handleGenerate(request: GenerateDocumentRequest): Promise<boolean> {
-    const landlord = {
-      landlordName: ownerProfile?.name ?? 'Proprietaire',
-      landlordAddress: ownerProfile?.address,
-      landlordCity: ownerProfile?.city,
-      landlordPhone: ownerProfile?.phone,
-      landlordSignature: ownerProfile?.signatureImage,
-    }
+    const resolveLeaseProfile = (lease: Lease) =>
+      resolveOwnerProfileForLease(owners, lease, fallbackOwnerProfile)
 
     switch (request.kind) {
       case 'payment_certificate':
@@ -199,6 +196,14 @@ export default function Documents() {
 
         const lease = leases.find((entry) => entry.id === payment.lease_id)
         if (!lease) return false
+        const ownerProfile = resolveLeaseProfile(lease)
+        const landlord = {
+          landlordName: ownerProfile?.name ?? 'Proprietaire',
+          landlordAddress: ownerProfile?.address,
+          landlordCity: ownerProfile?.city,
+          landlordPhone: ownerProfile?.phone,
+          landlordSignature: ownerProfile?.signatureImage,
+        }
 
         const full = isFullPayment(payment)
         const baseData = {
@@ -241,6 +246,14 @@ export default function Documents() {
       case 'rent_revision_notice': {
         const lease = leases.find((entry) => entry.id === request.leaseId)
         if (!lease) return false
+        const ownerProfile = resolveLeaseProfile(lease)
+        const landlord = {
+          landlordName: ownerProfile?.name ?? 'Proprietaire',
+          landlordAddress: ownerProfile?.address,
+          landlordCity: ownerProfile?.city,
+          landlordPhone: ownerProfile?.phone,
+          landlordSignature: ownerProfile?.signatureImage,
+        }
 
         const context = getRevisionTemplateContext(lease, irlIndices)
         if (!context) return false
@@ -277,6 +290,7 @@ export default function Documents() {
       case 'furnished_lease_contract': {
         const lease = leases.find((entry) => entry.id === request.leaseId)
         if (!lease) return false
+        const ownerProfile = resolveLeaseProfile(lease)
 
         const persistedLease = await window.api.leases.updateContractDetails(
           lease.id,
@@ -302,6 +316,14 @@ export default function Documents() {
       case 'deposit_receipt': {
         const lease = leases.find((entry) => entry.id === request.leaseId)
         if (!lease || !lease.deposit_received_date || lease.deposit_amount <= 0) return false
+        const ownerProfile = resolveLeaseProfile(lease)
+        const landlord = {
+          landlordName: ownerProfile?.name ?? 'Proprietaire',
+          landlordAddress: ownerProfile?.address,
+          landlordCity: ownerProfile?.city,
+          landlordPhone: ownerProfile?.phone,
+          landlordSignature: ownerProfile?.signatureImage,
+        }
 
         const data: DepositReceiptPdfData = {
           ...landlord,
@@ -329,6 +351,14 @@ export default function Documents() {
       case 'deposit_settlement': {
         const lease = leases.find((entry) => entry.id === request.leaseId)
         if (!lease || !lease.deposit_refund_date || lease.deposit_amount <= 0) return false
+        const ownerProfile = resolveLeaseProfile(lease)
+        const landlord = {
+          landlordName: ownerProfile?.name ?? 'Proprietaire',
+          landlordAddress: ownerProfile?.address,
+          landlordCity: ownerProfile?.city,
+          landlordPhone: ownerProfile?.phone,
+          landlordSignature: ownerProfile?.signatureImage,
+        }
 
         const data: DepositSettlementPdfData = {
           ...landlord,
@@ -547,7 +577,8 @@ export default function Documents() {
       <AnimatePresence>
         {showForm && sourcesLoaded && (
           <GenerateDocumentModal
-            profile={ownerProfile}
+            profile={fallbackOwnerProfile}
+            resolveLeaseProfile={(lease) => resolveOwnerProfileForLease(owners, lease, fallbackOwnerProfile)}
             payments={paidPayments}
             leases={leases}
             irlIndices={irlIndices}

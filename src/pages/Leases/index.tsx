@@ -106,6 +106,7 @@ export default function Leases() {
         {
           property_id: lease.property_id,
           tenant_id: lease.tenant_id,
+          owner_profile_id: lease.owner_profile_id,
           type: lease.type,
           start_date: lease.start_date,
           end_date: lease.end_date,
@@ -139,6 +140,7 @@ export default function Leases() {
         {
           property_id: lease.property_id,
           tenant_id: lease.tenant_id,
+          owner_profile_id: lease.owner_profile_id,
           type: lease.type,
           start_date: lease.start_date,
           end_date: lease.end_date,

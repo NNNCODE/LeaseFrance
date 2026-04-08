@@ -9,6 +9,7 @@ export interface Lease {
   id: number
   property_id: number
   tenant_id: number
+  owner_profile_id: string | null
   type: 'vide' | 'meuble' | 'mobilite'
   start_date: string
   end_date: string | null
@@ -31,6 +32,7 @@ export interface Lease {
   property_city: string
   property_zip: string
   property_area_m2: number | null
+  property_owner_profile_id: string | null
   tenant_first_name: string
   tenant_last_name: string
   tenant_email: string | null
@@ -44,6 +46,7 @@ export interface Lease {
 export interface LeaseInput {
   property_id: number
   tenant_id: number
+  owner_profile_id?: string | null
   type: string
   start_date: string
   end_date?: string | null
@@ -64,6 +67,25 @@ interface LeaseRow extends Omit<Lease, 'contract_details'> {
   contract_details: string | null
 }
 
+function normalizeOwnerProfileId(ownerProfileId: string | null | undefined): string | null {
+  const normalized = ownerProfileId?.trim()
+  return normalized ? normalized : null
+}
+
+function getPropertyOwnerProfileId(propertyId: number): string | null {
+  const row = getDb()
+    .prepare('SELECT owner_profile_id FROM properties WHERE id = ?')
+    .get(propertyId) as { owner_profile_id: string | null } | undefined
+  return normalizeOwnerProfileId(row?.owner_profile_id)
+}
+
+function getStoredLeaseOwnerProfileId(leaseId: number): string | null {
+  const row = getDb()
+    .prepare('SELECT owner_profile_id FROM leases WHERE id = ?')
+    .get(leaseId) as { owner_profile_id: string | null } | undefined
+  return normalizeOwnerProfileId(row?.owner_profile_id)
+}
+
 const SELECT = `
   SELECT l.*,
     p.name  AS property_name,
@@ -71,6 +93,7 @@ const SELECT = `
     p.city  AS property_city,
     p.zip   AS property_zip,
     p.area_m2 AS property_area_m2,
+    p.owner_profile_id AS property_owner_profile_id,
     t.first_name AS tenant_first_name,
     t.last_name  AS tenant_last_name,
     t.email AS tenant_email,
@@ -95,19 +118,23 @@ export function getById(id: number): Lease | undefined {
 
 export function create(data: LeaseInput): Lease {
   const db = getDb()
+  const ownerProfileId = data.owner_profile_id !== undefined
+    ? normalizeOwnerProfileId(data.owner_profile_id)
+    : getPropertyOwnerProfileId(data.property_id)
   const result = db.prepare(`
     INSERT INTO leases
-      (property_id, tenant_id, type, start_date, end_date,
+      (property_id, tenant_id, owner_profile_id, type, start_date, end_date,
        rent_amount, charges_amount, deposit_amount,
        deposit_received_date, deposit_refund_date, deposit_retained_amount, deposit_notes,
        irl_reference_index, irl_reference_quarter, contract_details, status)
     VALUES
-      (@property_id, @tenant_id, @type, @start_date, @end_date,
+      (@property_id, @tenant_id, @owner_profile_id, @type, @start_date, @end_date,
        @rent_amount, @charges_amount, @deposit_amount,
        @deposit_received_date, @deposit_refund_date, @deposit_retained_amount, @deposit_notes,
        @irl_reference_index, @irl_reference_quarter, @contract_details, @status)
   `).run({
     ...data,
+    owner_profile_id: ownerProfileId,
     end_date: data.end_date ?? null,
     deposit_received_date: data.deposit_received_date ?? null,
     deposit_refund_date: data.deposit_refund_date ?? null,
@@ -124,9 +151,12 @@ export function create(data: LeaseInput): Lease {
 const CONFLICT_MSG = 'Les donnees ont ete modifiees depuis votre dernier chargement. Fermez le formulaire et reessayez.'
 
 export function update(id: number, data: LeaseInput, expectedUpdatedAt: string): Lease | undefined {
+  const ownerProfileId = data.owner_profile_id !== undefined
+    ? normalizeOwnerProfileId(data.owner_profile_id)
+    : getStoredLeaseOwnerProfileId(id) ?? getPropertyOwnerProfileId(data.property_id)
   const result = getDb().prepare(`
     UPDATE leases SET
-      property_id=@property_id, tenant_id=@tenant_id, type=@type,
+      property_id=@property_id, tenant_id=@tenant_id, owner_profile_id=@owner_profile_id, type=@type,
       start_date=@start_date, end_date=@end_date,
       rent_amount=@rent_amount, charges_amount=@charges_amount,
       deposit_amount=@deposit_amount,
@@ -142,6 +172,7 @@ export function update(id: number, data: LeaseInput, expectedUpdatedAt: string):
     WHERE id=@id AND updated_at=@expected_updated_at
   `).run({
     ...data,
+    owner_profile_id: ownerProfileId,
     end_date: data.end_date ?? null,
     deposit_received_date: data.deposit_received_date ?? null,
     deposit_refund_date: data.deposit_refund_date ?? null,

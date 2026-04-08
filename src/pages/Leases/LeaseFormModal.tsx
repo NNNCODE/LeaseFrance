@@ -3,7 +3,9 @@ import { motion } from 'framer-motion'
 import { Save, TrendingUp, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
+import { formatOwnerDisplayName } from '@/lib/ownerProfiles'
 import { Input } from '@/components/ui/input'
+import { useOwnerStore } from '@/stores/useOwnerStore'
 import { formatQuarter } from '@/lib/irl'
 import { formatCurrency } from '@/lib/utils'
 import { emptyLeaseForm, LEASE_TYPES, statusLabel } from './leasePageUtils'
@@ -20,6 +22,7 @@ export default function LeaseFormModal({
   onClose,
 }: LeaseFormModalProps) {
   const { t } = useTranslation()
+  const owners = useOwnerStore((state) => state.owners)
   const [properties, setProperties] = useState<Property[]>([])
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [irlIndices, setIrlIndices] = useState<IrlIndex[]>([])
@@ -28,6 +31,7 @@ export default function LeaseFormModal({
       ? {
           property_id: initial.property_id,
           tenant_id: initial.tenant_id,
+          owner_profile_id: initial.owner_profile_id,
           type: initial.type,
           start_date: initial.start_date,
           end_date: initial.end_date,
@@ -59,7 +63,11 @@ export default function LeaseFormModal({
       setIrlIndices(nextIrl)
       if (!initial) {
         if (nextProperties.length === 1) {
-          setForm((current) => ({ ...current, property_id: nextProperties[0].id }))
+          setForm((current) => ({
+            ...current,
+            property_id: nextProperties[0].id,
+            owner_profile_id: nextProperties[0].owner_profile_id ?? null,
+          }))
         }
         if (nextTenants.length === 1) {
           setForm((current) => ({ ...current, tenant_id: nextTenants[0].id }))
@@ -76,6 +84,14 @@ export default function LeaseFormModal({
   function setField<K extends keyof LeaseInput>(field: K, value: LeaseInput[K]) {
     setForm((current) => ({ ...current, [field]: value }))
   }
+
+  const selectedProperty = properties.find((property) => property.id === form.property_id) ?? null
+  const inheritedOwnerLabel = selectedProperty?.owner_profile_id
+    ? formatOwnerDisplayName(
+        owners.find((owner) => owner.id === selectedProperty.owner_profile_id) ?? null,
+        t('profile.unnamedOwner'),
+      )
+    : t('leases.ownerDefaultNone')
 
   function computeMaxDeposit() {
     if (form.type === 'vide') return form.rent_amount
@@ -152,7 +168,15 @@ export default function LeaseFormModal({
             <select
               aria-label={t('leases.property')}
               value={form.property_id}
-              onChange={(event) => setField('property_id', Number(event.target.value))}
+              onChange={(event) => {
+                const propertyId = Number(event.target.value)
+                const property = properties.find((entry) => entry.id === propertyId) ?? null
+                setForm((current) => ({
+                  ...current,
+                  property_id: propertyId,
+                  owner_profile_id: property?.owner_profile_id ?? null,
+                }))
+              }}
               disabled={noProperties}
               className="w-full rounded-lg border border-border bg-surfaceHigh px-3 py-2 text-sm text-textPrimary transition-colors focus:border-primary focus:outline-none disabled:opacity-50"
             >
@@ -165,6 +189,24 @@ export default function LeaseFormModal({
                 </option>
               ))}
             </select>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-textMuted">{t('leases.ownerProfile')}</label>
+            <select
+              aria-label={t('leases.ownerProfile')}
+              value={form.owner_profile_id ?? ''}
+              onChange={(event) => setField('owner_profile_id', event.target.value || null)}
+              className="w-full rounded-lg border border-border bg-surfaceHigh px-3 py-2 text-sm text-textPrimary transition-colors focus:border-primary focus:outline-none"
+            >
+              <option value="">{t('leases.ownerInheritFromProperty', { owner: inheritedOwnerLabel })}</option>
+              {owners.map((owner) => (
+                <option key={owner.id} value={owner.id}>
+                  {formatOwnerDisplayName(owner, t('profile.unnamedOwner'))}
+                </option>
+              ))}
+            </select>
+            <p className="text-[10px] text-textMuted">{t('leases.ownerProfileHelp')}</p>
           </div>
 
           <div className="flex flex-col gap-1.5">

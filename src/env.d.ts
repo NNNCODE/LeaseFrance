@@ -122,6 +122,7 @@ interface Property {
   zip: string
   type: string
   area_m2: number | null
+  owner_profile_id: string | null
   created_at: string
   updated_at: string
 }
@@ -133,12 +134,14 @@ interface PropertyInput {
   zip: string
   type: string
   area_m2?: number | null
+  owner_profile_id?: string | null
 }
 
 interface Lease {
   id: number
   property_id: number
   tenant_id: number
+  owner_profile_id: string | null
   type: 'vide' | 'meuble' | 'mobilite'
   start_date: string
   end_date: string | null
@@ -160,6 +163,7 @@ interface Lease {
   property_city: string
   property_zip: string
   property_area_m2: number | null
+  property_owner_profile_id: string | null
   tenant_first_name: string
   tenant_last_name: string
   tenant_email: string | null
@@ -173,6 +177,7 @@ interface Lease {
 interface LeaseInput {
   property_id: number
   tenant_id: number
+  owner_profile_id?: string | null
   type: string
   start_date: string
   end_date?: string | null

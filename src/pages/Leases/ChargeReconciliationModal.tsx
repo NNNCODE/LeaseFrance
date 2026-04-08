@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { resolveOwnerProfileForLease } from '@/lib/ownerProfiles'
 import { ChargeReconciliationPDF, type ChargeReconciliationPdfData } from '@/lib/pdf/chargeReconciliation'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { useAuthStore } from '@/stores/useAuthStore'
@@ -116,8 +117,9 @@ export default function ChargeReconciliationModal({
   onClose: () => void
 }) {
   const { profile } = useAuthStore()
+  const owners = useOwnerStore((state) => state.owners)
   const activeOwner = useOwnerStore((state) => state.activeOwner)
-  const ownerProfile = activeOwner ?? profile
+  const ownerProfile = resolveOwnerProfileForLease(owners, lease, activeOwner ?? profile)
   const [rows, setRows] = useState<ChargeReconciliation[]>([])
   const [payments, setPayments] = useState<Payment[]>([])
   const [form, setForm] = useState<ChargeReconciliationFormState>(buildDefaultForm())

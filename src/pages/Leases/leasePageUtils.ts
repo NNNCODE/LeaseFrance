@@ -27,6 +27,7 @@ export function statusLabel(status: keyof typeof STATUS_CONFIG, t?: TFunction) {
 export const emptyLeaseForm: LeaseInput = {
   property_id: 0,
   tenant_id: 0,
+  owner_profile_id: null,
   type: 'vide',
   start_date: '',
   end_date: null,

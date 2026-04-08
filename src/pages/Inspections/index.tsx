@@ -15,6 +15,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { resolveOwnerProfileForLease } from '@/lib/ownerProfiles'
 import { InspectionPDF, type InspectionPdfData } from '@/lib/pdf/inspection'
 import { formatDate } from '@/lib/utils'
 import { useAuthStore } from '@/stores/useAuthStore'
@@ -71,8 +72,9 @@ function buildInspectionPdfData(
 export default function Inspections() {
   const { t } = useTranslation()
   const { profile } = useAuthStore()
+  const owners = useOwnerStore((state) => state.owners)
   const activeOwner = useOwnerStore((state) => state.activeOwner)
-  const ownerProfile = activeOwner ?? profile
+  const fallbackOwnerProfile = activeOwner ?? profile
   const [inspections, setInspections] = useState<Inspection[]>([])
   const [leases, setLeases] = useState<Lease[]>([])
   const [loading, setLoading] = useState(true)
@@ -167,6 +169,10 @@ export default function Inspections() {
     setError('')
 
     try {
+      const lease = leases.find((entry) => entry.id === inspection.lease_id) ?? null
+      const ownerProfile = lease
+        ? resolveOwnerProfileForLease(owners, lease, fallbackOwnerProfile)
+        : fallbackOwnerProfile
       const data = buildInspectionPdfData(inspection, ownerProfile, t('nav.profile'))
       const blob = await pdf(<InspectionPDF data={data} />).toBlob()
       const buffer = new Uint8Array(await blob.arrayBuffer())

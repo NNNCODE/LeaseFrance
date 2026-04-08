@@ -8,6 +8,7 @@ export interface Property {
   zip: string
   type: string
   area_m2: number | null
+  owner_profile_id: string | null
   created_at: string
   updated_at: string
 }
@@ -21,6 +22,12 @@ export interface PropertyInput {
   zip: string
   type: string
   area_m2?: number | null
+  owner_profile_id?: string | null
+}
+
+function normalizeOwnerProfileId(ownerProfileId: string | null | undefined): string | null {
+  const normalized = ownerProfileId?.trim()
+  return normalized ? normalized : null
 }
 
 export function getAll(): Property[] {
@@ -34,19 +41,27 @@ export function getById(id: number): Property | undefined {
 export function create(data: PropertyInput): Property {
   const db = getDb()
   const stmt = db.prepare(`
-    INSERT INTO properties (name, address, city, zip, type, area_m2)
-    VALUES (@name, @address, @city, @zip, @type, @area_m2)
+    INSERT INTO properties (name, address, city, zip, type, area_m2, owner_profile_id)
+    VALUES (@name, @address, @city, @zip, @type, @area_m2, @owner_profile_id)
   `)
-  const result = stmt.run(data)
+  const result = stmt.run({
+    ...data,
+    owner_profile_id: normalizeOwnerProfileId(data.owner_profile_id),
+  })
   return getById(result.lastInsertRowid as number)!
 }
 
 export function update(id: number, data: PropertyInput, expectedUpdatedAt: string): Property | undefined {
   const result = getDb().prepare(`
     UPDATE properties SET name=@name, address=@address, city=@city,
-    zip=@zip, type=@type, area_m2=@area_m2, updated_at=datetime('now')
+    zip=@zip, type=@type, area_m2=@area_m2, owner_profile_id=@owner_profile_id, updated_at=datetime('now')
     WHERE id=@id AND updated_at=@expected_updated_at
-  `).run({ ...data, id, expected_updated_at: expectedUpdatedAt })
+  `).run({
+    ...data,
+    id,
+    owner_profile_id: normalizeOwnerProfileId(data.owner_profile_id),
+    expected_updated_at: expectedUpdatedAt,
+  })
   if (result.changes === 0) {
     if (getDb().prepare('SELECT 1 FROM properties WHERE id = ?').get(id)) {
       throw new Error(CONFLICT_MSG)

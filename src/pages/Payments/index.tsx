@@ -4,6 +4,7 @@ import { pdf } from '@react-pdf/renderer'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowRightLeft, CheckCircle2, CreditCard, Plus, RefreshCw, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { resolveOwnerProfileForLease } from '@/lib/ownerProfiles'
 import { formatCurrency } from '@/lib/utils'
 import { QuittancePDF, type QuittanceData } from '@/lib/pdf/quittance'
 import { RecuPDF, type RecuData } from '@/lib/pdf/recu'
@@ -20,8 +21,9 @@ import { monthLabel, today } from './paymentPageUtils'
 export default function Payments() {
   const { t } = useTranslation()
   const { profile } = useAuthStore()
+  const owners = useOwnerStore((state) => state.owners)
   const activeOwner = useOwnerStore((state) => state.activeOwner)
-  const ownerProfile = activeOwner ?? profile
+  const fallbackOwnerProfile = activeOwner ?? profile
   const [payments, setPayments] = useState<Payment[]>([])
   const [leases, setLeases] = useState<Lease[]>([])
   const [loading, setLoading] = useState(true)
@@ -128,6 +130,7 @@ export default function Payments() {
   async function handleGenerateDocument(payment: Payment) {
     const lease = leases.find((entry) => entry.id === payment.lease_id)
     if (!lease) return
+    const ownerProfile = resolveOwnerProfileForLease(owners, lease, fallbackOwnerProfile)
 
     const isFullPayment =
       payment.rent_amount >= payment.lease_rent_amount
@@ -364,7 +367,14 @@ export default function Payments() {
         {reminding && (
           <PaymentReminderModal
             payment={reminding}
-            profile={ownerProfile}
+            profile={resolveOwnerProfileForLease(
+              owners,
+              leases.find((lease) => lease.id === reminding.lease_id) ?? {
+                owner_profile_id: null,
+                property_owner_profile_id: null,
+              },
+              fallbackOwnerProfile,
+            )}
             onClose={() => setReminding(null)}
             onSaved={load}
           />
