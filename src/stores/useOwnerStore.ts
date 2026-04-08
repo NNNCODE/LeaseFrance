@@ -46,7 +46,9 @@ export const useOwnerStore = create<OwnerState>((set) => ({
   },
 
   createOwner: async (draft) => {
-    const created = await window.api.owners.create(draft)
+    const created = draft === undefined
+      ? await window.api.owners.create()
+      : await window.api.owners.create(draft)
     const owners = await window.api.owners.list()
     set({ owners, activeOwner: created, status: 'ready' })
     return created

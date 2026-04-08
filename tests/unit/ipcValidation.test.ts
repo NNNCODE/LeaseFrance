@@ -21,6 +21,11 @@ describe('validateInvokeArgs', () => {
     expect(password).toBeUndefined()
   })
 
+  it('accepts owner creation with no payload or an explicit undefined payload', () => {
+    expect(validateInvokeArgs('owners:create', [])).toEqual([])
+    expect(validateInvokeArgs('owners:create', [undefined])).toEqual([undefined])
+  })
+
   it('accepts diagnostics IPC channels without arguments', () => {
     expect(validateInvokeArgs('diagnostics:exportReport', [])).toEqual([])
     expect(validateInvokeArgs('diagnostics:openLogsFolder', [])).toEqual([])

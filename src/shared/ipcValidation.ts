@@ -223,7 +223,7 @@ const invokeArgSchemas = {
   'auth:verifyRecoveryKey': z.tuple([nonEmptyText]),
   'auth:resetWithRecoveryKey': z.tuple([nonEmptyText, z.string().min(8)]),
   'auth:regenerateRecoveryKey': z.tuple([nonEmptyText]),
-  'owners:create': z.union([z.tuple([]), z.tuple([ownerProfileDraft])]),
+  'owners:create': z.union([z.tuple([]), z.tuple([ownerProfileDraft.optional()])]),
   'owners:update': z.tuple([nonEmptyText, ownerProfileDraft]),
   'owners:setActive': z.tuple([nonEmptyText]),
   'owners:delete': z.tuple([nonEmptyText]),
