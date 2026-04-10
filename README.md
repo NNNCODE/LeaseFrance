@@ -171,13 +171,12 @@ docs/       Architecture, roadmap, security notes, and feature write-ups
 - Production builds disable DevTools
 - Backup flows support encrypted archives
 
-More detail lives in [docs/SECURITY.md](docs/SECURITY.md).
+More detail lives in [SECURITY.md](SECURITY.md) and [docs/SECURITY.md](docs/SECURITY.md).
 
 ## Contributing
 
-Contribution guidelines are not formalized yet.
-Until `CONTRIBUTING.md` is added, treat the repository as maintainer-led and
-open issues or draft pull requests only when the intended scope is clear.
+This is currently a maintainer-led public repository.
+See [CONTRIBUTING.md](CONTRIBUTING.md) before opening issues or pull requests.
 
 ## License
 

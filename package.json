@@ -3,6 +3,14 @@
   "version": "0.1.1",
   "license": "MIT",
   "description": "Gestion locative pour proprietaires prives en France",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NNNCODE/LeaseFrance.git"
+  },
+  "homepage": "https://github.com/NNNCODE/LeaseFrance",
+  "bugs": {
+    "url": "https://github.com/NNNCODE/LeaseFrance/issues"
+  },
   "main": "out/main/main.js",
   "scripts": {
     "dev": "node scripts/dev.mjs",
