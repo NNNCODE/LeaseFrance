@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { AlertTriangle, FolderOpen, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import PdfCanvasPreview from '@/components/PdfCanvasPreview'
 import { Button } from '@/components/ui/button'
 import { formatDate } from '@/lib/utils'
 import { getDocumentMeta } from './documentPageUtils'
@@ -13,12 +14,12 @@ interface PdfPreviewModalProps {
 
 export default function PdfPreviewModal({ doc, onClose }: PdfPreviewModalProps) {
   const { t } = useTranslation()
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [pdfData, setPdfData] = useState<Uint8Array | null>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    setPreviewUrl(null)
+    setPdfData(null)
     setError('')
     setLoading(true)
 
@@ -29,7 +30,6 @@ export default function PdfPreviewModal({ doc, onClose }: PdfPreviewModalProps) 
     }
 
     let cancelled = false
-    let objectUrl: string | null = null
 
     async function loadPdf() {
       const result = await window.api.documents.readFile(doc.file_path!)
@@ -38,13 +38,7 @@ export default function PdfPreviewModal({ doc, onClose }: PdfPreviewModalProps) 
       if (result.error || !result.data || !result.mimeType) {
         setError(result.error || t('documents.readError'))
       } else {
-        const nextUrl = URL.createObjectURL(new Blob([result.data], { type: result.mimeType }))
-        if (cancelled) {
-          URL.revokeObjectURL(nextUrl)
-          return
-        }
-        objectUrl = nextUrl
-        setPreviewUrl(nextUrl)
+        setPdfData(result.data)
       }
       setLoading(false)
     }
@@ -52,7 +46,6 @@ export default function PdfPreviewModal({ doc, onClose }: PdfPreviewModalProps) 
     void loadPdf()
     return () => {
       cancelled = true
-      if (objectUrl) URL.revokeObjectURL(objectUrl)
     }
   }, [doc.file_path, t])
 
@@ -114,8 +107,8 @@ export default function PdfPreviewModal({ doc, onClose }: PdfPreviewModalProps) 
               <AlertTriangle className="h-8 w-8 text-warning" />
               <p className="text-sm text-textMuted">{error}</p>
             </div>
-          ) : previewUrl ? (
-            <iframe src={previewUrl} className="h-full w-full border-0" title={t('documents.preview')} />
+          ) : pdfData ? (
+            <PdfCanvasPreview data={pdfData} />
           ) : null}
         </div>
       </motion.div>

@@ -17,10 +17,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
   DOSSIER_ITEMS,
+  DossierKey,
   getCompletedDossierCount,
   getDossierStatusVariant,
   hasEmergencyContact,
   hasGuarantor,
+  isDossierKey,
 } from './tenantFileHelpers'
 
 type TenantFileForm = Pick<
@@ -42,7 +44,7 @@ type TenantFileForm = Pick<
 
 interface TenantFileModalProps {
   tenant: Tenant
-  onSave: (data: TenantFileForm) => Promise<void>
+  onSave: (tenantId: number, data: TenantFileForm, expectedUpdatedAt: string) => Promise<Tenant>
   onClose: () => void
 }
 
@@ -64,8 +66,27 @@ function createInitialForm(tenant: Tenant): TenantFileForm {
   }
 }
 
+function buildSavePayload(form: TenantFileForm): TenantFileForm {
+  return {
+    guarantor_name: form.guarantor_name?.toString().trim() || null,
+    guarantor_email: form.guarantor_email?.toString().trim() || null,
+    guarantor_phone: form.guarantor_phone?.toString().trim() || null,
+    guarantor_address: form.guarantor_address?.toString().trim() || null,
+    emergency_contact_name: form.emergency_contact_name?.toString().trim() || null,
+    emergency_contact_phone: form.emergency_contact_phone?.toString().trim() || null,
+    emergency_contact_relation: form.emergency_contact_relation?.toString().trim() || null,
+    dossier_id_document: Boolean(form.dossier_id_document),
+    dossier_income_proof: Boolean(form.dossier_income_proof),
+    dossier_employment_proof: Boolean(form.dossier_employment_proof),
+    dossier_tax_notice: Boolean(form.dossier_tax_notice),
+    dossier_bank_details: Boolean(form.dossier_bank_details),
+    dossier_notes: form.dossier_notes?.toString().trim() || null,
+  }
+}
+
 export default function TenantFileModal({ tenant, onSave, onClose }: TenantFileModalProps) {
   const { t } = useTranslation()
+  const [currentTenant, setCurrentTenant] = useState(tenant)
   const [form, setForm] = useState<TenantFileForm>(() => createInitialForm(tenant))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -85,24 +106,37 @@ export default function TenantFileModal({ tenant, onSave, onClose }: TenantFileM
     setError('')
 
     try {
-      await onSave({
-        guarantor_name: form.guarantor_name?.toString().trim() || null,
-        guarantor_email: form.guarantor_email?.toString().trim() || null,
-        guarantor_phone: form.guarantor_phone?.toString().trim() || null,
-        guarantor_address: form.guarantor_address?.toString().trim() || null,
-        emergency_contact_name: form.emergency_contact_name?.toString().trim() || null,
-        emergency_contact_phone: form.emergency_contact_phone?.toString().trim() || null,
-        emergency_contact_relation: form.emergency_contact_relation?.toString().trim() || null,
-        dossier_id_document: Boolean(form.dossier_id_document),
-        dossier_income_proof: Boolean(form.dossier_income_proof),
-        dossier_employment_proof: Boolean(form.dossier_employment_proof),
-        dossier_tax_notice: Boolean(form.dossier_tax_notice),
-        dossier_bank_details: Boolean(form.dossier_bank_details),
-        dossier_notes: form.dossier_notes?.toString().trim() || null,
-      })
+      const updated = await onSave(currentTenant.id, buildSavePayload(form), currentTenant.updated_at)
+      setCurrentTenant(updated)
       onClose()
     } catch (err) {
       setError(`${t('common.error')}: ${err instanceof Error ? err.message : String(err)}`)
+      setSaving(false)
+    }
+  }
+
+  async function handleAttachmentUploadComplete(slot: string | null) {
+    if (!isDossierKey(slot) || form[slot]) return
+
+    const dossierKey = slot as DossierKey
+    setSaving(true)
+    setError('')
+
+    try {
+      const updated = await onSave(
+        currentTenant.id,
+        buildSavePayload({
+          ...createInitialForm(currentTenant),
+          [dossierKey]: true,
+        }),
+        currentTenant.updated_at,
+      )
+
+      setCurrentTenant(updated)
+      setForm((current) => ({ ...current, [dossierKey]: true }))
+    } catch (err) {
+      setError(`${t('common.error')}: ${err instanceof Error ? err.message : String(err)}`)
+    } finally {
       setSaving(false)
     }
   }
@@ -128,7 +162,7 @@ export default function TenantFileModal({ tenant, onSave, onClose }: TenantFileM
             <div>
               <h2 className="text-base font-semibold text-textPrimary">{t('tenants.dossier.title')}</h2>
               <p className="text-xs text-textMuted mt-0.5">
-                {tenant.first_name} {tenant.last_name}
+                {currentTenant.first_name} {currentTenant.last_name}
               </p>
             </div>
           </div>
@@ -278,9 +312,10 @@ export default function TenantFileModal({ tenant, onSave, onClose }: TenantFileM
           {/* ── Attachments ────────────────────────────────── */}
           <AttachmentPanel
             entityType="tenant"
-            entityId={tenant.id}
+            entityId={currentTenant.id}
             title={t('tenants.fileModal.attachments')}
             slots={DOSSIER_ITEMS.map((item) => ({ key: item.key, label: t(item.labelKey) }))}
+            onUploadComplete={handleAttachmentUploadComplete}
           />
 
           <section className="rounded-2xl border border-border bg-surfaceHigh/40 p-4">

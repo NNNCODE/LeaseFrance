@@ -77,6 +77,7 @@ describe('GenerateDocumentModal', () => {
     render(
       <GenerateDocumentModal
         profile={null}
+        resolveLeaseProfile={() => null}
         payments={[createPayment()]}
         leases={[createLease()]}
         irlIndices={[]}

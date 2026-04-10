@@ -45,16 +45,20 @@ file operations.
 CSP is injected as an HTTP response header (not a `<meta>` tag) so it
 cannot be bypassed by modifying the HTML file.
 
-**Development policy** allows `'unsafe-inline'` for scripts (Vite HMR)
+**Development policy** allows `'unsafe-inline'` for scripts (Vite HMR),
+`'wasm-unsafe-eval'` for local PDF generation via `@react-pdf/renderer`,
 and WebSocket connections to localhost.
 
-**Production policy** blocks inline scripts entirely and restricts
+**Production policy** blocks inline scripts entirely, still allows
+`'wasm-unsafe-eval'` for the same PDF generation path, and restricts
 all connections to `'self'`.
 
 Both policies allow:
 - Google Fonts (`style-src`, `font-src`)
 - Data URIs and blobs for images (`img-src`) — needed for signature
   images and PDF preview
+- Blob-backed iframe previews (`frame-src 'self' blob:`) — needed for
+  in-app PDF preview of generated documents and attachments
 - Inline styles (`style-src 'unsafe-inline'`) — required by Tailwind
   and React dynamic styles
 

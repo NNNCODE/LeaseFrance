@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readdirSync, renameSync, rmSync } from 'fs'
 import { join } from 'path'
 
 const PRODUCT_NAME = 'Baillio'
-const LEGACY_USER_DATA_DIRS = ['LeaseFrance']
+const LEGACY_USER_DATA_DIRS = ['LeaseFrance', 'lease-france']
 const EPHEMERAL_LOCK_ENTRIES = new Set(['SingletonCookie', 'SingletonLock'])
 
 function desiredUserDataPath(): string {

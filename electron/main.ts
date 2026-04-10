@@ -59,6 +59,7 @@ import { activateLicense, getLicenseState, initLicenseRuntime, refreshLicense } 
 import type { BaillioInvokeChannels, BaillioWindowChannels } from '../src/shared/ipc'
 import { validateInvokeArgs } from '../src/shared/ipcValidation'
 import { ATTACHMENT_DIALOG_EXTENSIONS, validateAttachmentFileSelection } from './security/attachments'
+import { buildContentSecurityPolicy } from './security/csp'
 
 const isDev = process.env['ELECTRON_RENDERER_URL'] !== undefined
 
@@ -249,9 +250,7 @@ function createWindow(): void {
 
   // Content Security Policy
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
-    const csp = isDev
-      ? "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' ws://localhost:* http://localhost:*;"
-      : "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self';"
+    const csp = buildContentSecurityPolicy(isDev)
     callback({
       responseHeaders: {
         ...details.responseHeaders,

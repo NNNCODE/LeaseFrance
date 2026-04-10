@@ -13,6 +13,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
+import PdfCanvasPreview from '@/components/PdfCanvasPreview'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 
@@ -27,6 +28,8 @@ interface AttachmentPanelProps {
   title?: string
   /** Compact mode for inline embedding. */
   compact?: boolean
+  /** Optional callback fired after a successful upload. */
+  onUploadComplete?: (slot: string | null, uploaded: Attachment[]) => Promise<void> | void
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -51,6 +54,7 @@ export default function AttachmentPanel({
   slots,
   title,
   compact = false,
+  onUploadComplete,
 }: AttachmentPanelProps) {
   const { t } = useTranslation()
   const [attachments, setAttachments] = useState<Attachment[]>([])
@@ -78,7 +82,10 @@ export default function AttachmentPanel({
     setError('')
     try {
       const uploaded = await window.api.attachments.upload(entityType, entityId, slot)
-      if (uploaded.length > 0) await load()
+      if (uploaded.length > 0) {
+        await load()
+        await onUploadComplete?.(slot, uploaded)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     }
@@ -275,6 +282,7 @@ function AttachmentPreviewModal({
 }) {
   const { t } = useTranslation()
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [pdfData, setPdfData] = useState<Uint8Array | null>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
 
@@ -282,6 +290,7 @@ function AttachmentPreviewModal({
     let cancelled = false
     let objectUrl: string | null = null
     setPreviewUrl(null)
+    setPdfData(null)
     setError('')
     setLoading(true)
 
@@ -291,6 +300,8 @@ function AttachmentPreviewModal({
 
       if (result.error || !result.data) {
         setError(result.error || t('attachments.readError'))
+      } else if (attachment.mime_type === 'application/pdf') {
+        setPdfData(result.data)
       } else if (result.mimeType) {
         const nextUrl = URL.createObjectURL(new Blob([result.data], { type: result.mimeType }))
         if (cancelled) {
@@ -370,12 +381,10 @@ function AttachmentPreviewModal({
               alt={attachment.file_name}
               className="max-w-full max-h-full object-contain rounded-lg"
             />
-          ) : previewUrl && isPdf ? (
-            <iframe
-              src={previewUrl}
-              className="w-full h-full border-0"
-              title={t('attachments.preview')}
-            />
+          ) : pdfData && isPdf ? (
+            <div className="h-full w-full overflow-hidden">
+              <PdfCanvasPreview data={pdfData} />
+            </div>
           ) : (
             <div className="flex flex-col items-center gap-3">
               <File className="w-8 h-8 text-textMuted" />

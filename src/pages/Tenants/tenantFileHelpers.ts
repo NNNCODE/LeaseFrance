@@ -6,7 +6,7 @@ export const DOSSIER_ITEMS = [
   { key: 'dossier_bank_details', labelKey: 'tenants.dossier.bankDetails' },
 ] as const
 
-type DossierKey = (typeof DOSSIER_ITEMS)[number]['key']
+export type DossierKey = (typeof DOSSIER_ITEMS)[number]['key']
 
 type TenantDossierShape = Pick<
   Tenant,
@@ -55,6 +55,10 @@ export function getDossierStatusVariant(tenant: Pick<TenantDossierShape, Dossier
   if (completed === DOSSIER_ITEMS.length) return 'success' as const
   if (completed === 0) return 'muted' as const
   return 'warning' as const
+}
+
+export function isDossierKey(value: string | null | undefined): value is DossierKey {
+  return DOSSIER_ITEMS.some((item) => item.key === value)
 }
 
 export function buildTenantInputFromTenant(tenant: Tenant): TenantInput {

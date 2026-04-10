@@ -143,16 +143,22 @@ export default function Tenants() {
     load()
   }
 
-  async function handleSaveDossier(data: TenantInput) {
-    if (!dossierTenant) return
+  async function handleSaveDossier(tenantId: number, data: TenantInput, expectedUpdatedAt: string) {
+    const current = tenants.find((tenant) => tenant.id === tenantId) ?? dossierTenant
+    if (!current) {
+      throw new Error('Locataire introuvable.')
+    }
 
-    await window.api.tenants.update(dossierTenant.id, {
-      ...buildTenantInputFromTenant(dossierTenant),
+    const updated = await window.api.tenants.update(tenantId, {
+      ...buildTenantInputFromTenant(current),
       ...data,
-    }, dossierTenant.updated_at)
+    }, expectedUpdatedAt)
 
-    setDossierTenant(null)
-    load()
+    setTenants((currentTenants) => currentTenants.map((tenant) => (
+      tenant.id === updated.id ? updated : tenant
+    )))
+    setDossierTenant(updated)
+    return updated
   }
 
   async function handleDelete() {
