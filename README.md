@@ -99,6 +99,9 @@ npm run dist
 The open repository should be usable without Baillio-operated services.
 These integrations are optional and disabled by default:
 
+Supported build-time environment variables are documented in `.env.example`.
+They are examples only; the app does not require a checked-in runtime config file.
+
 ### License Activation Runtime
 
 Enable packaged activation only if you provide a compatible license API:

@@ -5,6 +5,7 @@ node_modules/
 out/
 dist/
 build/auto-update.json
+build/license-runtime.json
 
 # Electron builder output
 release/
