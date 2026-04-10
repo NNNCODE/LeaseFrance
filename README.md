@@ -14,13 +14,13 @@ The product direction is pragmatic:
 
 ## Repository Status
 
-This repository is being prepared for a public open-source release.
+This repository is distributed under the MIT License.
 
 - The desktop app can run locally without Baillio-hosted services.
 - License activation and auto-update are optional integration points and stay
   disabled unless you configure them explicitly at build time.
-- A formal repository `LICENSE` file still needs to be added before public
-  redistribution terms are finalized.
+- Hosted license activation and auto-update endpoints are optional private
+  integrations, not required runtime dependencies for local development.
 
 ## What The App Currently Covers
 
@@ -94,7 +94,7 @@ npm run build
 npm run dist
 ```
 
-## Optional Commercial Integrations
+## Optional Private Integrations
 
 The open repository should be usable without Baillio-operated services.
 These integrations are optional and disabled by default:
@@ -178,6 +178,4 @@ open issues or draft pull requests only when the intended scope is clear.
 
 ## License
 
-No repository-wide open-source license file has been added yet.
-Do not assume redistribution or commercial reuse rights until the `LICENSE`
-file is published.
+This repository is licensed under the [MIT License](LICENSE).
