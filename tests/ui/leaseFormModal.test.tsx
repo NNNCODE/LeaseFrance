@@ -66,14 +66,14 @@ describe('LeaseFormModal', () => {
     render(<LeaseFormModal initial={null} onSave={onSave} onClose={vi.fn()} />)
 
     await waitFor(() => {
-      expect((screen.getByLabelText('Bien immobilier') as HTMLSelectElement).value).toBe('1')
+      expect((screen.getByLabelText('Bien') as HTMLSelectElement).value).toBe('1')
       expect((screen.getByLabelText('Locataire') as HTMLSelectElement).value).toBe('2')
     })
 
     await user.click(screen.getByRole('button', { name: /mobilite/i }))
     await user.type(screen.getByLabelText('Date de debut'), '2026-04-01')
-    await user.type(screen.getByLabelText('Loyer HC'), '650')
-    await user.click(screen.getByRole('button', { name: /creer le bail/i }))
+    await user.type(screen.getByLabelText(/Loyer HC/i), '650')
+    await user.click(screen.getByRole('button', { name: /creer un bail/i }))
 
     expect(await screen.findByText(/bail mobilite requiert une date de fin/i)).not.toBeNull()
     expect(onSave).not.toHaveBeenCalled()

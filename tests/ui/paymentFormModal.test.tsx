@@ -61,8 +61,8 @@ describe('PaymentFormModal', () => {
     await user.selectOptions(screen.getByLabelText('Bail'), '7')
 
     await waitFor(() => {
-      expect((screen.getByLabelText('Loyer HC') as HTMLInputElement).value).toBe('820')
-      expect((screen.getByLabelText('Charges') as HTMLInputElement).value).toBe('45')
+      expect((screen.getByLabelText(/Loyer HC/i) as HTMLInputElement).value).toBe('820')
+      expect((screen.getByLabelText(/Charges/i) as HTMLInputElement).value).toBe('45')
     })
 
     await user.click(screen.getByRole('button', { name: /paye/i }))

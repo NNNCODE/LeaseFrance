@@ -176,7 +176,8 @@ More detail lives in [SECURITY.md](SECURITY.md) and [docs/SECURITY.md](docs/SECU
 ## Contributing
 
 This is currently a maintainer-led public repository.
-See [CONTRIBUTING.md](CONTRIBUTING.md) before opening issues or pull requests.
+See [CONTRIBUTING.md](CONTRIBUTING.md) before opening issues or pull requests,
+and follow [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) in public interactions.
 
 ## License
 

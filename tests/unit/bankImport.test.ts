@@ -88,11 +88,15 @@ describe('parseBankCsv', () => {
   })
 
   it('throws when date column is missing', () => {
-    expect(() => parseBankCsv('foo;bar;montant\n01/01/2025;X;100')).toThrow('date')
+    expect(() => parseBankCsv('foo;bar;montant\n01/01/2025;X;100')).toThrow(
+      'payments.bankImport.errors.missingDateColumn',
+    )
   })
 
   it('throws when amount column is missing', () => {
-    expect(() => parseBankCsv('date;libelle;foo\n01/01/2025;X;100')).toThrow('montant')
+    expect(() => parseBankCsv('date;libelle;foo\n01/01/2025;X;100')).toThrow(
+      'payments.bankImport.errors.missingAmountColumn',
+    )
   })
 
   it('generates unique fingerprints per row', () => {
@@ -211,7 +215,7 @@ describe('allocateImportedAmount', () => {
 describe('buildImportedNote', () => {
   it('formats note with row number and description', () => {
     const note = buildImportedNote('VIR LOYER DUPONT', 5)
-    expect(note).toBe('Import banque CSV ligne 5: VIR LOYER DUPONT')
+    expect(note).toBe('[CSV 5] VIR LOYER DUPONT')
   })
 })
 
