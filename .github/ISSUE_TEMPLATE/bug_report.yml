@@ -1,0 +1,99 @@
+name: Bug report
+description: Report a specific, reproducible problem in the app, build, or repository.
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a problem.
+
+        This is a maintainer-led repository. Narrow, reproducible bug reports are much easier to triage than broad problem descriptions.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I read CONTRIBUTING.md and confirmed this is in scope for the public tracker.
+          required: true
+        - label: I searched existing issues for the same or closely related problem.
+          required: true
+        - label: This is not a security-sensitive report. If it is, I will use SECURITY.md instead.
+          required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Pick the closest affected area.
+      options:
+        - Desktop app runtime
+        - Build or packaging
+        - Data, backup, or diagnostics
+        - PDF or document generation
+        - Documentation
+        - Tests or CI
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: summary
+    attributes:
+      label: Short summary
+      description: One sentence describing the failure.
+      placeholder: Opening the PDF preview modal fails when the file is missing.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: App version, branch, tag, or commit SHA when known.
+      placeholder: v0.1.1 or 1a2b3c4
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include OS version and anything relevant to reproduction.
+      placeholder: |
+        Windows 11 24H2
+        Node.js 20.x
+        Installed build / local dev checkout
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: Exact steps, starting from a clean or known state when possible.
+      placeholder: |
+        1. Open ...
+        2. Navigate to ...
+        3. Click ...
+        4. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      placeholder: The preview should open and render the selected PDF.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      placeholder: The modal stays blank and the console shows an error.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Logs, screenshots, or diagnostics
+      description: Paste the most relevant excerpts only.
+      render: shell
+      placeholder: |
+        <paste logs here>
+    validations:
+      required: false

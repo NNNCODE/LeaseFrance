@@ -1,0 +1,84 @@
+name: Scoped feature proposal
+description: Propose a small, concrete change that fits the current product direction.
+title: "[Proposal]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This repository is public, but product direction remains maintainer-led.
+
+        Use this form for focused, concrete proposals. Broad product brainstorming, unsolicited large refactors, and open-ended wishlist items are usually not actionable here.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I read CONTRIBUTING.md and understand that large unsolicited changes are unlikely to be reviewed.
+          required: true
+        - label: I checked the roadmap and existing issues for overlap before opening this proposal.
+          required: true
+        - label: I can describe a specific problem and a narrow change, not just a general idea.
+          required: true
+  - type: dropdown
+    id: proposal_type
+    attributes:
+      label: Proposal type
+      options:
+        - Small workflow improvement
+        - Incomplete existing behavior
+        - Developer experience or tooling
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: What concrete user or maintainer problem should this solve?
+      placeholder: |
+        Today ...
+        This is painful because ...
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: Keep the scope tight and implementation-facing.
+      placeholder: |
+        Add ...
+        Limit it to ...
+        Keep the current workflow unchanged except for ...
+    validations:
+      required: true
+  - type: textarea
+    id: scope_fit
+    attributes:
+      label: Why this fits the current project scope
+      description: Explain how this aligns with the current roadmap, backlog, or existing product direction.
+      placeholder: |
+        This stays within the current local-first desktop scope because ...
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives or current workaround
+      description: Note any workaround, rejected approach, or reason to keep the current behavior.
+      placeholder: |
+        Current workaround:
+        Alternative considered:
+    validations:
+      required: false
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: What would make this complete
+      description: List the expected outcome or acceptance checks.
+      placeholder: |
+        - Users can ...
+        - Existing flow still ...
+        - Validation covers ...
+    validations:
+      required: true

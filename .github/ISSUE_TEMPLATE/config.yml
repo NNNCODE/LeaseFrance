@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security report
+    url: https://github.com/NNNCODE/LeaseFrance/blob/HEAD/SECURITY.md
+    about: Report vulnerabilities privately by following SECURITY.md instead of opening a public issue.
+  - name: Documentation and setup
+    url: https://github.com/NNNCODE/LeaseFrance/blob/HEAD/README.md
+    about: Check the README for local setup, build, and test instructions before filing an issue.
+  - name: Contribution policy and scope
+    url: https://github.com/NNNCODE/LeaseFrance/blob/HEAD/CONTRIBUTING.md
+    about: Review the maintainer-led contribution policy and issue scope before opening a request.
+  - name: Product roadmap
+    url: https://github.com/NNNCODE/LeaseFrance/blob/HEAD/docs/ROADMAP.md
+    about: Read the roadmap before proposing broad product changes or new workflow areas.
