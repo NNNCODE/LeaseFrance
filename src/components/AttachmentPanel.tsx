@@ -123,7 +123,7 @@ export default function AttachmentPanel({
             <Badge variant="muted">{attachments.length}</Badge>
           )}
         </div>
-        <Button size="sm" variant="secondary" onClick={() => handleUpload(null)}>
+        <Button type="button" size="sm" variant="secondary" onClick={() => handleUpload(null)}>
           <Plus className="w-3 h-3" />
           {t('common.add')}
         </Button>
@@ -154,6 +154,7 @@ export default function AttachmentPanel({
                     )}
                   </div>
                   <button
+                    type="button"
                     onClick={() => handleUpload(slotDef.key)}
                     className="text-xs text-primary hover:text-primary/80 transition-colors flex items-center gap-1"
                   >
@@ -246,6 +247,7 @@ function AttachmentRow({
       </div>
       <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
         <button
+          type="button"
           onClick={onPreview}
           title={t('attachments.preview')}
           className="p-1 rounded-md text-textMuted hover:text-primary hover:bg-primary/10 transition-colors"
@@ -253,6 +255,7 @@ function AttachmentRow({
           <Eye className="w-3.5 h-3.5" />
         </button>
         <button
+          type="button"
           onClick={onOpen}
           title={t('common.open')}
           className="p-1 rounded-md text-textMuted hover:text-primary hover:bg-primary/10 transition-colors"
@@ -260,6 +263,7 @@ function AttachmentRow({
           <FolderOpen className="w-3.5 h-3.5" />
         </button>
         <button
+          type="button"
           onClick={onDelete}
           title={t('common.delete')}
           className="p-1 rounded-md text-textMuted hover:text-danger hover:bg-danger/10 transition-colors"
@@ -300,16 +304,20 @@ function AttachmentPreviewModal({
 
       if (result.error || !result.data) {
         setError(result.error || t('attachments.readError'))
-      } else if (attachment.mime_type === 'application/pdf') {
-        setPdfData(result.data)
-      } else if (result.mimeType) {
-        const nextUrl = URL.createObjectURL(new Blob([result.data], { type: result.mimeType }))
-        if (cancelled) {
-          URL.revokeObjectURL(nextUrl)
-          return
+      } else {
+        const fileBytes = new Uint8Array(result.data)
+
+        if (attachment.mime_type === 'application/pdf') {
+          setPdfData(fileBytes)
+        } else if (result.mimeType) {
+          const nextUrl = URL.createObjectURL(new Blob([fileBytes], { type: result.mimeType }))
+          if (cancelled) {
+            URL.revokeObjectURL(nextUrl)
+            return
+          }
+          objectUrl = nextUrl
+          setPreviewUrl(nextUrl)
         }
-        objectUrl = nextUrl
-        setPreviewUrl(nextUrl)
       }
       setLoading(false)
     }
@@ -350,14 +358,16 @@ function AttachmentPreviewModal({
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <Button
+              type="button"
               variant="secondary"
               size="sm"
               onClick={() => window.api.attachments.open(attachment.id)}
-            >
+            >S
               <FolderOpen className="w-3.5 h-3.5" />
               {t('common.open')}
             </Button>
             <button
+              type="button"
               onClick={onClose}
               className="p-1.5 rounded-lg text-textMuted hover:bg-surfaceHigh hover:text-textPrimary transition-colors"
             >

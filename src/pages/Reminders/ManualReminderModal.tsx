@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
 import { BellRing, Save, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import DateInput from '@/components/ui/date-input'
 import { Input } from '@/components/ui/input'
 
 const CATEGORY_OPTIONS = [
@@ -105,10 +106,9 @@ export default function ManualReminderModal({
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-textMuted">{t('reminders.manualForm.dueDate')}</label>
-              <Input
-                type="date"
+              <DateInput
                 value={form.due_date}
-                onChange={(event) => set('due_date', event.target.value)}
+                onChange={(value) => set('due_date', value ?? '')}
               />
             </div>
           </div>

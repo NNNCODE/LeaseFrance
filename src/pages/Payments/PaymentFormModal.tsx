@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
 import { ChevronDown, Save, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import DateInput from '@/components/ui/date-input'
 import { Input } from '@/components/ui/input'
 import {
   createEmptyPaymentForm,
@@ -252,11 +253,10 @@ export default function PaymentFormModal({
               <label className="text-xs font-medium text-textMuted">
                 {t('payments.paymentDate')} {form.status !== 'paid' && <span className="opacity-50">({t('common.optional')})</span>}
               </label>
-              <Input
+              <DateInput
                 aria-label={t('payments.paymentDate')}
-                type="date"
                 value={form.payment_date ?? ''}
-                onChange={(event) => setField('payment_date', event.target.value || null)}
+                onChange={(value) => setField('payment_date', value)}
               />
             </div>
             <div className="flex flex-col gap-1.5">

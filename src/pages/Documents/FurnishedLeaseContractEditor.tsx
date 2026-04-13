@@ -1,4 +1,5 @@
 import { AlertTriangle, Info } from 'lucide-react'
+import DateInput from '@/components/ui/date-input'
 import { Input } from '@/components/ui/input'
 import {
   BUILDING_REGIME_OPTIONS,
@@ -291,6 +292,14 @@ function TextField({
   placeholder?: string
   type?: string
 }) {
+  if (type === 'date') {
+    return (
+      <FieldWrapper label={label}>
+        <DateInput value={value} onChange={(nextValue) => onChange(nextValue ?? '')} placeholder={placeholder} />
+      </FieldWrapper>
+    )
+  }
+
   return (
     <FieldWrapper label={label}>
       <Input value={value} type={type} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} />

@@ -5,6 +5,7 @@ import AttachmentPanel from '@/components/AttachmentPanel'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import DateInput from '@/components/ui/date-input'
 import { Input } from '@/components/ui/input'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { getDepositReturnedAmount, getDepositStatus, getDepositStatusMeta } from './depositUtils'
@@ -175,10 +176,9 @@ export default function DepositManagementModal({
               </div>
               <div className="mt-4 flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-textMuted">Date d'encaissement</label>
-                <Input
-                  type="date"
+                <DateInput
                   value={form.deposit_received_date ?? ''}
-                  onChange={(event) => set('deposit_received_date', event.target.value || null)}
+                  onChange={(value) => set('deposit_received_date', value)}
                 />
                 {form.deposit_received_date && (
                   <p className="text-xs text-textMuted mt-1 flex items-center gap-1.5">
@@ -197,10 +197,9 @@ export default function DepositManagementModal({
               <div className="mt-4 grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-medium text-textMuted">Date de restitution</label>
-                  <Input
-                    type="date"
+                  <DateInput
                     value={form.deposit_refund_date ?? ''}
-                    onChange={(event) => set('deposit_refund_date', event.target.value || null)}
+                    onChange={(value) => set('deposit_refund_date', value)}
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">

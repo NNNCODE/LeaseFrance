@@ -25,6 +25,7 @@ export default function PdfCanvasPreview({ data }: PdfCanvasPreviewProps) {
 
   useEffect(() => {
     let cancelled = false
+    let loadingTask: ReturnType<typeof getDocument> | null = null
 
     async function renderPdf() {
       setPages([])
@@ -32,8 +33,11 @@ export default function PdfCanvasPreview({ data }: PdfCanvasPreviewProps) {
       setLoading(true)
 
       try {
-        const loadingTask = getDocument({
-          data,
+        // pdf.js may transfer TypedArray ownership to its worker. Keep the
+        // React state payload intact by handing pdf.js a fresh copy.
+        const pdfBytes = data.slice()
+        loadingTask = getDocument({
+          data: pdfBytes,
           isEvalSupported: false,
           stopAtErrors: true,
           useWasm: false,
@@ -86,6 +90,7 @@ export default function PdfCanvasPreview({ data }: PdfCanvasPreviewProps) {
     void renderPdf()
     return () => {
       cancelled = true
+      void loadingTask?.destroy()
     }
   }, [data])
 

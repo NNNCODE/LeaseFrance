@@ -13,6 +13,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
+import DateInput from '@/components/ui/date-input'
 import { ReminderLetterPDF, type ReminderLetterData } from '@/lib/pdf/reminder'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { monthLabel } from './paymentPageUtils'
@@ -249,11 +250,9 @@ export default function PaymentReminderModal({
           <div className="grid grid-cols-[220px_1fr] gap-4">
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-textMuted">{t('payments.reminderModal.letterDate')}</label>
-              <input
-                type="date"
+              <DateInput
                 value={sentAt}
-                onChange={(event) => setSentAt(event.target.value)}
-                className="w-full rounded-lg border border-border bg-surfaceHigh px-3 py-2 text-sm text-textPrimary transition-colors focus:border-primary focus:outline-none"
+                onChange={(value) => setSentAt(value ?? '')}
               />
             </div>
             <div className="flex flex-col gap-1.5">

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { Save, TrendingUp, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
+import DateInput from '@/components/ui/date-input'
 import { formatOwnerDisplayName } from '@/lib/ownerProfiles'
 import { Input } from '@/components/ui/input'
 import { useOwnerStore } from '@/stores/useOwnerStore'
@@ -259,22 +260,20 @@ export default function LeaseFormModal({
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-textMuted">{t('leases.startDate')}</label>
-              <Input
+              <DateInput
                 aria-label={t('leases.startDate')}
-                type="date"
                 value={form.start_date}
-                onChange={(event) => setField('start_date', event.target.value)}
+                onChange={(value) => setField('start_date', value ?? '')}
               />
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-textMuted">
                 {t('leases.endDate')} {form.type !== 'mobilite' && <span className="opacity-50">({t('common.optional')})</span>}
               </label>
-              <Input
+              <DateInput
                 aria-label={t('leases.endDate')}
-                type="date"
                 value={form.end_date ?? ''}
-                onChange={(event) => setField('end_date', event.target.value || null)}
+                onChange={(value) => setField('end_date', value)}
               />
             </div>
           </div>

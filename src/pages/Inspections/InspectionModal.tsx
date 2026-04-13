@@ -5,6 +5,7 @@ import { CheckCircle2, Plus, ScrollText, Trash2, X } from 'lucide-react'
 import AttachmentPanel from '@/components/AttachmentPanel'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import DateInput from '@/components/ui/date-input'
 import { Input } from '@/components/ui/input'
 import { formatDate } from '@/lib/utils'
 
@@ -225,7 +226,7 @@ export default function InspectionModal({
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-textMuted">{t('inspections.date')}</label>
-              <Input type="date" value={form.inspection_date} onChange={(event) => setField('inspection_date', event.target.value)} />
+              <DateInput value={form.inspection_date} onChange={(value) => setField('inspection_date', value ?? '')} />
             </div>
           </div>
 

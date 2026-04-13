@@ -15,6 +15,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import DateInput from '@/components/ui/date-input'
 import FurnishedLeaseContractEditor from './FurnishedLeaseContractEditor'
 import {
   getFurnishedLeaseContractAdvisories,
@@ -644,20 +645,16 @@ function RevisionPreview({
       <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-medium text-textMuted">{t('documents.modal.revision.noticeDate')}</label>
-          <input
-            type="date"
+          <DateInput
             value={noticeDate}
-            onChange={(event) => onNoticeDateChange(event.target.value)}
-            className="w-full bg-surfaceHigh border border-border rounded-lg px-3 py-2 text-sm text-textPrimary focus:outline-none focus:border-primary transition-colors"
+            onChange={(value) => onNoticeDateChange(value ?? '')}
           />
         </div>
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-medium text-textMuted">{t('documents.modal.revision.effectiveDate')}</label>
-          <input
-            type="date"
+          <DateInput
             value={effectiveDate}
-            onChange={(event) => onEffectiveDateChange(event.target.value)}
-            className="w-full bg-surfaceHigh border border-border rounded-lg px-3 py-2 text-sm text-textPrimary focus:outline-none focus:border-primary transition-colors"
+            onChange={(value) => onEffectiveDateChange(value ?? '')}
           />
         </div>
       </div>
