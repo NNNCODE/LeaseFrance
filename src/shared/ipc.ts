@@ -118,6 +118,7 @@ export interface BaillioInvokeApi {
     updateStatus: (id: number, status: string) => Promise<boolean>
     readFile: (filePath: string) => Promise<{ data: Uint8Array | null; mimeType: string | null; error: string | null }>
     savePdf: (leaseId: number, fileName: string, buffer: Uint8Array, docType?: string) => Promise<{ saved: boolean; path: string | null }>
+    importForLease: (leaseId: number, docType?: string) => Promise<{ imported: boolean; path: string | null }>
     openFile: (filePath: string) => Promise<void>
   }
   exports: {

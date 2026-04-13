@@ -31,6 +31,10 @@ describe('validateInvokeArgs', () => {
     expect(validateInvokeArgs('diagnostics:openLogsFolder', [])).toEqual([])
   })
 
+  it('accepts document imports with an explicit contract type', () => {
+    expect(validateInvokeArgs('documents:importForLease', [12, 'contrat_location'])).toEqual([12, 'contrat_location'])
+  })
+
   it('accepts nullable owner bindings on properties and leases', () => {
     const [propertyInput] = validateInvokeArgs('properties:create', [{
       name: 'Studio Paris',

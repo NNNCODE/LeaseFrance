@@ -180,6 +180,7 @@ const api: BaillioApi = {
     getGenerationSources: invoke('documents:getGenerationSources'),
     delete: invoke('documents:delete'),
     savePdf: invoke('documents:savePdf'),
+    importForLease: invoke('documents:importForLease'),
     updateStatus: invoke('documents:updateStatus'),
     readFile: invoke('documents:readFile'),
     openFile: invoke('documents:openFile'),

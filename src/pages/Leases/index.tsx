@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { AlertTriangle, Plus, TrendingUp } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 import IrlManagerModal from '@/components/irl/IrlManagerModal'
 import { Button } from '@/components/ui/button'
 import {
@@ -19,6 +20,7 @@ import LeaseRow from './LeaseRow'
 
 export default function Leases() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const [leases, setLeases] = useState<Lease[]>([])
   const [irlIndices, setIrlIndices] = useState<IrlIndex[]>([])
   const [loading, setLoading] = useState(true)
@@ -66,6 +68,28 @@ export default function Leases() {
     setDeleting(null)
     setDeleteError('')
     setDeleteLoading(false)
+  }
+
+  function openContractFlow(lease: Lease) {
+    navigate('/documents', {
+      state: {
+        initialTemplate: 'furnished_lease_contract',
+        templateParams: { leaseId: lease.id },
+      },
+    })
+  }
+
+  async function importExistingContract(lease: Lease) {
+    try {
+      const result = await window.api.documents.importForLease(
+        lease.id,
+        lease.type === 'meuble' ? 'contrat_location_meublee' : 'contrat_location',
+      )
+      if (!result.imported) return
+      navigate('/documents')
+    } catch (err) {
+      alert(err instanceof Error ? err.message : String(err))
+    }
   }
 
   async function handleSave(data: LeaseInput) {
@@ -262,6 +286,10 @@ export default function Leases() {
               lease={lease}
               onEdit={() => openEdit(lease)}
               onDelete={() => setDeleting(lease)}
+              onOpenContract={() => openContractFlow(lease)}
+              onImportContract={() => {
+                void importExistingContract(lease)
+              }}
               onManageDeposit={() => setManagingDeposit(lease)}
               onManageCharges={() => setManagingCharges(lease)}
               onRevise={() => setRevising(lease)}

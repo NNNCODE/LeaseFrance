@@ -31,6 +31,7 @@ const documentType = z.enum([
   'quittance',
   'recu',
   'avis_revision_loyer',
+  'contrat_location',
   'contrat_location_meublee',
   'recu_depot_garantie',
   'solde_depot_garantie',
@@ -201,6 +202,11 @@ const documentSavePdfArgs = z.union([
   z.tuple([positiveInt, nonEmptyText, uint8Array, documentType]),
 ])
 
+const documentImportArgs = z.union([
+  z.tuple([positiveInt]),
+  z.tuple([positiveInt, documentType]),
+])
+
 const exportSaveFileArgs = z.union([
   z.tuple([nonEmptyText, uint8Array]),
   z.tuple([nonEmptyText, uint8Array, z.array(fileFilterInput)]),
@@ -259,6 +265,7 @@ const invokeArgSchemas = {
   'search:query': z.tuple([z.string(), searchFilterKey]),
   'documents:delete': z.tuple([positiveInt]),
   'documents:savePdf': documentSavePdfArgs,
+  'documents:importForLease': documentImportArgs,
   'documents:updateStatus': z.tuple([positiveInt, documentStatus]),
   'documents:readFile': z.tuple([nonEmptyText]),
   'documents:openFile': z.tuple([nonEmptyText]),

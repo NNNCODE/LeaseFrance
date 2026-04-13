@@ -30,6 +30,8 @@ export function getDocumentMeta(type: string, t: TFunction) {
       return { label: t('documents.type.proposition_echeancier'), variant: 'success' as const, icon: Info, iconClass: 'text-success', iconBg: 'bg-success/10' }
     case 'avis_revision_loyer':
       return { label: t('documents.type.avis_revision_loyer'), variant: 'default' as const, icon: TrendingUp, iconClass: 'text-primary', iconBg: 'bg-primary/10' }
+    case 'contrat_location':
+      return { label: t('documents.type.contrat_location'), variant: 'default' as const, icon: ScrollText, iconClass: 'text-primary', iconBg: 'bg-primary/10' }
     case 'recu_depot_garantie':
       return { label: t('documents.type.recu_depot_garantie'), variant: 'default' as const, icon: ShieldCheck, iconClass: 'text-primary', iconBg: 'bg-primary/10' }
     case 'solde_depot_garantie':
@@ -47,6 +49,7 @@ export function getDocumentTypeFilters(t: TFunction): Array<{ value: string; lab
     { value: 'quittance', label: t('documents.type.quittance') },
     { value: 'recu', label: t('documents.type.recu') },
     { value: 'avis_revision_loyer', label: t('documents.type.avis_revision_loyer') },
+    { value: 'contrat_location', label: t('documents.type.contrat_location') },
     { value: 'contrat_location_meublee', label: t('documents.type.contrat_location_meublee') },
     { value: 'recu_depot_garantie', label: t('documents.type.recu_depot_garantie') },
     { value: 'solde_depot_garantie', label: t('documents.type.solde_depot_garantie') },

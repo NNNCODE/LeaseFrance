@@ -3,6 +3,7 @@ import { pdf } from '@react-pdf/renderer'
 import { AnimatePresence, motion } from 'framer-motion'
 import { FileText, Search, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { buildFurnishedLeaseContractPdfData } from '@/lib/leaseContractDocument'
@@ -41,8 +42,15 @@ import {
 
 const TEMPLATE_PARAMS_KEY = 'lf_doc_template_params'
 
+interface DocumentsRouteState {
+  initialTemplate?: DocumentTemplateKind | null
+  templateParams?: Record<string, unknown> | null
+}
+
 export default function Documents() {
   const { t } = useTranslation()
+  const location = useLocation()
+  const navigate = useNavigate()
   const { profile } = useAuthStore()
   const owners = useOwnerStore((state) => state.owners)
   const activeOwner = useOwnerStore((state) => state.activeOwner)
@@ -433,6 +441,33 @@ export default function Documents() {
     setRegenerateKind(null)
     setShowForm(true)
   }
+
+  useEffect(() => {
+    const routeState = location.state as DocumentsRouteState | null
+    if (!routeState?.initialTemplate) return
+
+    let cancelled = false
+
+    void (async () => {
+      if (routeState.templateParams) {
+        saveTemplateParams(routeState.initialTemplate!, routeState.templateParams)
+      }
+
+      const ready = await ensureGenerationSources()
+      if (!ready || cancelled) return
+
+      setRegenerateKind(routeState.initialTemplate ?? null)
+      setShowForm(true)
+      navigate(
+        { pathname: location.pathname, search: location.search },
+        { replace: true, state: null },
+      )
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [ensureGenerationSources, location.pathname, location.search, location.state, navigate])
 
   const hasFilters = Boolean(searchQuery || typeFilter || statusFilter)
   const paidPayments = payments

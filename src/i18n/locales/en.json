@@ -513,6 +513,8 @@
       "deposit": "Deposit: {{amount}}",
       "depositCollected": "Collected on {{date}}",
       "depositToReturn": "To return: {{amount}}",
+      "importContract": "Import an existing contract",
+      "openContract": "Open contract",
       "manageCharges": "Reconcile charges",
       "manageDeposit": "Manage security deposit",
       "reviseRent": "Revise rent (IRL)"
@@ -800,6 +802,7 @@
       "mise_en_demeure": "Formal notice",
       "proposition_echeancier": "Payment plan",
       "avis_revision_loyer": "Rent revision notice",
+      "contrat_location": "Lease contract",
       "recu_depot_garantie": "Deposit receipt",
       "solde_depot_garantie": "Deposit settlement",
       "contrat_location_meublee": "Furnished lease contract"

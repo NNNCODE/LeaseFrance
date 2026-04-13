@@ -3,11 +3,13 @@ import {
   Building2,
   CalendarDays,
   Euro,
+  FileText,
   Pencil,
   ScrollText,
   ShieldCheck,
   Trash2,
   TrendingUp,
+  Upload,
   User,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -22,6 +24,8 @@ interface LeaseRowProps {
   lease: Lease
   onEdit: () => void
   onDelete: () => void
+  onOpenContract: () => void
+  onImportContract: () => void
   onManageDeposit: () => void
   onManageCharges: () => void
   onRevise: () => void
@@ -31,6 +35,8 @@ export default function LeaseRow({
   lease,
   onEdit,
   onDelete,
+  onOpenContract,
+  onImportContract,
   onManageDeposit,
   onManageCharges,
   onRevise,
@@ -143,8 +149,27 @@ export default function LeaseRow({
           </div>
 
           <div className="flex shrink-0 gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+            <button
+              type="button"
+              onClick={onImportContract}
+              title={t('leases.row.importContract')}
+              className="rounded-lg p-1.5 text-textMuted transition-colors hover:bg-primary/10 hover:text-primary"
+            >
+              <Upload className="h-3.5 w-3.5" />
+            </button>
+            {lease.type === 'meuble' && (
+              <button
+                type="button"
+                onClick={onOpenContract}
+                title={t('leases.row.openContract')}
+                className="rounded-lg p-1.5 text-textMuted transition-colors hover:bg-primary/10 hover:text-primary"
+              >
+                <FileText className="h-3.5 w-3.5" />
+              </button>
+            )}
             {lease.charges_amount > 0 && (
               <button
+                type="button"
                 onClick={onManageCharges}
                 title={t('leases.row.manageCharges')}
                 className="rounded-lg p-1.5 text-textMuted transition-colors hover:bg-warning/10 hover:text-warning"
@@ -154,6 +179,7 @@ export default function LeaseRow({
             )}
             {lease.deposit_amount > 0 && (
               <button
+                type="button"
                 onClick={onManageDeposit}
                 title={t('leases.row.manageDeposit')}
                 className="rounded-lg p-1.5 text-textMuted transition-colors hover:bg-primary/10 hover:text-primary"
@@ -163,6 +189,7 @@ export default function LeaseRow({
             )}
             {canRevise && (
               <button
+                type="button"
                 onClick={onRevise}
                 title={t('leases.row.reviseRent')}
                 className="rounded-lg p-1.5 text-textMuted transition-colors hover:bg-primary/10 hover:text-primary"
@@ -171,12 +198,14 @@ export default function LeaseRow({
               </button>
             )}
             <button
+              type="button"
               onClick={onEdit}
               className="rounded-lg p-1.5 text-textMuted transition-colors hover:bg-surfaceHigh hover:text-textPrimary"
             >
               <Pencil className="h-3.5 w-3.5" />
             </button>
             <button
+              type="button"
               onClick={onDelete}
               className="rounded-lg p-1.5 text-textMuted transition-colors hover:bg-danger/10 hover:text-danger"
             >

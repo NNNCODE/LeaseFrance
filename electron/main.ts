@@ -362,6 +362,7 @@ handle('documents:savePdf', async (leaseId, fileName, buffer, docType) => {
     quittance: 'Enregistrer la quittance',
     recu: 'Enregistrer le recu de loyer',
     avis_revision_loyer: "Enregistrer l'avis de revision du loyer",
+    contrat_location: 'Enregistrer le contrat de location',
     contrat_location_meublee: 'Enregistrer le contrat de location meublee',
     recu_depot_garantie: 'Enregistrer le recu de depot de garantie',
     solde_depot_garantie: 'Enregistrer le solde de depot de garantie',
@@ -381,6 +382,20 @@ handle('documents:savePdf', async (leaseId, fileName, buffer, docType) => {
   writeFileSync(filePath, toNodeBuffer(buffer))
   documentsDb.create(leaseId, docType ?? 'quittance', filePath)
   return { saved: true, path: filePath }
+})
+handle('documents:importForLease', async (leaseId, docType) => {
+  const titleMap: Record<string, string> = {
+    contrat_location: 'Importer un contrat de location',
+    contrat_location_meublee: 'Importer un contrat de location meublee',
+  }
+  const { filePaths, canceled } = await dialog.showOpenDialog({
+    title: titleMap[docType ?? 'contrat_location'] ?? 'Importer un document',
+    filters: [{ name: 'PDF', extensions: ['pdf'] }],
+    properties: ['openFile'],
+  })
+  if (canceled || filePaths.length === 0) return { imported: false, path: null }
+  documentsDb.create(leaseId, docType ?? 'contrat_location', filePaths[0])
+  return { imported: true, path: filePaths[0] }
 })
 handle('documents:updateStatus', (id, status) => documentsDb.updateStatus(id, status))
 handle('documents:readFile', (filePath) => {
