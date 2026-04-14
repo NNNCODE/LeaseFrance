@@ -16,7 +16,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import DateInput from '@/components/ui/date-input'
 import { ReminderLetterPDF, type ReminderLetterData } from '@/lib/pdf/reminder'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { monthLabel } from './paymentPageUtils'
+import { monthLabel, paymentVersionToken } from './paymentPageUtils'
 
 type ReminderStage = 'relance_amiable' | 'mise_en_demeure' | 'proposition_echeancier'
 
@@ -145,7 +145,7 @@ export default function PaymentReminderModal({
       })
 
       if (payment.status === 'pending') {
-        await window.api.payments.update(payment.id, { status: 'late' }, payment.updated_at)
+        await window.api.payments.update(payment.id, { status: 'late' }, paymentVersionToken(payment))
       }
 
       await onSaved()

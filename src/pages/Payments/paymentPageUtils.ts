@@ -72,6 +72,10 @@ export function today() {
   return new Date().toISOString().split('T')[0]
 }
 
+export function paymentVersionToken(payment: Payment) {
+  return payment.updated_at ?? payment.created_at
+}
+
 export function createEmptyPaymentForm(): PaymentInput {
   const currentDate = new Date()
   return {

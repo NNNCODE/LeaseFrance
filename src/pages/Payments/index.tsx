@@ -16,7 +16,7 @@ import PaymentEmptyState from './PaymentEmptyState'
 import PaymentFormModal from './PaymentFormModal'
 import PaymentReminderModal from './PaymentReminderModal'
 import PaymentRow from './PaymentRow'
-import { monthLabel, today } from './paymentPageUtils'
+import { monthLabel, paymentVersionToken, today } from './paymentPageUtils'
 
 export default function Payments() {
   const { t } = useTranslation()
@@ -102,7 +102,7 @@ export default function Payments() {
 
   async function handleSave(data: PaymentInput) {
     if (editing) {
-      await window.api.payments.update(editing.id, data, editing.updated_at)
+      await window.api.payments.update(editing.id, data, paymentVersionToken(editing))
     } else {
       await window.api.payments.create(data)
     }
@@ -113,7 +113,7 @@ export default function Payments() {
 
   async function handleMarkPaid(payment: Payment) {
     try {
-      await window.api.payments.markPaid(payment.id, today(), payment.updated_at)
+      await window.api.payments.markPaid(payment.id, today(), paymentVersionToken(payment))
     } catch (err) {
       alert(err instanceof Error ? err.message : String(err))
     }
@@ -342,6 +342,7 @@ export default function Payments() {
           <PaymentFormModal
             initial={editing}
             leases={leases.filter((lease) => lease.status === 'active')}
+            payments={payments}
             onSave={handleSave}
             onClose={() => {
               setShowForm(false)

@@ -636,12 +636,13 @@
       "notesPlaceholder": "Ex : paiement partiel, virement recu en deux fois...",
       "submitEdit": "Modifier",
       "submitCreate": "Creer",
-      "errors": {
-        "leaseRequired": "Selectionnez un bail.",
-        "rentRequired": "Le loyer doit etre superieur a 0.",
-        "save": "Erreur : {{error}}"
-      }
-    },
+        "errors": {
+          "leaseRequired": "Selectionnez un bail.",
+          "rentRequired": "Le loyer doit etre superieur a 0.",
+          "duplicatePeriod": "Un paiement existe deja pour ce bail et cette periode. Modifiez le paiement existant.",
+          "save": "Erreur : {{error}}"
+        }
+      },
     "reminderModal": {
       "title": "Relance impaye",
       "unpaidAmount": "Montant impaye : {{amount}}",

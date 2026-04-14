@@ -16,6 +16,7 @@ import {
 interface PaymentFormModalProps {
   initial: Payment | null
   leases: Lease[]
+  payments: Payment[]
   onSave: (data: PaymentInput) => Promise<void>
   onClose: () => void
 }
@@ -23,6 +24,7 @@ interface PaymentFormModalProps {
 export default function PaymentFormModal({
   initial,
   leases,
+  payments,
   onSave,
   onClose,
 }: PaymentFormModalProps) {
@@ -50,6 +52,17 @@ export default function PaymentFormModal({
     setForm((current) => ({ ...current, [field]: value }))
   }
 
+  function formatErrorMessage(err: unknown) {
+    let message = err instanceof Error ? err.message : String(err)
+
+    message = message.replace(/^Error invoking remote method '[^']+':\s*/i, '').trim()
+    while (message.startsWith('Error: ')) {
+      message = message.slice('Error: '.length).trim()
+    }
+
+    return message
+  }
+
   useEffect(() => {
     if (!form.lease_id || initial) return
     const selectedLease = leases.find((lease) => lease.id === form.lease_id)
@@ -73,6 +86,18 @@ export default function PaymentFormModal({
         ? { ...form, payment_date: today() }
         : form
 
+    const duplicatePayment = payments.find((payment) => (
+      payment.lease_id === nextForm.lease_id
+      && payment.period_month === nextForm.period_month
+      && payment.period_year === nextForm.period_year
+      && payment.id !== initial?.id
+    ))
+
+    if (duplicatePayment) {
+      setError(t('payments.form.errors.duplicatePeriod'))
+      return
+    }
+
     if (nextForm !== form) {
       setForm(nextForm)
     }
@@ -81,7 +106,7 @@ export default function PaymentFormModal({
     try {
       await onSave(nextForm)
     } catch (err) {
-      setError(t('payments.form.errors.save', { error: err instanceof Error ? err.message : String(err) }))
+      setError(t('payments.form.errors.save', { error: formatErrorMessage(err) }))
       setSaving(false)
     }
   }

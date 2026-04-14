@@ -38,7 +38,18 @@ export interface PaymentInput {
 
 const SELECT = `
   SELECT
-    pay.*,
+    pay.id,
+    pay.lease_id,
+    pay.period_month,
+    pay.period_year,
+    pay.rent_amount,
+    pay.charges_amount,
+    pay.payment_date,
+    pay.payment_method,
+    pay.status,
+    pay.notes,
+    pay.created_at,
+    COALESCE(pay.updated_at, pay.created_at) AS updated_at,
     p.name        AS property_name,
     p.address     AS property_address,
     p.city        AS property_city,
@@ -119,7 +130,7 @@ export function update(id: number, data: Partial<PaymentInput>, expectedUpdatedA
       rent_amount=@rent_amount, charges_amount=@charges_amount,
       payment_date=@payment_date, payment_method=@payment_method,
       status=@status, notes=@notes, updated_at=datetime('now')
-    WHERE id=@id AND updated_at=@expected_updated_at
+    WHERE id=@id AND COALESCE(updated_at, created_at)=@expected_updated_at
   `).run({ ...merged, id, expected_updated_at: expectedUpdatedAt })
   if (result.changes === 0) {
     throw new Error(CONFLICT_MSG)
@@ -129,7 +140,7 @@ export function update(id: number, data: Partial<PaymentInput>, expectedUpdatedA
 
 export function markPaid(id: number, paymentDate: string, expectedUpdatedAt: string): Payment | undefined {
   const result = getDb().prepare(
-    `UPDATE payments SET status='paid', payment_date=?, updated_at=datetime('now') WHERE id=? AND updated_at=?`
+    `UPDATE payments SET status='paid', payment_date=?, updated_at=datetime('now') WHERE id=? AND COALESCE(updated_at, created_at)=?`
   ).run(paymentDate, id, expectedUpdatedAt)
   if (result.changes === 0) {
     if (getDb().prepare('SELECT 1 FROM payments WHERE id = ?').get(id)) {

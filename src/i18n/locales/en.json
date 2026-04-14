@@ -636,12 +636,13 @@
       "notesPlaceholder": "Example: partial payment, transfer received in two parts...",
       "submitEdit": "Update",
       "submitCreate": "Create",
-      "errors": {
-        "leaseRequired": "Select a lease.",
-        "rentRequired": "Rent must be greater than 0.",
-        "save": "Error: {{error}}"
-      }
-    },
+        "errors": {
+          "leaseRequired": "Select a lease.",
+          "rentRequired": "Rent must be greater than 0.",
+          "duplicatePeriod": "A payment already exists for this lease and period. Edit the existing payment.",
+          "save": "Error: {{error}}"
+        }
+      },
     "reminderModal": {
       "title": "Unpaid reminder",
       "unpaidAmount": "Amount due: {{amount}}",

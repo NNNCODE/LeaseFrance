@@ -29,7 +29,7 @@ import {
   type MatchReason,
   type ParsedBankTransaction,
 } from './bankImport'
-import { monthLabel } from './paymentPageUtils'
+import { monthLabel, paymentVersionToken } from './paymentPageUtils'
 
 interface ImportDraft {
   transaction: ParsedBankTransaction
@@ -288,7 +288,7 @@ export default function PaymentBankImportModal({
               payment.notes,
               importedNote(t, row.transaction.description, row.transaction.rowNumber),
             ),
-          }, payment.updated_at)
+          }, paymentVersionToken(payment))
 
           importedEntries.push({
             fingerprint: row.transaction.fingerprint,

@@ -636,12 +636,13 @@
       "notesPlaceholder": "例如：部分付款、分两次到账的转账...",
       "submitEdit": "更新",
       "submitCreate": "创建",
-      "errors": {
-        "leaseRequired": "请选择租约。",
-        "rentRequired": "租金必须大于 0。",
-        "save": "错误：{{error}}"
-      }
-    },
+        "errors": {
+          "leaseRequired": "请选择租约。",
+          "rentRequired": "租金必须大于 0。",
+          "duplicatePeriod": "该租约在这个月份已经有一笔付款记录。请修改现有付款。",
+          "save": "错误：{{error}}"
+        }
+      },
     "reminderModal": {
       "title": "欠款提醒",
       "unpaidAmount": "应付金额：{{amount}}",
