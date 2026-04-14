@@ -65,6 +65,10 @@ function avatarColor(id: number) {
   return AVATAR_COLORS[id % AVATAR_COLORS.length]
 }
 
+function getTenantVersionToken(tenant: Tenant) {
+  return tenant.updated_at ?? tenant.created_at
+}
+
 export default function Tenants() {
   const { t } = useTranslation()
   const [tenants, setTenants] = useState<Tenant[]>([])
@@ -134,7 +138,7 @@ export default function Tenants() {
       await window.api.tenants.update(editing.id, {
         ...buildTenantInputFromTenant(editing),
         ...data,
-      }, editing.updated_at)
+      }, getTenantVersionToken(editing))
     } else {
       await window.api.tenants.create(data)
     }

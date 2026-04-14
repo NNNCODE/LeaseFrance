@@ -80,7 +80,7 @@ const SELECT = `
     COALESCE(t.dossier_bank_details, 0)     AS dossier_bank_details,
     t.dossier_notes,
     t.created_at,
-    t.updated_at,
+    COALESCE(t.updated_at, t.created_at) AS updated_at,
     l.id         AS lease_id,
     l.type       AS lease_type,
     l.rent_amount,
@@ -231,7 +231,7 @@ export function update(id: number, data: TenantInput, expectedUpdatedAt: string)
       dossier_bank_details=@dossier_bank_details,
       dossier_notes=@dossier_notes,
       updated_at=datetime('now')
-    WHERE id=@id AND updated_at=@expected_updated_at
+    WHERE id=@id AND COALESCE(updated_at, created_at)=@expected_updated_at
   `).run({ ...payload, id, expected_updated_at: expectedUpdatedAt })
 
   if (result.changes === 0) {

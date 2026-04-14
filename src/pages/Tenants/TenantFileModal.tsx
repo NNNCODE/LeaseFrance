@@ -100,13 +100,17 @@ export default function TenantFileModal({ tenant, onSave, onClose }: TenantFileM
     setForm((current) => ({ ...current, [field]: value }))
   }
 
+  function getVersionToken(current: Tenant) {
+    return current.updated_at ?? current.created_at
+  }
+
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
     setSaving(true)
     setError('')
 
     try {
-      const updated = await onSave(currentTenant.id, buildSavePayload(form), currentTenant.updated_at)
+      const updated = await onSave(currentTenant.id, buildSavePayload(form), getVersionToken(currentTenant))
       setCurrentTenant(updated)
       onClose()
     } catch (err) {
@@ -129,7 +133,7 @@ export default function TenantFileModal({ tenant, onSave, onClose }: TenantFileM
           ...createInitialForm(currentTenant),
           [dossierKey]: true,
         }),
-        currentTenant.updated_at,
+        getVersionToken(currentTenant),
       )
 
       setCurrentTenant(updated)
