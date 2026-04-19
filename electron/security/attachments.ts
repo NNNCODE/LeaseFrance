@@ -1,7 +1,7 @@
 import { readFileSync } from 'fs'
 import { basename, extname } from 'path'
 
-type AttachmentKind = 'pdf' | 'png' | 'jpg' | 'webp' | 'gif' | 'bmp' | 'tiff'
+type AttachmentKind = 'pdf' | 'png' | 'jpg' | 'webp' | 'gif' | 'bmp' | 'tiff' | 'mp4'
 
 const ATTACHMENT_TYPE_BY_EXTENSION: Record<string, { kind: AttachmentKind; mimeType: string }> = {
   '.pdf': { kind: 'pdf', mimeType: 'application/pdf' },
@@ -12,6 +12,7 @@ const ATTACHMENT_TYPE_BY_EXTENSION: Record<string, { kind: AttachmentKind; mimeT
   '.gif': { kind: 'gif', mimeType: 'image/gif' },
   '.bmp': { kind: 'bmp', mimeType: 'image/bmp' },
   '.tiff': { kind: 'tiff', mimeType: 'image/tiff' },
+  '.mp4': { kind: 'mp4', mimeType: 'video/mp4' },
 }
 
 export const ATTACHMENT_DIALOG_EXTENSIONS = Object.keys(ATTACHMENT_TYPE_BY_EXTENSION).map((extension) => extension.slice(1))
@@ -46,6 +47,12 @@ export function detectAttachmentKind(bytes: Uint8Array): AttachmentKind | null {
     )
   ) {
     return 'tiff'
+  }
+  if (
+    bytes.length >= 12
+    && String.fromCharCode(...bytes.subarray(4, 8)) === 'ftyp'
+  ) {
+    return 'mp4'
   }
   return null
 }

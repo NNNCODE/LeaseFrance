@@ -460,7 +460,7 @@ handle('attachments:upload', async (entityType, entityId, slot) => {
   const { filePaths, canceled } = await dialog.showOpenDialog({
     title: 'Ajouter un fichier',
     filters: [
-      { name: 'Documents et images', extensions: ATTACHMENT_DIALOG_EXTENSIONS },
+      { name: 'Documents, images et videos', extensions: ATTACHMENT_DIALOG_EXTENSIONS },
     ],
     properties: ['openFile', 'multiSelections'],
   })
