@@ -76,4 +76,8 @@ describe('validateInvokeArgs', () => {
       otherParts: ['balcon'],
     })
   })
+
+  it('accepts the force-delete lease IPC channel', () => {
+    expect(validateInvokeArgs('leases:deleteWithLinkedRecords', [12])).toEqual([12])
+  })
 })

@@ -2,10 +2,12 @@ import { motion } from 'framer-motion'
 import { AlertTriangle, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
+import { isLeaseDeleteBlockedError } from './leasePageUtils'
 
 interface LeaseDeleteModalProps {
   lease: Lease
   onConfirm: () => void
+  onForceDelete?: () => void
   onClose: () => void
   error: string
   loading: boolean
@@ -14,11 +16,13 @@ interface LeaseDeleteModalProps {
 export default function LeaseDeleteModal({
   lease,
   onConfirm,
+  onForceDelete,
   onClose,
   error,
   loading,
 }: LeaseDeleteModalProps) {
   const { t } = useTranslation()
+  const showLinkedRecordsReminder = Boolean(error) && isLeaseDeleteBlockedError(error)
 
   return (
     <motion.div
@@ -53,6 +57,19 @@ export default function LeaseDeleteModal({
 
         {error && <p className="rounded-lg bg-danger/10 px-3 py-2 text-xs text-danger">{error}</p>}
 
+        {showLinkedRecordsReminder && (
+          <>
+            <div className="rounded-lg bg-warning/10 px-3 py-2 text-xs text-warning">
+              {t('leases.deleteBlockedReminder')}
+            </div>
+            {onForceDelete && (
+              <div className="rounded-lg bg-danger/10 px-3 py-2 text-xs text-danger">
+                {t('leases.deleteForceWarning')}
+              </div>
+            )}
+          </>
+        )}
+
         <div className="flex gap-2">
           <Button variant="secondary" onClick={onClose} className="flex-1">
             {t('common.cancel')}
@@ -62,6 +79,13 @@ export default function LeaseDeleteModal({
             {loading ? t('common.deleting') : t('common.delete')}
           </Button>
         </div>
+
+        {showLinkedRecordsReminder && onForceDelete && (
+          <Button variant="danger" onClick={onForceDelete} disabled={loading}>
+            <Trash2 className="h-3.5 w-3.5" />
+            {loading ? t('common.deleting') : t('leases.deleteForceAction')}
+          </Button>
+        )}
       </motion.div>
     </motion.div>
   )

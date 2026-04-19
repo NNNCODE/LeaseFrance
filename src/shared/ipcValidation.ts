@@ -245,6 +245,7 @@ const invokeArgSchemas = {
   'leases:update': z.tuple([positiveInt, leaseInput, versionToken]),
   'leases:updateContractDetails': z.tuple([positiveInt, leaseContractDetails.nullable(), versionToken]),
   'leases:delete': z.tuple([positiveInt]),
+  'leases:deleteWithLinkedRecords': z.tuple([positiveInt]),
   'payments:getByLease': z.tuple([positiveInt]),
   'payments:create': z.tuple([paymentInput]),
   'payments:update': z.tuple([positiveInt, paymentInput.partial(), versionToken]),

@@ -67,6 +67,7 @@ export interface BaillioInvokeApi {
     update: (id: number, data: LeaseInput, expectedUpdatedAt: string) => Promise<Lease>
     updateContractDetails: (id: number, contractDetails: LeaseContractDetails | null, expectedUpdatedAt: string) => Promise<Lease>
     delete: (id: number) => Promise<boolean>
+    deleteWithLinkedRecords: (id: number) => Promise<boolean>
   }
   payments: {
     getAll: () => Promise<Payment[]>

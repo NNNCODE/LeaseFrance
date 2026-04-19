@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { useOwnerStore } from '@/stores/useOwnerStore'
 import { formatQuarter } from '@/lib/irl'
 import { formatCurrency } from '@/lib/utils'
-import { emptyLeaseForm, LEASE_TYPES, statusLabel } from './leasePageUtils'
+import { emptyLeaseForm, formatLeaseErrorMessage, LEASE_TYPES, statusLabel } from './leasePageUtils'
 
 interface LeaseFormModalProps {
   initial: Lease | null
@@ -116,7 +116,7 @@ export default function LeaseFormModal({
     try {
       await onSave(form)
     } catch (err) {
-      setError(t('leases.form.errors.save', { error: err instanceof Error ? err.message : String(err) }))
+      setError(t('leases.form.errors.save', { error: formatLeaseErrorMessage(err) }))
       setSaving(false)
     }
   }

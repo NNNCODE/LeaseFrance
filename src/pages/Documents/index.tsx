@@ -21,6 +21,7 @@ import { RecuPDF, type RecuData } from '@/lib/pdf/recu'
 import { resolveOwnerProfileForLease } from '@/lib/ownerProfiles'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useOwnerStore } from '@/stores/useOwnerStore'
+import { leaseVersionToken } from '@/pages/Leases/leasePageUtils'
 import DocumentDeleteModal from './DocumentDeleteModal'
 import DocumentRow from './DocumentRow'
 import {
@@ -303,7 +304,7 @@ export default function Documents() {
         const persistedLease = await window.api.leases.updateContractDetails(
           lease.id,
           request.contractDetails,
-          lease.updated_at,
+          leaseVersionToken(lease),
         )
         if (!persistedLease) return false
 

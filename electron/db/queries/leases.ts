@@ -87,7 +87,27 @@ function getStoredLeaseOwnerProfileId(leaseId: number): string | null {
 }
 
 const SELECT = `
-  SELECT l.*,
+  SELECT
+    l.id,
+    l.property_id,
+    l.tenant_id,
+    l.owner_profile_id,
+    l.type,
+    l.start_date,
+    l.end_date,
+    l.rent_amount,
+    l.charges_amount,
+    l.deposit_amount,
+    l.deposit_received_date,
+    l.deposit_refund_date,
+    l.deposit_retained_amount,
+    l.deposit_notes,
+    l.irl_reference_index,
+    l.irl_reference_quarter,
+    l.status,
+    l.created_at,
+    COALESCE(l.updated_at, l.created_at) AS updated_at,
+    l.contract_details,
     p.name  AS property_name,
     p.address AS property_address,
     p.city  AS property_city,
@@ -169,7 +189,7 @@ export function update(id: number, data: LeaseInput, expectedUpdatedAt: string):
       contract_details=@contract_details,
       status=@status,
       updated_at=datetime('now')
-    WHERE id=@id AND updated_at=@expected_updated_at
+    WHERE id=@id AND COALESCE(updated_at, created_at)=@expected_updated_at
   `).run({
     ...data,
     owner_profile_id: ownerProfileId,
@@ -203,7 +223,7 @@ export function updateContractDetails(
     UPDATE leases SET
       contract_details=@contract_details,
       updated_at=datetime('now')
-    WHERE id=@id AND updated_at=@expected_updated_at
+    WHERE id=@id AND COALESCE(updated_at, created_at)=@expected_updated_at
   `).run({
     id,
     contract_details: serializeLeaseContractDetails(contractDetails),
@@ -228,6 +248,40 @@ export function remove(id: number): boolean {
     }
     throw err
   }
+}
+
+export function removeWithLinkedRecords(id: number): boolean {
+  const db = getDb()
+  const removeTx = db.transaction((leaseId: number) => {
+    const paymentIds = (
+      db.prepare('SELECT id FROM payments WHERE lease_id = ?').all(leaseId) as Array<{ id: number }>
+    ).map((row) => row.id)
+    const inspectionIds = (
+      db.prepare('SELECT id FROM inspections WHERE lease_id = ?').all(leaseId) as Array<{ id: number }>
+    ).map((row) => row.id)
+
+    if (paymentIds.length > 0) {
+      const paymentPlaceholders = paymentIds.map(() => '?').join(', ')
+      db.prepare(`UPDATE bank_imports SET payment_id = NULL WHERE payment_id IN (${paymentPlaceholders})`).run(...paymentIds)
+      db.prepare(`DELETE FROM payments WHERE id IN (${paymentPlaceholders})`).run(...paymentIds)
+    }
+
+    if (inspectionIds.length > 0) {
+      const inspectionPlaceholders = inspectionIds.map(() => '?').join(', ')
+      db.prepare(`DELETE FROM attachments WHERE entity_type = 'inspection' AND entity_id IN (${inspectionPlaceholders})`).run(...inspectionIds)
+    }
+
+    db.prepare(`DELETE FROM documents WHERE lease_id = ?`).run(leaseId)
+    db.prepare(`DELETE FROM manual_reminders WHERE lease_id = ?`).run(leaseId)
+    db.prepare(`DELETE FROM attachments WHERE entity_type = 'lease' AND entity_id = ?`).run(leaseId)
+    db.prepare(`DELETE FROM charge_reconciliations WHERE lease_id = ?`).run(leaseId)
+    db.prepare(`DELETE FROM inspections WHERE lease_id = ?`).run(leaseId)
+
+    const result = db.prepare('DELETE FROM leases WHERE id = ?').run(leaseId)
+    return result.changes > 0
+  })
+
+  return removeTx(id)
 }
 
 export function count(): number {

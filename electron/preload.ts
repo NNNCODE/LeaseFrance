@@ -131,6 +131,7 @@ const api: BaillioApi = {
     update: invoke('leases:update'),
     updateContractDetails: invoke('leases:updateContractDetails'),
     delete: invoke('leases:delete'),
+    deleteWithLinkedRecords: invoke('leases:deleteWithLinkedRecords'),
   },
   payments: {
     getAll: invoke('payments:getAll'),

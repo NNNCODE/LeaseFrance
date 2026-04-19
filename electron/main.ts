@@ -311,6 +311,7 @@ handle('leases:update', (id, data, expectedUpdatedAt) => leasesDb.update(id, dat
 handle('leases:updateContractDetails', (id, contractDetails, expectedUpdatedAt) =>
   leasesDb.updateContractDetails(id, contractDetails, expectedUpdatedAt))
 handle('leases:delete', (id) => leasesDb.remove(id))
+handle('leases:deleteWithLinkedRecords', (id) => leasesDb.removeWithLinkedRecords(id))
 
 // Payments IPC
 handle('payments:getAll', () => paymentsDb.getAll())

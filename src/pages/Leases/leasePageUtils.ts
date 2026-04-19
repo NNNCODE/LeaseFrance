@@ -24,6 +24,27 @@ export function statusLabel(status: keyof typeof STATUS_CONFIG, t?: TFunction) {
   return t ? t(meta.labelKey) : meta.label
 }
 
+export function leaseVersionToken(lease: Lease) {
+  return lease.updated_at ?? lease.created_at
+}
+
+export function formatLeaseErrorMessage(error: unknown) {
+  let message = error instanceof Error ? error.message : String(error)
+
+  message = message.replace(/^Error invoking remote method '[^']+':\s*/i, '').trim()
+  while (message.startsWith('Error: ')) {
+    message = message.slice('Error: '.length).trim()
+  }
+
+  return message
+}
+
+export function isLeaseDeleteBlockedError(error: string) {
+  return formatLeaseErrorMessage(error).includes(
+    'Impossible de supprimer ce bail car des paiements, documents ou rappels y sont encore rattaches.',
+  )
+}
+
 export const emptyLeaseForm: LeaseInput = {
   property_id: 0,
   tenant_id: 0,

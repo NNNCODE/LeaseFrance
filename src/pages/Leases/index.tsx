@@ -15,6 +15,7 @@ import DepositManagementModal, { type DepositManagementInput } from './DepositMa
 import LeaseDeleteModal from './LeaseDeleteModal'
 import LeaseEmptyState from './LeaseEmptyState'
 import LeaseFormModal from './LeaseFormModal'
+import { formatLeaseErrorMessage, leaseVersionToken } from './leasePageUtils'
 import LeaseRevisionModal from './LeaseRevisionModal'
 import LeaseRow from './LeaseRow'
 
@@ -88,13 +89,13 @@ export default function Leases() {
       if (!result.imported) return
       navigate('/documents')
     } catch (err) {
-      alert(err instanceof Error ? err.message : String(err))
+      alert(formatLeaseErrorMessage(err))
     }
   }
 
   async function handleSave(data: LeaseInput) {
     if (editing) {
-      await window.api.leases.update(editing.id, data, editing.updated_at)
+      await window.api.leases.update(editing.id, data, leaseVersionToken(editing))
     } else {
       await window.api.leases.create(data)
     }
@@ -111,7 +112,21 @@ export default function Leases() {
       closeDelete()
       await load()
     } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : String(err))
+      setDeleteError(formatLeaseErrorMessage(err))
+      setDeleteLoading(false)
+    }
+  }
+
+  async function handleForceDelete() {
+    if (!deleting) return
+    setDeleteLoading(true)
+    setDeleteError('')
+    try {
+      await window.api.leases.deleteWithLinkedRecords(deleting.id)
+      closeDelete()
+      await load()
+    } catch (err) {
+      setDeleteError(formatLeaseErrorMessage(err))
       setDeleteLoading(false)
     }
   }
@@ -146,11 +161,11 @@ export default function Leases() {
           contract_details: lease.contract_details,
           status: lease.status,
         },
-        lease.updated_at,
+        leaseVersionToken(lease),
       )
       setRevising(null)
     } catch (err) {
-      alert(err instanceof Error ? err.message : String(err))
+      alert(formatLeaseErrorMessage(err))
     }
     await load()
   }
@@ -180,11 +195,11 @@ export default function Leases() {
           contract_details: lease.contract_details,
           status: lease.status,
         },
-        lease.updated_at,
+        leaseVersionToken(lease),
       )
       setManagingDeposit(null)
     } catch (err) {
-      alert(err instanceof Error ? err.message : String(err))
+      alert(formatLeaseErrorMessage(err))
     }
     await load()
   }
@@ -308,6 +323,9 @@ export default function Leases() {
             lease={deleting}
             onConfirm={() => {
               void handleDelete()
+            }}
+            onForceDelete={() => {
+              void handleForceDelete()
             }}
             onClose={closeDelete}
             error={deleteError}
