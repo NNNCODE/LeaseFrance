@@ -1037,6 +1037,7 @@
     "roomNotesPlaceholder": "Observations",
     "removeRoom": "Supprimer la ligne",
     "notesPlaceholder": "Observations supplementaires...",
+    "moveInVideoSlot": "Video d'entree d'origine",
     "attachmentsAfterSave": "Enregistrez d'abord l'etat des lieux pour ajouter des photos, PDF ou videos dans la section des pieces jointes.",
     "signatureHelp": "Le PDF reprend la signature du proprietaire si elle existe dans {{owner}}. La signature du locataire reste un emplacement a signer sur la version imprimee.",
     "saveInspection": "Enregistrer le constat",
@@ -1428,7 +1429,7 @@
     "missing": "Manquant",
     "otherFiles": "Autres pieces jointes",
     "emptyTitle": "Aucune piece jointe",
-    "emptyDesc": "Cliquez sur Ajouter pour joindre un fichier PDF ou une image.",
+    "emptyDesc": "Cliquez sur Ajouter pour joindre un fichier PDF, une image ou une video.",
     "preview": "Apercu",
     "readError": "Impossible de lire le fichier.",
     "previewUnavailable": "Apercu non disponible pour ce type de fichier."

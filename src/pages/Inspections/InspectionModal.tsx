@@ -18,6 +18,10 @@ const KIND_META: Record<InspectionKind, { labelKey: string }> = {
   exit: { labelKey: 'inspections.kindExit' },
 }
 
+const ENTRY_ATTACHMENT_SLOTS = [
+  { key: 'move_in_video', labelKey: 'inspections.moveInVideoSlot' },
+] as const
+
 function today() {
   return new Date().toISOString().split('T')[0]
 }
@@ -79,6 +83,9 @@ export default function InspectionModal({
     () => inspections.find((item) => item.lease_id === form.lease_id && item.id !== inspection?.id),
     [form.lease_id, inspection?.id, inspections],
   )
+  const inspectionAttachmentSlots = form.kind === 'entry'
+    ? ENTRY_ATTACHMENT_SLOTS.map((slot) => ({ key: slot.key, label: t(slot.labelKey) }))
+    : undefined
 
   function setField<K extends keyof InspectionInput>(field: K, value: InspectionInput[K]) {
     setForm((current) => ({ ...current, [field]: value }))
@@ -345,6 +352,7 @@ export default function InspectionModal({
             <AttachmentPanel
               entityType="inspection"
               entityId={inspection.id}
+              slots={inspectionAttachmentSlots}
               compact
             />
           ) : (

@@ -65,4 +65,38 @@ describe('AttachmentPanel', () => {
       expect(screen.getByTestId('pdf-canvas-preview').textContent).toBe('bytes:4')
     })
   })
+
+  it('shows slotted files even when no slot definitions are provided', async () => {
+    ;(window as Window & typeof globalThis & { api: any }).api = {
+      attachments: {
+        getByEntity: vi.fn().mockResolvedValue([{
+          id: 18,
+          entity_type: 'inspection',
+          entity_id: 4,
+          slot: 'move_in_video',
+          file_name: 'etat-des-lieux-entree.mp4',
+          mime_type: 'video/mp4',
+          file_size: 9800000,
+          stored_name: 'stored-entree-video.mp4',
+          created_at: '2026-04-20 09:00:00',
+        }]),
+        upload: vi.fn().mockResolvedValue([]),
+        read: vi.fn(),
+        open: vi.fn(),
+        delete: vi.fn().mockResolvedValue(true),
+      },
+    }
+
+    render(
+      <AttachmentPanel
+        entityType="inspection"
+        entityId={4}
+        title="Pieces jointes"
+      />,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText('etat-des-lieux-entree.mp4')).toBeTruthy()
+    })
+  })
 })

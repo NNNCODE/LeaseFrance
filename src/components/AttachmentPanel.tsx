@@ -109,7 +109,7 @@ export default function AttachmentPanel({
     }))
     : null
 
-  const generalFiles = attachments.filter((a) => !a.slot)
+  const generalFiles = slotted ? attachments.filter((a) => !a.slot) : attachments
   const resolvedTitle = title ?? t('attachments.title')
 
   return (

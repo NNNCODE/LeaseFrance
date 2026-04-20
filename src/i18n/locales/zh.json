@@ -1037,6 +1037,7 @@
     "roomNotesPlaceholder": "观察说明",
     "removeRoom": "删除此行",
     "notesPlaceholder": "补充观察说明...",
+    "moveInVideoSlot": "\u539f\u59cb\u5165\u4f4f\u89c6\u9891",
     "attachmentsAfterSave": "请先保存这份检查记录，随后才能在附件区域添加照片、PDF 或视频。",
     "signatureHelp": "PDF 会使用在 {{owner}} 中保存的房东签名（如有）。租户签名仍需在线下打印版本上手写。",
     "saveInspection": "保存检查",
@@ -1428,7 +1429,7 @@
     "missing": "缺失",
     "otherFiles": "其他附件",
     "emptyTitle": "暂无附件",
-    "emptyDesc": "点击“添加”以附加 PDF 文件或图片。",
+    "emptyDesc": "\u70b9\u51fb\u201c\u6dfb\u52a0\u201d\u4ee5\u9644\u52a0 PDF \u6587\u4ef6\u3001\u56fe\u7247\u6216\u89c6\u9891\u3002",
     "preview": "预览",
     "readError": "无法读取该文件。",
     "previewUnavailable": "此文件类型暂不支持预览。"

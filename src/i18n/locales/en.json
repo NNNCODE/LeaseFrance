@@ -1037,6 +1037,7 @@
     "roomNotesPlaceholder": "Observations",
     "removeRoom": "Remove row",
     "notesPlaceholder": "Additional observations...",
+    "moveInVideoSlot": "Original move-in video",
     "attachmentsAfterSave": "Save the inspection first to add photos, PDFs, or videos in the attachments section.",
     "signatureHelp": "The PDF uses the landlord signature if it exists in {{owner}}. The tenant signature remains a space to sign on the printed version.",
     "saveInspection": "Save inspection",
@@ -1428,7 +1429,7 @@
     "missing": "Missing",
     "otherFiles": "Other attachments",
     "emptyTitle": "No attachments",
-    "emptyDesc": "Click Add to attach a PDF file or an image.",
+    "emptyDesc": "Click Add to attach a PDF file, image, or video.",
     "preview": "Preview",
     "readError": "Unable to read the file.",
     "previewUnavailable": "Preview is not available for this file type."
