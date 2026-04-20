@@ -341,12 +341,16 @@ export default function InspectionModal({
             />
           </div>
 
-          {inspection && (
+          {inspection ? (
             <AttachmentPanel
               entityType="inspection"
               entityId={inspection.id}
               compact
             />
+          ) : (
+            <div className="rounded-xl border border-border bg-surfaceHigh/20 px-4 py-3 text-xs text-textMuted leading-5">
+              {t('inspections.attachmentsAfterSave')}
+            </div>
           )}
 
           <div className="rounded-xl border border-warning/20 bg-warning/5 px-4 py-3 text-xs text-textMuted leading-5">

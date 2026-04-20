@@ -1037,6 +1037,7 @@
     "roomNotesPlaceholder": "Observations",
     "removeRoom": "Remove row",
     "notesPlaceholder": "Additional observations...",
+    "attachmentsAfterSave": "Save the inspection first to add photos, PDFs, or videos in the attachments section.",
     "signatureHelp": "The PDF uses the landlord signature if it exists in {{owner}}. The tenant signature remains a space to sign on the printed version.",
     "saveInspection": "Save inspection",
     "errors": {

@@ -1037,6 +1037,7 @@
     "roomNotesPlaceholder": "Observations",
     "removeRoom": "Supprimer la ligne",
     "notesPlaceholder": "Observations supplementaires...",
+    "attachmentsAfterSave": "Enregistrez d'abord l'etat des lieux pour ajouter des photos, PDF ou videos dans la section des pieces jointes.",
     "signatureHelp": "Le PDF reprend la signature du proprietaire si elle existe dans {{owner}}. La signature du locataire reste un emplacement a signer sur la version imprimee.",
     "saveInspection": "Enregistrer le constat",
     "errors": {

@@ -1037,6 +1037,7 @@
     "roomNotesPlaceholder": "观察说明",
     "removeRoom": "删除此行",
     "notesPlaceholder": "补充观察说明...",
+    "attachmentsAfterSave": "请先保存这份检查记录，随后才能在附件区域添加照片、PDF 或视频。",
     "signatureHelp": "PDF 会使用在 {{owner}} 中保存的房东签名（如有）。租户签名仍需在线下打印版本上手写。",
     "saveInspection": "保存检查",
     "errors": {

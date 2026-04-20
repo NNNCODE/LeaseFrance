@@ -349,7 +349,18 @@ function InspectionRow({
         show: { opacity: 1, x: 0, transition: { duration: 0.2, ease: 'easeOut' } },
       }}
     >
-      <Card className="group hover:border-primary/30 transition-colors">
+      <Card
+        className="group cursor-pointer hover:border-primary/30 transition-colors"
+        role="button"
+        tabIndex={0}
+        onClick={onEdit}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault()
+            onEdit()
+          }
+        }}
+      >
         <CardContent className="px-5 py-4">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0 flex-1">
@@ -387,25 +398,36 @@ function InspectionRow({
               </div>
             </div>
 
-            <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="flex items-center gap-2 shrink-0">
               <button
-                onClick={onGeneratePdf}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onGeneratePdf()
+                }}
                 disabled={busy}
                 title={t('inspections.generatePdf')}
                 className="p-1.5 rounded-lg hover:bg-primary/10 text-textMuted hover:text-primary transition-colors disabled:opacity-40"
               >
                 <Download className="w-4 h-4" />
               </button>
-              <button
-                onClick={onEdit}
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onEdit()
+                }}
                 disabled={busy}
-                title={t('common.edit')}
-                className="p-1.5 rounded-lg hover:bg-surfaceHigh text-textMuted hover:text-textPrimary transition-colors disabled:opacity-40"
               >
-                <Pencil className="w-4 h-4" />
-              </button>
+                <Pencil className="w-3.5 h-3.5" />
+                {t('common.open')}
+              </Button>
               <button
-                onClick={onDelete}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onDelete()
+                }}
                 disabled={busy}
                 title={t('common.delete')}
                 className="p-1.5 rounded-lg hover:bg-danger/10 text-textMuted hover:text-danger transition-colors disabled:opacity-40"
