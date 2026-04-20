@@ -8,12 +8,17 @@ import '@/i18n'
 
 vi.mock('@/components/AttachmentPanel', () => ({
   default: ({
+    title,
     slots,
+    generalSectionLabel,
   }: {
+    title?: string
     slots?: Array<{ key: string; label: string }>
+    generalSectionLabel?: string
   }) => (
     <div>
-      <span>Attachment panel</span>
+      <span>{title ?? 'Attachment panel'}</span>
+      {generalSectionLabel ? <span>{generalSectionLabel}</span> : null}
       {slots?.map((slot) => (
         <span key={slot.key}>{slot.label}</span>
       ))}
@@ -87,10 +92,13 @@ describe('InspectionModal', () => {
       />,
     )
 
+    expect(screen.getByText('Fichiers du constat')).toBeTruthy()
     expect(screen.getByText("Video d'entree d'origine")).toBeTruthy()
+    expect(screen.getByText('Autres fichiers du constat')).toBeTruthy()
 
     await user.click(screen.getByRole('button', { name: 'Sortie' }))
     expect(screen.queryByText("Video d'entree d'origine")).toBeNull()
+    expect(screen.queryByText('Autres fichiers du constat')).toBeNull()
 
     await user.click(screen.getByRole('button', { name: 'Entree' }))
     expect(screen.getByText("Video d'entree d'origine")).toBeTruthy()

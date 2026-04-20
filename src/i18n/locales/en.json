@@ -1037,7 +1037,12 @@
     "roomNotesPlaceholder": "Observations",
     "removeRoom": "Remove row",
     "notesPlaceholder": "Additional observations...",
+    "attachmentsTitle": "Inspection files",
     "moveInVideoSlot": "Original move-in video",
+    "moveInVideoSlotHelp": "Keep the original move-in video separate so it is easy to find later.",
+    "moveInVideoBadge": "Video",
+    "generalFilesLabel": "Other inspection files",
+    "generalFilesHelp": "Add photos, PDFs, and other supporting files here.",
     "attachmentsAfterSave": "Save the inspection first to add photos, PDFs, or videos in the attachments section.",
     "signatureHelp": "The PDF uses the landlord signature if it exists in {{owner}}. The tenant signature remains a space to sign on the printed version.",
     "saveInspection": "Save inspection",
@@ -1432,6 +1437,8 @@
     "emptyDesc": "Click Add to attach a PDF file, image, or video.",
     "preview": "Preview",
     "readError": "Unable to read the file.",
+    "videoPreviewLoading": "Loading video preview...",
+    "videoPreviewFailed": "Unable to play this MP4 inline. Use Open to play it in the system video player.",
     "previewUnavailable": "Preview is not available for this file type."
   }
 }

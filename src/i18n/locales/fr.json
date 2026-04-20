@@ -1037,7 +1037,12 @@
     "roomNotesPlaceholder": "Observations",
     "removeRoom": "Supprimer la ligne",
     "notesPlaceholder": "Observations supplementaires...",
+    "attachmentsTitle": "Fichiers du constat",
     "moveInVideoSlot": "Video d'entree d'origine",
+    "moveInVideoSlotHelp": "Conservez la video d'entree a part pour la retrouver rapidement plus tard.",
+    "moveInVideoBadge": "Video",
+    "generalFilesLabel": "Autres fichiers du constat",
+    "generalFilesHelp": "Ajoutez ici les photos, PDF et autres pieces jointes.",
     "attachmentsAfterSave": "Enregistrez d'abord l'etat des lieux pour ajouter des photos, PDF ou videos dans la section des pieces jointes.",
     "signatureHelp": "Le PDF reprend la signature du proprietaire si elle existe dans {{owner}}. La signature du locataire reste un emplacement a signer sur la version imprimee.",
     "saveInspection": "Enregistrer le constat",
@@ -1432,6 +1437,8 @@
     "emptyDesc": "Cliquez sur Ajouter pour joindre un fichier PDF, une image ou une video.",
     "preview": "Apercu",
     "readError": "Impossible de lire le fichier.",
+    "videoPreviewLoading": "Chargement de l'apercu video...",
+    "videoPreviewFailed": "Impossible de lire ce MP4 dans l'application. Utilisez Ouvrir pour le lire avec le lecteur video du systeme.",
     "previewUnavailable": "Apercu non disponible pour ce type de fichier."
   }
 }

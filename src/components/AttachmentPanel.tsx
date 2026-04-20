@@ -7,6 +7,7 @@ import {
   File,
   FileImage,
   FileText,
+  Film,
   FolderOpen,
   Paperclip,
   Plus,
@@ -23,9 +24,21 @@ interface AttachmentPanelProps {
   entityType: 'tenant' | 'lease' | 'inspection'
   entityId: number
   /** Named slots for structured uploads (e.g. dossier items). */
-  slots?: Array<{ key: string; label: string }>
+  slots?: Array<{
+    key: string
+    label: string
+    description?: string
+    featured?: boolean
+    badge?: string
+  }>
   /** Panel title. */
   title?: string
+  /** Optional label for unslotted files when slots are present. */
+  generalSectionLabel?: string
+  /** Optional helper text for unslotted files when slots are present. */
+  generalSectionDescription?: string
+  /** Keep the general section visible even when it is empty. */
+  alwaysShowGeneralSection?: boolean
   /** Compact mode for inline embedding. */
   compact?: boolean
   /** Optional callback fired after a successful upload. */
@@ -43,6 +56,7 @@ function formatFileSize(bytes: number) {
 function getFileIcon(mimeType: string) {
   if (mimeType.startsWith('image/')) return FileImage
   if (mimeType === 'application/pdf') return FileText
+  if (mimeType === 'video/mp4') return Film
   return File
 }
 
@@ -53,6 +67,9 @@ export default function AttachmentPanel({
   entityId,
   slots,
   title,
+  generalSectionLabel,
+  generalSectionDescription,
+  alwaysShowGeneralSection = false,
   compact = false,
   onUploadComplete,
 }: AttachmentPanelProps) {
@@ -111,6 +128,8 @@ export default function AttachmentPanel({
 
   const generalFiles = slotted ? attachments.filter((a) => !a.slot) : attachments
   const resolvedTitle = title ?? t('attachments.title')
+  const resolvedGeneralSectionLabel = generalSectionLabel ?? t('attachments.otherFiles')
+  const showGeneralSection = generalFiles.length > 0 || (Boolean(slotted) && alwaysShowGeneralSection)
 
   return (
     <div className={compact ? '' : 'rounded-2xl border border-border'}>
@@ -141,22 +160,38 @@ export default function AttachmentPanel({
           <div className="flex flex-col gap-3">
             {/* ── Slot sections ───────────────────────────── */}
             {slotted && slotted.map((slotDef) => (
-              <div key={slotDef.key} className="rounded-xl border border-border bg-surfaceHigh/30 p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <p className="text-xs font-medium text-textPrimary">{slotDef.label}</p>
-                    {slotDef.files.length > 0 ? (
-                      <Badge variant="success" className="text-[10px]">
-                        {t('attachments.fileCount', { count: slotDef.files.length })}
-                      </Badge>
-                    ) : (
-                      <Badge variant="warning" className="text-[10px]">{t('attachments.missing')}</Badge>
-                    )}
+              <div
+                key={slotDef.key}
+                className={`rounded-xl border p-3 ${
+                  slotDef.featured
+                    ? 'border-primary/30 bg-primary/5'
+                    : 'border-border bg-surfaceHigh/30'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2 gap-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {slotDef.featured ? <Film className="w-3.5 h-3.5 text-primary shrink-0" /> : null}
+                      <p className="text-xs font-medium text-textPrimary">{slotDef.label}</p>
+                      {slotDef.badge ? (
+                        <Badge variant="default" className="text-[10px]">{slotDef.badge}</Badge>
+                      ) : null}
+                      {slotDef.files.length > 0 ? (
+                        <Badge variant="success" className="text-[10px]">
+                          {t('attachments.fileCount', { count: slotDef.files.length })}
+                        </Badge>
+                      ) : (
+                        <Badge variant="warning" className="text-[10px]">{t('attachments.missing')}</Badge>
+                      )}
+                    </div>
+                    {slotDef.description ? (
+                      <p className="text-[11px] text-textMuted mt-1 leading-5">{slotDef.description}</p>
+                    ) : null}
                   </div>
                   <button
                     type="button"
                     onClick={() => handleUpload(slotDef.key)}
-                    className="text-xs text-primary hover:text-primary/80 transition-colors flex items-center gap-1"
+                    className="text-xs text-primary hover:text-primary/80 transition-colors flex items-center gap-1 shrink-0"
                   >
                     <Plus className="w-3 h-3" />
                     {t('common.add')}
@@ -180,20 +215,29 @@ export default function AttachmentPanel({
             ))}
 
             {/* ── General files ────────────────────────────── */}
-            {generalFiles.length > 0 && (
-              <div className="flex flex-col gap-1">
-                {slotted && (
-                  <p className="text-xs font-medium text-textMuted mb-1">{t('attachments.otherFiles')}</p>
-                )}
-                {generalFiles.map((file) => (
-                  <AttachmentRow
-                    key={file.id}
-                    attachment={file}
-                    onPreview={() => setPreviewAttachment(file)}
-                    onOpen={() => window.api.attachments.open(file.id)}
-                    onDelete={() => handleDelete(file.id)}
-                  />
-                ))}
+            {showGeneralSection && (
+              <div className={slotted ? 'rounded-xl border border-border bg-surfaceHigh/20 p-3' : 'flex flex-col gap-1'}>
+                {slotted ? (
+                  <div className={generalFiles.length > 0 ? 'mb-2' : ''}>
+                    <p className="text-xs font-medium text-textPrimary">{resolvedGeneralSectionLabel}</p>
+                    {generalSectionDescription ? (
+                      <p className="text-[11px] text-textMuted mt-1 leading-5">{generalSectionDescription}</p>
+                    ) : null}
+                  </div>
+                ) : null}
+                {generalFiles.length > 0 ? (
+                  <div className="flex flex-col gap-1">
+                    {generalFiles.map((file) => (
+                      <AttachmentRow
+                        key={file.id}
+                        attachment={file}
+                        onPreview={() => setPreviewAttachment(file)}
+                        onOpen={() => window.api.attachments.open(file.id)}
+                        onDelete={() => handleDelete(file.id)}
+                      />
+                    ))}
+                  </div>
+                ) : null}
               </div>
             )}
 
@@ -289,6 +333,8 @@ function AttachmentPreviewModal({
   const [pdfData, setPdfData] = useState<Uint8Array | null>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
+  const [videoReady, setVideoReady] = useState(false)
+  const [videoError, setVideoError] = useState('')
 
   useEffect(() => {
     let cancelled = false
@@ -297,6 +343,8 @@ function AttachmentPreviewModal({
     setPdfData(null)
     setError('')
     setLoading(true)
+    setVideoReady(false)
+    setVideoError('')
 
     async function loadFile() {
       const result = await window.api.attachments.read(attachment.id)
@@ -363,7 +411,7 @@ function AttachmentPreviewModal({
               variant="secondary"
               size="sm"
               onClick={() => window.api.attachments.open(attachment.id)}
-            >S
+            >
               <FolderOpen className="w-3.5 h-3.5" />
               {t('common.open')}
             </Button>
@@ -393,12 +441,34 @@ function AttachmentPreviewModal({
               className="max-w-full max-h-full object-contain rounded-lg"
             />
           ) : previewUrl && isMp4 ? (
-            <video
-              data-testid="attachment-video-preview"
-              src={previewUrl}
-              controls
-              className="max-w-full max-h-full rounded-lg bg-black"
-            />
+            videoError ? (
+              <div className="flex flex-col items-center gap-3 text-center">
+                <File className="w-8 h-8 text-textMuted" />
+                <p className="text-sm text-textMuted">{videoError}</p>
+              </div>
+            ) : (
+              <div className="relative flex items-center justify-center w-full h-full">
+                {!videoReady && (
+                  <p className="text-sm text-textMuted animate-pulse">
+                    {t('attachments.videoPreviewLoading')}
+                  </p>
+                )}
+                <video
+                  data-testid="attachment-video-preview"
+                  src={previewUrl}
+                  controls
+                  preload="auto"
+                  playsInline
+                  onLoadedData={() => setVideoReady(true)}
+                  onCanPlay={() => setVideoReady(true)}
+                  onError={() => {
+                    setVideoReady(false)
+                    setVideoError(t('attachments.videoPreviewFailed'))
+                  }}
+                  className={`max-w-full max-h-full rounded-lg bg-black ${videoReady ? '' : 'opacity-0 absolute pointer-events-none'}`}
+                />
+              </div>
+            )
           ) : pdfData && isPdf ? (
             <div className="h-full w-full overflow-hidden">
               <PdfCanvasPreview data={pdfData} />

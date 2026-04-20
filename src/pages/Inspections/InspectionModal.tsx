@@ -19,7 +19,12 @@ const KIND_META: Record<InspectionKind, { labelKey: string }> = {
 }
 
 const ENTRY_ATTACHMENT_SLOTS = [
-  { key: 'move_in_video', labelKey: 'inspections.moveInVideoSlot' },
+  {
+    key: 'move_in_video',
+    labelKey: 'inspections.moveInVideoSlot',
+    descriptionKey: 'inspections.moveInVideoSlotHelp',
+    badgeKey: 'inspections.moveInVideoBadge',
+  },
 ] as const
 
 function today() {
@@ -84,7 +89,13 @@ export default function InspectionModal({
     [form.lease_id, inspection?.id, inspections],
   )
   const inspectionAttachmentSlots = form.kind === 'entry'
-    ? ENTRY_ATTACHMENT_SLOTS.map((slot) => ({ key: slot.key, label: t(slot.labelKey) }))
+    ? ENTRY_ATTACHMENT_SLOTS.map((slot) => ({
+      key: slot.key,
+      label: t(slot.labelKey),
+      description: t(slot.descriptionKey),
+      badge: t(slot.badgeKey),
+      featured: true,
+    }))
     : undefined
 
   function setField<K extends keyof InspectionInput>(field: K, value: InspectionInput[K]) {
@@ -352,7 +363,11 @@ export default function InspectionModal({
             <AttachmentPanel
               entityType="inspection"
               entityId={inspection.id}
+              title={t('inspections.attachmentsTitle')}
               slots={inspectionAttachmentSlots}
+              generalSectionLabel={form.kind === 'entry' ? t('inspections.generalFilesLabel') : undefined}
+              generalSectionDescription={form.kind === 'entry' ? t('inspections.generalFilesHelp') : undefined}
+              alwaysShowGeneralSection={form.kind === 'entry'}
               compact
             />
           ) : (

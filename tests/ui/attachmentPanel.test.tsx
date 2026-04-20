@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import type React from 'react'
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import AttachmentPanel from '@/components/AttachmentPanel'
@@ -124,6 +124,71 @@ describe('AttachmentPanel', () => {
       expect(video.getAttribute('src')).toBe('blob:mp4-preview')
       expect(video.controls).toBe(true)
     })
+
+    fireEvent.loadedData(screen.getByTestId('attachment-video-preview'))
+
+    await waitFor(() => {
+      expect(screen.queryByText("Chargement de l'apercu video...")).toBeNull()
+    })
+  })
+
+  it('shows a fallback message when the MP4 cannot be played inline', async () => {
+    const user = userEvent.setup()
+    const createObjectUrl = vi.fn(() => 'blob:mp4-preview-error')
+
+    Object.defineProperty(URL, 'createObjectURL', {
+      writable: true,
+      value: createObjectUrl,
+    })
+    Object.defineProperty(URL, 'revokeObjectURL', {
+      writable: true,
+      value: vi.fn(),
+    })
+
+    ;(window as Window & typeof globalThis & { api: any }).api = {
+      attachments: {
+        getByEntity: vi.fn().mockResolvedValue([{
+          id: 20,
+          entity_type: 'inspection',
+          entity_id: 4,
+          slot: 'move_in_video',
+          file_name: 'codec-unsupported.mp4',
+          mime_type: 'video/mp4',
+          file_size: 204800,
+          stored_name: 'stored-codec-unsupported.mp4',
+          created_at: '2026-04-21 09:00:00',
+        }]),
+        upload: vi.fn().mockResolvedValue([]),
+        read: vi.fn().mockResolvedValue({
+          data: new Uint8Array([0, 0, 0, 0, 102, 116, 121, 112]),
+          mimeType: 'video/mp4',
+          error: null,
+        }),
+        open: vi.fn(),
+        delete: vi.fn().mockResolvedValue(true),
+      },
+    }
+
+    render(
+      <AttachmentPanel
+        entityType="inspection"
+        entityId={4}
+        title="Pieces jointes"
+      />,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText('codec-unsupported.mp4')).toBeTruthy()
+    })
+
+    await user.click(screen.getByTitle('Apercu'))
+
+    const video = await screen.findByTestId('attachment-video-preview')
+    fireEvent.error(video)
+
+    await waitFor(() => {
+      expect(screen.getByText("Impossible de lire ce MP4 dans l'application. Utilisez Ouvrir pour le lire avec le lecteur video du systeme.")).toBeTruthy()
+    })
   })
 
   it('shows slotted files even when no slot definitions are provided', async () => {
@@ -158,5 +223,68 @@ describe('AttachmentPanel', () => {
     await waitFor(() => {
       expect(screen.getByText('etat-des-lieux-entree.mp4')).toBeTruthy()
     })
+  })
+
+  it('renders distinct labels for the move-in video slot and general inspection files', async () => {
+    ;(window as Window & typeof globalThis & { api: any }).api = {
+      attachments: {
+        getByEntity: vi.fn().mockResolvedValue([
+          {
+            id: 21,
+            entity_type: 'inspection',
+            entity_id: 4,
+            slot: 'move_in_video',
+            file_name: 'video-entree.mp4',
+            mime_type: 'video/mp4',
+            file_size: 9800000,
+            stored_name: 'stored-video-entree.mp4',
+            created_at: '2026-04-21 10:00:00',
+          },
+          {
+            id: 22,
+            entity_type: 'inspection',
+            entity_id: 4,
+            slot: null,
+            file_name: 'photos-cuisine.pdf',
+            mime_type: 'application/pdf',
+            file_size: 240000,
+            stored_name: 'stored-photos-cuisine.pdf',
+            created_at: '2026-04-21 10:02:00',
+          },
+        ]),
+        upload: vi.fn().mockResolvedValue([]),
+        read: vi.fn(),
+        open: vi.fn(),
+        delete: vi.fn().mockResolvedValue(true),
+      },
+    }
+
+    render(
+      <AttachmentPanel
+        entityType="inspection"
+        entityId={4}
+        title="Fichiers du constat"
+        slots={[{
+          key: 'move_in_video',
+          label: "Video d'entree d'origine",
+          description: "Conservez la video d'entree a part pour la retrouver rapidement plus tard.",
+          badge: 'Video',
+          featured: true,
+        }]}
+        generalSectionLabel="Autres fichiers du constat"
+        generalSectionDescription="Ajoutez ici les photos, PDF et autres pieces jointes."
+        alwaysShowGeneralSection
+      />,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText("Video d'entree d'origine")).toBeTruthy()
+    })
+
+    expect(screen.getByText('Autres fichiers du constat')).toBeTruthy()
+    expect(screen.getByText("Conservez la video d'entree a part pour la retrouver rapidement plus tard.")).toBeTruthy()
+    expect(screen.getByText('Ajoutez ici les photos, PDF et autres pieces jointes.')).toBeTruthy()
+    expect(screen.getByText('video-entree.mp4')).toBeTruthy()
+    expect(screen.getByText('photos-cuisine.pdf')).toBeTruthy()
   })
 })

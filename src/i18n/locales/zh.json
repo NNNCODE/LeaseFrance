@@ -1037,7 +1037,12 @@
     "roomNotesPlaceholder": "观察说明",
     "removeRoom": "删除此行",
     "notesPlaceholder": "补充观察说明...",
+    "attachmentsTitle": "检查附件",
     "moveInVideoSlot": "\u539f\u59cb\u5165\u4f4f\u89c6\u9891",
+    "moveInVideoSlotHelp": "把入住原始视频单独放在这里，后续更容易找到。",
+    "moveInVideoBadge": "视频",
+    "generalFilesLabel": "其他检查文件",
+    "generalFilesHelp": "照片、PDF 和其他补充文件放在这里。",
     "attachmentsAfterSave": "请先保存这份检查记录，随后才能在附件区域添加照片、PDF 或视频。",
     "signatureHelp": "PDF 会使用在 {{owner}} 中保存的房东签名（如有）。租户签名仍需在线下打印版本上手写。",
     "saveInspection": "保存检查",
@@ -1432,6 +1437,8 @@
     "emptyDesc": "\u70b9\u51fb\u201c\u6dfb\u52a0\u201d\u4ee5\u9644\u52a0 PDF \u6587\u4ef6\u3001\u56fe\u7247\u6216\u89c6\u9891\u3002",
     "preview": "预览",
     "readError": "无法读取该文件。",
+    "videoPreviewLoading": "正在加载视频预览...",
+    "videoPreviewFailed": "无法在应用内播放这个 MP4。请使用“打开”交给系统视频播放器。",
     "previewUnavailable": "此文件类型暂不支持预览。"
   }
 }
