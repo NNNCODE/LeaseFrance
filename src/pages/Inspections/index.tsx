@@ -139,11 +139,14 @@ export default function Inspections() {
     if (editing) {
       await window.api.inspections.update(editing.id, data)
       setNotice(t('inspections.updatedNotice'))
+      closeForm()
     } else {
-      await window.api.inspections.create(data)
+      const created = await window.api.inspections.create(data)
       setNotice(t('inspections.createdNotice'))
+      setEditing(created)
+      setInitialLeaseId(null)
+      setShowForm(true)
     }
-    closeForm()
     await load()
   }
 
@@ -279,6 +282,7 @@ export default function Inspections() {
       <AnimatePresence>
         {showForm && (
           <InspectionModal
+            key={editing?.id ?? 'new'}
             inspection={editing}
             leases={availableLeases}
             inspections={inspections}
