@@ -331,6 +331,7 @@ function AttachmentPreviewModal({
 
   const isImage = attachment.mime_type.startsWith('image/')
   const isPdf = attachment.mime_type === 'application/pdf'
+  const isMp4 = attachment.mime_type === 'video/mp4'
 
   return (
     <motion.div
@@ -390,6 +391,13 @@ function AttachmentPreviewModal({
               src={previewUrl}
               alt={attachment.file_name}
               className="max-w-full max-h-full object-contain rounded-lg"
+            />
+          ) : previewUrl && isMp4 ? (
+            <video
+              data-testid="attachment-video-preview"
+              src={previewUrl}
+              controls
+              className="max-w-full max-h-full rounded-lg bg-black"
             />
           ) : pdfData && isPdf ? (
             <div className="h-full w-full overflow-hidden">

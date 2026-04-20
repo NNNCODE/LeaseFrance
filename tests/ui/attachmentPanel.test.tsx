@@ -66,6 +66,66 @@ describe('AttachmentPanel', () => {
     })
   })
 
+  it('renders an inline MP4 player in the attachment preview modal', async () => {
+    const user = userEvent.setup()
+    const createObjectUrl = vi.fn(() => 'blob:mp4-preview')
+    const revokeObjectUrl = vi.fn()
+
+    Object.defineProperty(URL, 'createObjectURL', {
+      writable: true,
+      value: createObjectUrl,
+    })
+    Object.defineProperty(URL, 'revokeObjectURL', {
+      writable: true,
+      value: revokeObjectUrl,
+    })
+
+    ;(window as Window & typeof globalThis & { api: any }).api = {
+      attachments: {
+        getByEntity: vi.fn().mockResolvedValue([{
+          id: 19,
+          entity_type: 'inspection',
+          entity_id: 4,
+          slot: 'move_in_video',
+          file_name: 'etat-des-lieux-entree.mp4',
+          mime_type: 'video/mp4',
+          file_size: 9800000,
+          stored_name: 'stored-entree-video.mp4',
+          created_at: '2026-04-20 09:00:00',
+        }]),
+        upload: vi.fn().mockResolvedValue([]),
+        read: vi.fn().mockResolvedValue({
+          data: new Uint8Array([0, 0, 0, 0, 102, 116, 121, 112]),
+          mimeType: 'video/mp4',
+          error: null,
+        }),
+        open: vi.fn(),
+        delete: vi.fn().mockResolvedValue(true),
+      },
+    }
+
+    render(
+      <AttachmentPanel
+        entityType="inspection"
+        entityId={4}
+        title="Pieces jointes"
+      />,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText('etat-des-lieux-entree.mp4')).toBeTruthy()
+    })
+
+    await user.click(screen.getByTitle('Apercu'))
+
+    await waitFor(() => {
+      const video = screen.getByTestId('attachment-video-preview') as HTMLVideoElement
+      expect(video.tagName).toBe('VIDEO')
+      expect(video.getAttribute('src')).toBe('blob:mp4-preview')
+      expect(video.controls).toBe(true)
+    })
+  })
+
   it('shows slotted files even when no slot definitions are provided', async () => {
     ;(window as Window & typeof globalThis & { api: any }).api = {
       attachments: {
