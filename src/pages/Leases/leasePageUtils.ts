@@ -84,6 +84,45 @@ export function getLatestMoveInVideoByLease(inspections: Inspection[], attachmen
   return result
 }
 
+export function getLatestMoveInVideoByTenant(leases: Lease[], inspections: Inspection[], attachments: Attachment[]) {
+  const tenantIdByLease = new Map(leases.map((lease) => [lease.id, lease.tenant_id]))
+  const moveInVideosByInspection = new Map<number, Attachment>()
+
+  for (const attachment of [...attachments].sort((a, b) => (
+    compareDesc(a.created_at, b.created_at) || b.id - a.id
+  ))) {
+    if (
+      attachment.entity_type !== 'inspection'
+      || attachment.slot !== 'move_in_video'
+      || attachment.mime_type !== 'video/mp4'
+      || moveInVideosByInspection.has(attachment.entity_id)
+    ) {
+      continue
+    }
+
+    moveInVideosByInspection.set(attachment.entity_id, attachment)
+  }
+
+  const result = new Map<number, Attachment>()
+  const sortedInspections = [...inspections].sort((a, b) => (
+    compareDesc(a.inspection_date, b.inspection_date)
+    || compareDesc(a.created_at, b.created_at)
+    || b.id - a.id
+  ))
+
+  for (const inspection of sortedInspections) {
+    if (inspection.kind !== 'entry') continue
+
+    const tenantId = tenantIdByLease.get(inspection.lease_id)
+    if (!tenantId || result.has(tenantId)) continue
+
+    const video = moveInVideosByInspection.get(inspection.id)
+    if (video) result.set(tenantId, video)
+  }
+
+  return result
+}
+
 export const emptyLeaseForm: LeaseInput = {
   property_id: 0,
   tenant_id: 0,

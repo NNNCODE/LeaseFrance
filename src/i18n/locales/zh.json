@@ -351,6 +351,7 @@
     "emergencyContact": "紧急联系人",
     "ledger": "租户账本",
     "file": "档案",
+    "openMoveInVideo": "\u5165\u4f4f\u89c6\u9891",
     "withIncompleteFile": "{{count}} 份档案待完善",
     "withIncompleteFile_plural": "{{count}} 份档案待完善",
     "noResults": "没有找到与“{{query}}”相关的结果",

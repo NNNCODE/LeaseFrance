@@ -351,6 +351,7 @@
     "emergencyContact": "Contact d'urgence",
     "ledger": "Compte locataire",
     "file": "Dossier locatif",
+    "openMoveInVideo": "Video d'entree",
     "withIncompleteFile": "{{count}} dossier a completer",
     "withIncompleteFile_plural": "{{count}} dossiers a completer",
     "noResults": "Aucun resultat pour \"{{query}}\"",

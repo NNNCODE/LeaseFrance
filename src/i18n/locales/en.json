@@ -351,6 +351,7 @@
     "emergencyContact": "Emergency contact",
     "ledger": "Tenant ledger",
     "file": "Tenant file",
+    "openMoveInVideo": "Move-in video",
     "withIncompleteFile": "{{count}} file to complete",
     "withIncompleteFile_plural": "{{count}} files to complete",
     "noResults": "No results for \"{{query}}\"",

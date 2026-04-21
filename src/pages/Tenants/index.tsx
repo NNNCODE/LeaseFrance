@@ -8,6 +8,7 @@ import {
   CalendarDays,
   CheckCircle2,
   Euro,
+  Film,
   FileText,
   Mail,
   Pencil,
@@ -26,6 +27,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { formatCurrency, formatDate } from '@/lib/utils'
+import { getLatestMoveInVideoByTenant } from '@/pages/Leases/leasePageUtils'
 import TenantFileModal from './TenantFileModal'
 import TenantLedgerModal from './TenantLedgerModal'
 import {
@@ -72,6 +74,7 @@ function getTenantVersionToken(tenant: Tenant) {
 export default function Tenants() {
   const { t } = useTranslation()
   const [tenants, setTenants] = useState<Tenant[]>([])
+  const [moveInVideosByTenant, setMoveInVideosByTenant] = useState<Map<number, Attachment>>(new Map())
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [showForm, setShowForm] = useState(false)
@@ -84,8 +87,14 @@ export default function Tenants() {
 
   async function load() {
     setLoading(true)
-    const data = await window.api.tenants.getAll()
-    setTenants(data)
+    const [nextTenants, nextLeases, nextInspections, nextAttachments] = await Promise.all([
+      window.api.tenants.getAll(),
+      window.api.leases.getAll(),
+      window.api.inspections.getAll(),
+      window.api.attachments.getAll(),
+    ])
+    setTenants(nextTenants)
+    setMoveInVideosByTenant(getLatestMoveInVideoByTenant(nextLeases, nextInspections, nextAttachments))
     setLoading(false)
   }
 
@@ -224,16 +233,24 @@ export default function Tenants() {
           animate="show"
           variants={{ hidden: {}, show: { transition: { staggerChildren: 0.05 } } }}
         >
-          {filtered.map((tenant) => (
-            <TenantCard
-              key={tenant.id}
-              tenant={tenant}
-              onEdit={() => openEdit(tenant)}
-              onDelete={() => setDeleting(tenant)}
-              onOpenLedger={() => setLedgerTenant(tenant)}
-              onOpenDossier={() => setDossierTenant(tenant)}
-            />
-          ))}
+          {filtered.map((tenant) => {
+            const moveInVideoAttachment = moveInVideosByTenant.get(tenant.id) ?? null
+
+            return (
+              <TenantCard
+                key={tenant.id}
+                tenant={tenant}
+                onEdit={() => openEdit(tenant)}
+                onDelete={() => setDeleting(tenant)}
+                onOpenLedger={() => setLedgerTenant(tenant)}
+                onOpenDossier={() => setDossierTenant(tenant)}
+                moveInVideoAttachment={moveInVideoAttachment}
+                onOpenMoveInVideo={() => {
+                  if (moveInVideoAttachment) void window.api.attachments.open(moveInVideoAttachment.id)
+                }}
+              />
+            )
+          })}
         </motion.div>
       )}
 
@@ -299,12 +316,16 @@ function TenantCard({
   onDelete,
   onOpenLedger,
   onOpenDossier,
+  moveInVideoAttachment,
+  onOpenMoveInVideo,
 }: {
   tenant: Tenant
   onEdit: () => void
   onDelete: () => void
   onOpenLedger: () => void
   onOpenDossier: () => void
+  moveInVideoAttachment?: Attachment | null
+  onOpenMoveInVideo?: () => void
 }) {
   const { t } = useTranslation()
   const hasLease = Boolean(tenant.lease_id)
@@ -314,6 +335,8 @@ function TenantCard({
   const dossierVariant = getDossierStatusVariant(tenant)
   const missingItems = getMissingDossierItems(tenant)
   const guarantorPresent = hasGuarantor(tenant)
+  const hasMoveInVideo = Boolean(moveInVideoAttachment && onOpenMoveInVideo)
+  const actionColumns = hasLease || hasMoveInVideo ? 'grid-cols-2' : 'grid-cols-1'
 
   return (
     <motion.div
@@ -449,7 +472,7 @@ function TenantCard({
             </div>
           )}
 
-          <div className={`grid gap-2 mt-auto ${hasLease ? 'grid-cols-2' : 'grid-cols-1'}`}>
+          <div className={`grid gap-2 mt-auto ${actionColumns}`}>
             <Button variant="outline" size="sm" onClick={onOpenDossier} className="w-full">
               <ShieldCheck className="w-3.5 h-3.5" />
               {t('tenants.file')}
@@ -458,6 +481,12 @@ function TenantCard({
               <Button variant="outline" size="sm" onClick={onOpenLedger} className="w-full">
                 <ScrollText className="w-3.5 h-3.5" />
                 {t('tenants.ledger')}
+              </Button>
+            )}
+            {hasMoveInVideo && (
+              <Button variant="outline" size="sm" onClick={onOpenMoveInVideo} className="w-full">
+                <Film className="w-3.5 h-3.5" />
+                {t('tenants.openMoveInVideo')}
               </Button>
             )}
           </div>

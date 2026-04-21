@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   formatLeaseErrorMessage,
   getLatestMoveInVideoByLease,
+  getLatestMoveInVideoByTenant,
   isLeaseDeleteBlockedError,
   leaseVersionToken,
 } from '@/pages/Leases/leasePageUtils'
@@ -62,6 +63,13 @@ function createInspection(overrides: Partial<Inspection> = {}): Inspection {
     tenant_last_name: 'Martin',
     lease_start_date: '2026-04-01',
     lease_end_date: null,
+    ...overrides,
+  }
+}
+
+function createLease(overrides: Partial<Lease> = {}): Lease {
+  return {
+    ...baseLease,
     ...overrides,
   }
 }
@@ -128,5 +136,28 @@ describe('leasePageUtils', () => {
 
     expect(result.get(7)?.id).toBe(21)
     expect(result.has(8)).toBe(false)
+  })
+
+  it('finds the latest move-in video attachment per tenant across active and past leases', () => {
+    const leases = [
+      createLease({ id: 7, tenant_id: 2, status: 'ended', start_date: '2025-04-01' }),
+      createLease({ id: 8, tenant_id: 2, status: 'active', start_date: '2026-04-01' }),
+      createLease({ id: 9, tenant_id: 3, status: 'terminated', start_date: '2026-03-01' }),
+    ]
+    const inspections = [
+      createInspection({ id: 10, lease_id: 7, inspection_date: '2025-04-01', created_at: '2025-04-01 09:00:00' }),
+      createInspection({ id: 11, lease_id: 8, inspection_date: '2026-04-01', created_at: '2026-04-01 09:00:00' }),
+      createInspection({ id: 12, lease_id: 9, inspection_date: '2026-03-01', created_at: '2026-03-01 09:00:00' }),
+    ]
+    const attachments = [
+      createAttachment({ id: 20, entity_id: 10, created_at: '2025-04-01 09:05:00' }),
+      createAttachment({ id: 21, entity_id: 11, created_at: '2026-04-01 09:05:00' }),
+      createAttachment({ id: 22, entity_id: 12, slot: null }),
+    ]
+
+    const result = getLatestMoveInVideoByTenant(leases, inspections, attachments)
+
+    expect(result.get(2)?.id).toBe(21)
+    expect(result.has(3)).toBe(false)
   })
 })
