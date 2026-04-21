@@ -105,6 +105,21 @@ function createInspection(): Inspection {
   }
 }
 
+function createAttachment(overrides: Partial<Attachment> = {}): Attachment {
+  return {
+    id: 41,
+    entity_type: 'inspection',
+    entity_id: 22,
+    slot: null,
+    file_name: 'inspection-photo.jpg',
+    mime_type: 'image/jpeg',
+    file_size: 120000,
+    stored_name: 'stored-inspection-photo.jpg',
+    created_at: '2026-04-20 09:00:00',
+    ...overrides,
+  }
+}
+
 describe('Inspections create flow', () => {
   beforeEach(() => {
     useAuthStore.setState({
@@ -140,6 +155,9 @@ describe('Inspections create flow', () => {
       leases: {
         getAll: vi.fn().mockResolvedValue([createLease()]),
       },
+      attachments: {
+        getAll: vi.fn().mockResolvedValue([]),
+      },
     }
 
     render(<Inspections />)
@@ -163,5 +181,50 @@ describe('Inspections create flow', () => {
     expect(screen.getByText('attachments-visible')).toBeTruthy()
     expect(window.api.inspections.create).toHaveBeenCalledTimes(1)
     expect(getAllInspections).toHaveBeenCalledTimes(2)
+  })
+
+  it('shows a compact attachment summary on inspection rows', async () => {
+    const inspection = createInspection()
+
+    ;(window as Window & typeof globalThis & { api: any }).api = {
+      inspections: {
+        getAll: vi.fn().mockResolvedValue([inspection]),
+        create: vi.fn(),
+        update: vi.fn(),
+        delete: vi.fn(),
+      },
+      leases: {
+        getAll: vi.fn().mockResolvedValue([createLease()]),
+      },
+      attachments: {
+        getAll: vi.fn().mockResolvedValue([
+          createAttachment({ id: 41, file_name: 'inspection-photo.jpg' }),
+          createAttachment({
+            id: 42,
+            slot: 'move_in_video',
+            file_name: 'video-entree.mp4',
+            mime_type: 'video/mp4',
+            stored_name: 'stored-video-entree.mp4',
+          }),
+          createAttachment({
+            id: 43,
+            entity_type: 'lease',
+            entity_id: 4,
+            file_name: 'lease-file.pdf',
+            mime_type: 'application/pdf',
+          }),
+        ]),
+      },
+    }
+
+    render(<Inspections />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Julie Bernard')).toBeTruthy()
+    })
+
+    expect(screen.getByText('2 fichiers')).toBeTruthy()
+    expect(screen.getByText("Video d'entree")).toBeTruthy()
+    expect(screen.queryByText('3 fichiers')).toBeNull()
   })
 })

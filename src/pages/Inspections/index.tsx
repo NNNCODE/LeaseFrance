@@ -7,10 +7,12 @@ import {
   Download,
   FileText,
   Home,
+  Paperclip,
   Pencil,
   Plus,
   ScrollText,
   Trash2,
+  Video,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -23,6 +25,15 @@ import { useOwnerStore } from '@/stores/useOwnerStore'
 import InspectionModal from './InspectionModal'
 
 type InspectionKind = Inspection['kind']
+type InspectionAttachmentSummary = {
+  count: number
+  hasMoveInVideo: boolean
+}
+
+const EMPTY_ATTACHMENT_SUMMARY: InspectionAttachmentSummary = {
+  count: 0,
+  hasMoveInVideo: false,
+}
 
 const KIND_META: Record<InspectionKind, {
   labelKey: string
@@ -39,6 +50,23 @@ function buildFileName(inspection: Inspection) {
 
 function buildDocumentType(kind: InspectionKind) {
   return kind === 'entry' ? 'etat_des_lieux_entree' : 'etat_des_lieux_sortie'
+}
+
+function buildInspectionAttachmentSummaries(attachments: Attachment[]) {
+  const summaries = new Map<number, InspectionAttachmentSummary>()
+
+  for (const attachment of attachments) {
+    if (attachment.entity_type !== 'inspection') continue
+
+    const current = summaries.get(attachment.entity_id) ?? EMPTY_ATTACHMENT_SUMMARY
+    summaries.set(attachment.entity_id, {
+      count: current.count + 1,
+      hasMoveInVideo: current.hasMoveInVideo
+        || (attachment.slot === 'move_in_video' && attachment.mime_type === 'video/mp4'),
+    })
+  }
+
+  return summaries
 }
 
 function buildInspectionPdfData(
@@ -77,6 +105,7 @@ export default function Inspections() {
   const fallbackOwnerProfile = activeOwner ?? profile
   const [inspections, setInspections] = useState<Inspection[]>([])
   const [leases, setLeases] = useState<Lease[]>([])
+  const [attachments, setAttachments] = useState<Attachment[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
@@ -91,12 +120,14 @@ export default function Inspections() {
     setError('')
 
     try {
-      const [nextInspections, nextLeases] = await Promise.all([
+      const [nextInspections, nextLeases, nextAttachments] = await Promise.all([
         window.api.inspections.getAll(),
         window.api.leases.getAll(),
+        window.api.attachments.getAll(),
       ])
       setInspections(nextInspections)
       setLeases(nextLeases)
+      setAttachments(nextAttachments)
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
@@ -116,6 +147,11 @@ export default function Inspections() {
     entry: inspections.filter((inspection) => inspection.kind === 'entry').length,
     exit: inspections.filter((inspection) => inspection.kind === 'exit').length,
   }), [inspections])
+
+  const attachmentSummaries = useMemo(
+    () => buildInspectionAttachmentSummaries(attachments),
+    [attachments],
+  )
 
   function openCreate(leaseId?: number) {
     setEditing(null)
@@ -270,6 +306,7 @@ export default function Inspections() {
             <InspectionRow
               key={inspection.id}
               inspection={inspection}
+              attachmentSummary={attachmentSummaries.get(inspection.id) ?? EMPTY_ATTACHMENT_SUMMARY}
               busy={busyId === inspection.id}
               onEdit={() => openEdit(inspection)}
               onDelete={() => setDeleting(inspection)}
@@ -288,7 +325,10 @@ export default function Inspections() {
             inspections={inspections}
             initialLeaseId={initialLeaseId}
             onSave={handleSave}
-            onClose={closeForm}
+            onClose={() => {
+              closeForm()
+              void load()
+            }}
           />
         )}
       </AnimatePresence>
@@ -332,12 +372,14 @@ function EmptyState({
 
 function InspectionRow({
   inspection,
+  attachmentSummary,
   busy,
   onEdit,
   onDelete,
   onGeneratePdf,
 }: {
   inspection: Inspection
+  attachmentSummary: InspectionAttachmentSummary
   busy: boolean
   onEdit: () => void
   onDelete: () => void
@@ -388,6 +430,16 @@ function InspectionRow({
                   <FileText className="w-3.5 h-3.5" />
                   <span>{t('inspections.zoneCount', { count: inspection.rooms.length })}</span>
                 </div>
+                <div className="flex items-center gap-1.5">
+                  <Paperclip className="w-3.5 h-3.5" />
+                  <span>{t('inspections.attachmentCount', { count: attachmentSummary.count })}</span>
+                </div>
+                {attachmentSummary.hasMoveInVideo ? (
+                  <Badge variant="success" className="shrink-0">
+                    <Video className="w-3 h-3" />
+                    {t('inspections.moveInVideoIncluded')}
+                  </Badge>
+                ) : null}
               </div>
 
               <div className="grid grid-cols-2 gap-4 mt-4 text-sm">
