@@ -1437,6 +1437,7 @@
     "otherFiles": "Autres pieces jointes",
     "emptyTitle": "Aucune piece jointe",
     "emptyDesc": "Cliquez sur Ajouter pour joindre un fichier PDF, une image ou une video.",
+    "uploadedAt": "Ajoute le {{date}}",
     "preview": "Apercu",
     "readError": "Impossible de lire le fichier.",
     "videoPreviewLoading": "Chargement de l'apercu video...",

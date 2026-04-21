@@ -17,6 +17,7 @@ import {
 import PdfCanvasPreview from '@/components/PdfCanvasPreview'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { formatDateTime } from '@/lib/utils'
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
@@ -58,6 +59,10 @@ function getFileIcon(mimeType: string) {
   if (mimeType === 'application/pdf') return FileText
   if (mimeType === 'video/mp4') return Film
   return File
+}
+
+function formatAttachmentDateTime(value: string) {
+  return formatDateTime(value.includes('T') ? value : value.replace(' ', 'T'))
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -204,6 +209,7 @@ export default function AttachmentPanel({
                       <AttachmentRow
                         key={file.id}
                         attachment={file}
+                        showUploadDate={entityType === 'inspection' && file.mime_type === 'video/mp4'}
                         onPreview={() => setPreviewAttachment(file)}
                         onOpen={() => window.api.attachments.open(file.id)}
                         onDelete={() => handleDelete(file.id)}
@@ -231,6 +237,7 @@ export default function AttachmentPanel({
                       <AttachmentRow
                         key={file.id}
                         attachment={file}
+                        showUploadDate={entityType === 'inspection' && file.mime_type === 'video/mp4'}
                         onPreview={() => setPreviewAttachment(file)}
                         onOpen={() => window.api.attachments.open(file.id)}
                         onDelete={() => handleDelete(file.id)}
@@ -270,24 +277,30 @@ export default function AttachmentPanel({
 
 function AttachmentRow({
   attachment,
+  showUploadDate = false,
   onPreview,
   onOpen,
   onDelete,
 }: {
   attachment: Attachment
+  showUploadDate?: boolean
   onPreview: () => void
   onOpen: () => void
   onDelete: () => void
 }) {
   const { t } = useTranslation()
   const FileIcon = getFileIcon(attachment.mime_type)
+  const metadata = [
+    formatFileSize(attachment.file_size),
+    showUploadDate ? t('attachments.uploadedAt', { date: formatAttachmentDateTime(attachment.created_at) }) : null,
+  ].filter(Boolean).join(' · ')
 
   return (
     <div className="flex items-center gap-3 py-1.5 px-2 rounded-lg hover:bg-surfaceHigh/60 transition-colors group">
       <FileIcon className="w-4 h-4 text-textMuted shrink-0" />
       <div className="flex-1 min-w-0">
         <p className="text-xs font-medium text-textPrimary truncate">{attachment.file_name}</p>
-        <p className="text-[10px] text-textMuted">{formatFileSize(attachment.file_size)}</p>
+        <p className="text-[10px] text-textMuted">{metadata}</p>
       </div>
       <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
         <button

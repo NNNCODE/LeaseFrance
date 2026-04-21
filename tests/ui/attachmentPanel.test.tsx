@@ -285,6 +285,7 @@ describe('AttachmentPanel', () => {
     expect(screen.getByText("Conservez la video d'entree a part pour la retrouver rapidement plus tard.")).toBeTruthy()
     expect(screen.getByText('Ajoutez ici les photos, PDF et autres pieces jointes.')).toBeTruthy()
     expect(screen.getByText('video-entree.mp4')).toBeTruthy()
+    expect(screen.getByText((text) => text.includes('9.3 Mo') && text.includes('Ajoute le'))).toBeTruthy()
     expect(screen.getByText('photos-cuisine.pdf')).toBeTruthy()
   })
 })

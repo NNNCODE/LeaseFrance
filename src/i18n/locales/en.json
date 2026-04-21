@@ -1437,6 +1437,7 @@
     "otherFiles": "Other attachments",
     "emptyTitle": "No attachments",
     "emptyDesc": "Click Add to attach a PDF file, image, or video.",
+    "uploadedAt": "Uploaded {{date}}",
     "preview": "Preview",
     "readError": "Unable to read the file.",
     "videoPreviewLoading": "Loading video preview...",
