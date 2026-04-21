@@ -113,10 +113,18 @@ export default function AttachmentPanel({
     }
   }
 
-  async function handleDelete(id: number) {
+  async function handleDelete(attachment: Attachment) {
+    if (
+      entityType === 'inspection'
+      && attachment.mime_type === 'video/mp4'
+      && !window.confirm(t('attachments.confirmDeleteInspectionVideo'))
+    ) {
+      return
+    }
+
     setError('')
     try {
-      await window.api.attachments.delete(id)
+      await window.api.attachments.delete(attachment.id)
       await load()
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
@@ -212,7 +220,7 @@ export default function AttachmentPanel({
                         showUploadDate={entityType === 'inspection' && file.mime_type === 'video/mp4'}
                         onPreview={() => setPreviewAttachment(file)}
                         onOpen={() => window.api.attachments.open(file.id)}
-                        onDelete={() => handleDelete(file.id)}
+                        onDelete={() => handleDelete(file)}
                       />
                     ))}
                   </div>
@@ -240,7 +248,7 @@ export default function AttachmentPanel({
                         showUploadDate={entityType === 'inspection' && file.mime_type === 'video/mp4'}
                         onPreview={() => setPreviewAttachment(file)}
                         onOpen={() => window.api.attachments.open(file.id)}
-                        onDelete={() => handleDelete(file.id)}
+                        onDelete={() => handleDelete(file)}
                       />
                     ))}
                   </div>
@@ -293,7 +301,7 @@ function AttachmentRow({
   const metadata = [
     formatFileSize(attachment.file_size),
     showUploadDate ? t('attachments.uploadedAt', { date: formatAttachmentDateTime(attachment.created_at) }) : null,
-  ].filter(Boolean).join(' · ')
+  ].filter(Boolean).join(' | ')
 
   return (
     <div className="flex items-center gap-3 py-1.5 px-2 rounded-lg hover:bg-surfaceHigh/60 transition-colors group">

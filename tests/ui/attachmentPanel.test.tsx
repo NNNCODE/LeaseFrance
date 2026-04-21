@@ -288,4 +288,99 @@ describe('AttachmentPanel', () => {
     expect(screen.getByText((text) => text.includes('9.3 Mo') && text.includes('Ajoute le'))).toBeTruthy()
     expect(screen.getByText('photos-cuisine.pdf')).toBeTruthy()
   })
+
+  it('asks for confirmation before deleting an inspection video attachment', async () => {
+    const user = userEvent.setup()
+    const confirmSpy = vi.spyOn(window, 'confirm')
+      .mockReturnValueOnce(false)
+      .mockReturnValueOnce(true)
+    const deleteAttachment = vi.fn().mockResolvedValue(true)
+
+    ;(window as Window & typeof globalThis & { api: any }).api = {
+      attachments: {
+        getByEntity: vi.fn().mockResolvedValue([{
+          id: 31,
+          entity_type: 'inspection',
+          entity_id: 4,
+          slot: 'move_in_video',
+          file_name: 'video-entree.mp4',
+          mime_type: 'video/mp4',
+          file_size: 9800000,
+          stored_name: 'stored-video-entree.mp4',
+          created_at: '2026-04-21 10:00:00',
+        }]),
+        upload: vi.fn().mockResolvedValue([]),
+        read: vi.fn(),
+        open: vi.fn(),
+        delete: deleteAttachment,
+      },
+    }
+
+    render(
+      <AttachmentPanel
+        entityType="inspection"
+        entityId={4}
+        title="Fichiers du constat"
+      />,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText('video-entree.mp4')).toBeTruthy()
+    })
+
+    await user.click(screen.getByTitle('Supprimer'))
+    expect(confirmSpy).toHaveBeenCalledWith(
+      "Supprimer definitivement cette video d'etat des lieux ? Cette action ne peut pas etre annulee.",
+    )
+    expect(deleteAttachment).not.toHaveBeenCalled()
+
+    await user.click(screen.getByTitle('Supprimer'))
+    expect(deleteAttachment).toHaveBeenCalledWith(31)
+
+    confirmSpy.mockRestore()
+  })
+
+  it('keeps non-video attachment deletion as a simple delete action', async () => {
+    const user = userEvent.setup()
+    const confirmSpy = vi.spyOn(window, 'confirm')
+    const deleteAttachment = vi.fn().mockResolvedValue(true)
+
+    ;(window as Window & typeof globalThis & { api: any }).api = {
+      attachments: {
+        getByEntity: vi.fn().mockResolvedValue([{
+          id: 32,
+          entity_type: 'inspection',
+          entity_id: 4,
+          slot: null,
+          file_name: 'photos-cuisine.pdf',
+          mime_type: 'application/pdf',
+          file_size: 240000,
+          stored_name: 'stored-photos-cuisine.pdf',
+          created_at: '2026-04-21 10:02:00',
+        }]),
+        upload: vi.fn().mockResolvedValue([]),
+        read: vi.fn(),
+        open: vi.fn(),
+        delete: deleteAttachment,
+      },
+    }
+
+    render(
+      <AttachmentPanel
+        entityType="inspection"
+        entityId={4}
+        title="Fichiers du constat"
+      />,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText('photos-cuisine.pdf')).toBeTruthy()
+    })
+
+    await user.click(screen.getByTitle('Supprimer'))
+    expect(confirmSpy).not.toHaveBeenCalled()
+    expect(deleteAttachment).toHaveBeenCalledWith(32)
+
+    confirmSpy.mockRestore()
+  })
 })

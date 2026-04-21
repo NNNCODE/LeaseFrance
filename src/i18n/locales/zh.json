@@ -1438,6 +1438,7 @@
     "emptyTitle": "暂无附件",
     "emptyDesc": "\u70b9\u51fb\u201c\u6dfb\u52a0\u201d\u4ee5\u9644\u52a0 PDF \u6587\u4ef6\u3001\u56fe\u7247\u6216\u89c6\u9891\u3002",
     "uploadedAt": "\u4e0a\u4f20\u4e8e {{date}}",
+    "confirmDeleteInspectionVideo": "\u8981\u6c38\u4e45\u5220\u9664\u8fd9\u4e2a\u68c0\u67e5\u89c6\u9891\u5417\uff1f\u6b64\u64cd\u4f5c\u65e0\u6cd5\u64a4\u9500\u3002",
     "preview": "预览",
     "readError": "无法读取该文件。",
     "videoPreviewLoading": "正在加载视频预览...",

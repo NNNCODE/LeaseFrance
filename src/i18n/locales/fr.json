@@ -1438,6 +1438,7 @@
     "emptyTitle": "Aucune piece jointe",
     "emptyDesc": "Cliquez sur Ajouter pour joindre un fichier PDF, une image ou une video.",
     "uploadedAt": "Ajoute le {{date}}",
+    "confirmDeleteInspectionVideo": "Supprimer definitivement cette video d'etat des lieux ? Cette action ne peut pas etre annulee.",
     "preview": "Apercu",
     "readError": "Impossible de lire le fichier.",
     "videoPreviewLoading": "Chargement de l'apercu video...",

@@ -1438,6 +1438,7 @@
     "emptyTitle": "No attachments",
     "emptyDesc": "Click Add to attach a PDF file, image, or video.",
     "uploadedAt": "Uploaded {{date}}",
+    "confirmDeleteInspectionVideo": "Delete this inspection video permanently? This action cannot be undone.",
     "preview": "Preview",
     "readError": "Unable to read the file.",
     "videoPreviewLoading": "Loading video preview...",
