@@ -69,4 +69,52 @@ describe('LeaseRow', () => {
     expect(onImportContract).toHaveBeenCalledTimes(1)
     expect(onOpenContract).toHaveBeenCalledTimes(1)
   })
+
+  it('shows the move-in video action only when a video attachment exists', async () => {
+    const user = userEvent.setup()
+    const onOpenMoveInVideo = vi.fn()
+
+    const { rerender } = render(
+      <LeaseRow
+        lease={createLease()}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+        onOpenContract={vi.fn()}
+        onImportContract={vi.fn()}
+        onManageDeposit={vi.fn()}
+        onManageCharges={vi.fn()}
+        onRevise={vi.fn()}
+        moveInVideoAttachment={{
+          id: 42,
+          entity_type: 'inspection',
+          entity_id: 12,
+          slot: 'move_in_video',
+          file_name: 'entree.mp4',
+          mime_type: 'video/mp4',
+          file_size: 1024,
+          stored_name: 'stored-entree.mp4',
+          created_at: '2026-04-21 10:00:00',
+        }}
+        onOpenMoveInVideo={onOpenMoveInVideo}
+      />,
+    )
+
+    await user.click(screen.getByTitle("Ouvrir la video d'entree"))
+    expect(onOpenMoveInVideo).toHaveBeenCalledTimes(1)
+
+    rerender(
+      <LeaseRow
+        lease={createLease()}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+        onOpenContract={vi.fn()}
+        onImportContract={vi.fn()}
+        onManageDeposit={vi.fn()}
+        onManageCharges={vi.fn()}
+        onRevise={vi.fn()}
+      />,
+    )
+
+    expect(screen.queryByTitle("Ouvrir la video d'entree")).toBeNull()
+  })
 })

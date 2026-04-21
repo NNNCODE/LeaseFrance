@@ -4,6 +4,7 @@ import {
   CalendarDays,
   Euro,
   FileText,
+  Film,
   Pencil,
   ScrollText,
   ShieldCheck,
@@ -29,6 +30,8 @@ interface LeaseRowProps {
   onManageDeposit: () => void
   onManageCharges: () => void
   onRevise: () => void
+  moveInVideoAttachment?: Attachment | null
+  onOpenMoveInVideo?: () => void
 }
 
 export default function LeaseRow({
@@ -40,6 +43,8 @@ export default function LeaseRow({
   onManageDeposit,
   onManageCharges,
   onRevise,
+  moveInVideoAttachment,
+  onOpenMoveInVideo,
 }: LeaseRowProps) {
   const { t } = useTranslation()
   const status = STATUS_CONFIG[lease.status]
@@ -147,6 +152,17 @@ export default function LeaseRow({
               )}
             </div>
           </div>
+
+          {moveInVideoAttachment && onOpenMoveInVideo && (
+            <button
+              type="button"
+              onClick={onOpenMoveInVideo}
+              title={t('leases.row.openMoveInVideo')}
+              className="shrink-0 rounded-lg border border-primary/20 bg-primary/10 p-1.5 text-primary transition-colors hover:bg-primary/15"
+            >
+              <Film className="h-3.5 w-3.5" />
+            </button>
+          )}
 
           <div className="flex shrink-0 gap-1 opacity-0 transition-opacity group-hover:opacity-100">
             <button

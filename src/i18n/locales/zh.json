@@ -520,6 +520,7 @@
       "openContract": "打开合同",
       "manageCharges": "结算杂费",
       "manageDeposit": "管理押金",
+      "openMoveInVideo": "\u6253\u5f00\u5165\u4f4f\u89c6\u9891",
       "reviseRent": "调整租金（IRL）"
     },
     "depositStatus": {

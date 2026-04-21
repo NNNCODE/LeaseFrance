@@ -520,6 +520,7 @@
       "openContract": "Open contract",
       "manageCharges": "Reconcile charges",
       "manageDeposit": "Manage security deposit",
+      "openMoveInVideo": "Open move-in video",
       "reviseRent": "Revise rent (IRL)"
     },
     "depositStatus": {

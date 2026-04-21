@@ -45,6 +45,45 @@ export function isLeaseDeleteBlockedError(error: string) {
   )
 }
 
+function compareDesc(a: string, b: string) {
+  return b.localeCompare(a)
+}
+
+export function getLatestMoveInVideoByLease(inspections: Inspection[], attachments: Attachment[]) {
+  const moveInVideosByInspection = new Map<number, Attachment>()
+
+  for (const attachment of [...attachments].sort((a, b) => (
+    compareDesc(a.created_at, b.created_at) || b.id - a.id
+  ))) {
+    if (
+      attachment.entity_type !== 'inspection'
+      || attachment.slot !== 'move_in_video'
+      || attachment.mime_type !== 'video/mp4'
+      || moveInVideosByInspection.has(attachment.entity_id)
+    ) {
+      continue
+    }
+
+    moveInVideosByInspection.set(attachment.entity_id, attachment)
+  }
+
+  const result = new Map<number, Attachment>()
+  const sortedInspections = [...inspections].sort((a, b) => (
+    compareDesc(a.inspection_date, b.inspection_date)
+    || compareDesc(a.created_at, b.created_at)
+    || b.id - a.id
+  ))
+
+  for (const inspection of sortedInspections) {
+    if (inspection.kind !== 'entry' || result.has(inspection.lease_id)) continue
+
+    const video = moveInVideosByInspection.get(inspection.id)
+    if (video) result.set(inspection.lease_id, video)
+  }
+
+  return result
+}
+
 export const emptyLeaseForm: LeaseInput = {
   property_id: 0,
   tenant_id: 0,

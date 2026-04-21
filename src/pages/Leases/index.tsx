@@ -15,7 +15,7 @@ import DepositManagementModal, { type DepositManagementInput } from './DepositMa
 import LeaseDeleteModal from './LeaseDeleteModal'
 import LeaseEmptyState from './LeaseEmptyState'
 import LeaseFormModal from './LeaseFormModal'
-import { formatLeaseErrorMessage, leaseVersionToken } from './leasePageUtils'
+import { formatLeaseErrorMessage, getLatestMoveInVideoByLease, leaseVersionToken } from './leasePageUtils'
 import LeaseRevisionModal from './LeaseRevisionModal'
 import LeaseRow from './LeaseRow'
 
@@ -24,6 +24,7 @@ export default function Leases() {
   const navigate = useNavigate()
   const [leases, setLeases] = useState<Lease[]>([])
   const [irlIndices, setIrlIndices] = useState<IrlIndex[]>([])
+  const [moveInVideosByLease, setMoveInVideosByLease] = useState<Map<number, Attachment>>(new Map())
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [showIrlManager, setShowIrlManager] = useState(false)
@@ -37,12 +38,15 @@ export default function Leases() {
 
   async function load() {
     setLoading(true)
-    const [nextLeases, nextIrl] = await Promise.all([
+    const [nextLeases, nextIrl, nextInspections, nextAttachments] = await Promise.all([
       window.api.leases.getAll(),
       window.api.irl.getAll(),
+      window.api.inspections.getAll(),
+      window.api.attachments.getAll(),
     ])
     setLeases(nextLeases)
     setIrlIndices(nextIrl)
+    setMoveInVideosByLease(getLatestMoveInVideoByLease(nextInspections, nextAttachments))
     setLoading(false)
   }
 
@@ -295,21 +299,29 @@ export default function Leases() {
           animate="show"
           variants={{ hidden: {}, show: { transition: { staggerChildren: 0.05 } } }}
         >
-          {leases.map((lease) => (
-            <LeaseRow
-              key={lease.id}
-              lease={lease}
-              onEdit={() => openEdit(lease)}
-              onDelete={() => setDeleting(lease)}
-              onOpenContract={() => openContractFlow(lease)}
-              onImportContract={() => {
-                void importExistingContract(lease)
-              }}
-              onManageDeposit={() => setManagingDeposit(lease)}
-              onManageCharges={() => setManagingCharges(lease)}
-              onRevise={() => setRevising(lease)}
-            />
-          ))}
+          {leases.map((lease) => {
+            const moveInVideoAttachment = moveInVideosByLease.get(lease.id) ?? null
+
+            return (
+              <LeaseRow
+                key={lease.id}
+                lease={lease}
+                onEdit={() => openEdit(lease)}
+                onDelete={() => setDeleting(lease)}
+                onOpenContract={() => openContractFlow(lease)}
+                onImportContract={() => {
+                  void importExistingContract(lease)
+                }}
+                onManageDeposit={() => setManagingDeposit(lease)}
+                onManageCharges={() => setManagingCharges(lease)}
+                onRevise={() => setRevising(lease)}
+                moveInVideoAttachment={moveInVideoAttachment}
+                onOpenMoveInVideo={() => {
+                  if (moveInVideoAttachment) void window.api.attachments.open(moveInVideoAttachment.id)
+                }}
+              />
+            )
+          })}
         </motion.div>
       )}
 

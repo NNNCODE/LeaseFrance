@@ -520,6 +520,7 @@
       "openContract": "Ouvrir le contrat",
       "manageCharges": "Regulariser les charges",
       "manageDeposit": "Gerer le depot de garantie",
+      "openMoveInVideo": "Ouvrir la video d'entree",
       "reviseRent": "Reviser le loyer (IRL)"
     },
     "depositStatus": {
