@@ -93,6 +93,9 @@ describe('InspectionModal', () => {
     )
 
     expect(screen.getByText('Fichiers du constat')).toBeTruthy()
+    expect(screen.getByText('Constat PDF et preuves liees')).toBeTruthy()
+    expect(screen.getByText('Constat PDF')).toBeTruthy()
+    expect(screen.getByText('Preuves originales')).toBeTruthy()
     expect(screen.getByText("Video d'entree d'origine")).toBeTruthy()
     expect(screen.getByText('Autres fichiers du constat')).toBeTruthy()
 

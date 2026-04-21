@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
-import { CheckCircle2, Plus, ScrollText, Trash2, X } from 'lucide-react'
+import { CheckCircle2, FileText, Paperclip, Plus, ScrollText, Trash2, X } from 'lucide-react'
 import AttachmentPanel from '@/components/AttachmentPanel'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -360,16 +360,39 @@ export default function InspectionModal({
           </div>
 
           {inspection ? (
-            <AttachmentPanel
-              entityType="inspection"
-              entityId={inspection.id}
-              title={t('inspections.attachmentsTitle')}
-              slots={inspectionAttachmentSlots}
-              generalSectionLabel={form.kind === 'entry' ? t('inspections.generalFilesLabel') : undefined}
-              generalSectionDescription={form.kind === 'entry' ? t('inspections.generalFilesHelp') : undefined}
-              alwaysShowGeneralSection={form.kind === 'entry'}
-              compact
-            />
+            <div className="flex flex-col gap-3">
+              <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+                <div className="flex items-start gap-3">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 shrink-0">
+                    <FileText className="w-4 h-4 text-primary" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-textPrimary">{t('inspections.evidenceFlowTitle')}</p>
+                    <p className="text-xs text-textMuted mt-1 leading-5">{t('inspections.evidenceFlowDesc')}</p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 mt-3 text-[11px] text-textMuted">
+                  <span className="inline-flex items-center gap-1 rounded-full border border-border bg-surface/70 px-2 py-1">
+                    <FileText className="w-3 h-3" />
+                    {t('inspections.pdfRecordLabel')}
+                  </span>
+                  <span className="inline-flex items-center gap-1 rounded-full border border-border bg-surface/70 px-2 py-1">
+                    <Paperclip className="w-3 h-3" />
+                    {t('inspections.evidenceFilesLabel')}
+                  </span>
+                </div>
+              </div>
+              <AttachmentPanel
+                entityType="inspection"
+                entityId={inspection.id}
+                title={t('inspections.attachmentsTitle')}
+                slots={inspectionAttachmentSlots}
+                generalSectionLabel={form.kind === 'entry' ? t('inspections.generalFilesLabel') : undefined}
+                generalSectionDescription={form.kind === 'entry' ? t('inspections.generalFilesHelp') : undefined}
+                alwaysShowGeneralSection={form.kind === 'entry'}
+                compact
+              />
+            </div>
           ) : (
             <div className="rounded-xl border border-border bg-surfaceHigh/20 px-4 py-3 text-xs text-textMuted leading-5">
               {t('inspections.attachmentsAfterSave')}
