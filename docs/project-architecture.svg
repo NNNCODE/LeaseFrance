@@ -1,0 +1,250 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1040" viewBox="0 0 1440 1040" role="img" aria-labelledby="title desc">
+  <title id="title">Baillio Desktop project architecture</title>
+  <desc id="desc">Architecture diagram showing Electron main process, secure preload bridge, React renderer, SQLite persistence, filesystem storage, and build/packaging.</desc>
+  <defs>
+    <linearGradient id="header" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#eef2ff"/>
+      <stop offset="100%" stop-color="#e0f2fe"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#0f172a" flood-opacity="0.10"/>
+    </filter>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#475569"/>
+    </marker>
+    <marker id="arrowBlue" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#2563eb"/>
+    </marker>
+    <marker id="arrowGreen" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#059669"/>
+    </marker>
+    <style>
+      .page { fill: #f8fafc; }
+      .title { font: 700 32px "Segoe UI", Arial, sans-serif; fill: #0f172a; }
+      .subtitle { font: 400 14px "Segoe UI", Arial, sans-serif; fill: #475569; }
+      .lane-title { font: 700 17px "Segoe UI", Arial, sans-serif; fill: #0f172a; }
+      .box-title { font: 700 14px "Segoe UI", Arial, sans-serif; fill: #0f172a; }
+      .box-text { font: 400 12px "Segoe UI", Arial, sans-serif; fill: #475569; }
+      .small { font: 400 11px "Segoe UI", Arial, sans-serif; fill: #64748b; }
+      .tag { font: 700 10px "Segoe UI", Arial, sans-serif; fill: #1d4ed8; letter-spacing: 0.3px; }
+      .tag-red { font: 700 10px "Segoe UI", Arial, sans-serif; fill: #b91c1c; letter-spacing: 0.3px; }
+      .lane { fill: #ffffff; stroke: #dbe4ee; stroke-width: 1.5; rx: 18; filter: url(#shadow); }
+      .box { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1.2; rx: 12; }
+      .box-blue { fill: #eff6ff; stroke: #93c5fd; stroke-width: 1.3; rx: 12; }
+      .box-green { fill: #ecfdf5; stroke: #86efac; stroke-width: 1.3; rx: 12; }
+      .box-amber { fill: #fffbeb; stroke: #fcd34d; stroke-width: 1.3; rx: 12; }
+      .box-red { fill: #fef2f2; stroke: #fca5a5; stroke-width: 1.3; rx: 12; }
+      .box-purple { fill: #f5f3ff; stroke: #c4b5fd; stroke-width: 1.3; rx: 12; }
+      .box-slate { fill: #f1f5f9; stroke: #94a3b8; stroke-width: 1.3; rx: 12; }
+      .arrow { fill: none; stroke: #475569; stroke-width: 2; marker-end: url(#arrow); }
+      .arrow-blue { fill: none; stroke: #2563eb; stroke-width: 2.2; marker-end: url(#arrowBlue); }
+      .arrow-green { fill: none; stroke: #059669; stroke-width: 2.2; marker-end: url(#arrowGreen); }
+      .dash { fill: none; stroke: #94a3b8; stroke-width: 2; stroke-dasharray: 6 6; }
+      .boundary { fill: #ffffff; stroke: #94a3b8; stroke-width: 1.5; stroke-dasharray: 6 6; rx: 16; }
+    </style>
+  </defs>
+
+  <rect class="page" width="1440" height="1040"/>
+
+  <rect x="40" y="30" width="1360" height="84" rx="22" fill="url(#header)" stroke="#c7d2fe"/>
+  <text class="title" x="70" y="76">Baillio Desktop — Project Architecture</text>
+  <text class="subtitle" x="70" y="100">Local-first Electron app for French private landlords. Electron 31, React 18, TypeScript, SQLite (better-sqlite3), Tailwind, Zustand, @react-pdf/renderer.</text>
+
+  <!-- LANE 1: RENDERER -->
+  <rect class="lane" x="40" y="138" width="400" height="720"/>
+  <text class="lane-title" x="70" y="172">Renderer Process (src/)</text>
+  <text class="small" x="70" y="190">React UI, routing, stores, PDF builders — no Node access</text>
+
+  <rect class="box-blue" x="68" y="208" width="344" height="74"/>
+  <text class="box-title" x="86" y="232">App Shell &amp; Routing</text>
+  <text class="box-text" x="86" y="252">src/App.tsx — auth gate (loading/setup/locked/unlocked)</text>
+  <text class="box-text" x="86" y="270">react-router-dom + Layout (sidebar, header)</text>
+
+  <rect class="box" x="68" y="294" width="166" height="112"/>
+  <text class="box-title" x="86" y="318">Pages</text>
+  <text class="box-text" x="86" y="340">src/pages/*</text>
+  <text class="box-text" x="86" y="358">Dashboard, Properties,</text>
+  <text class="box-text" x="86" y="376">Tenants, Leases, Payments,</text>
+  <text class="box-text" x="86" y="394">Documents, Inspections...</text>
+
+  <rect class="box" x="246" y="294" width="166" height="112"/>
+  <text class="box-title" x="264" y="318">Components</text>
+  <text class="box-text" x="264" y="340">src/components/*</text>
+  <text class="box-text" x="264" y="358">AttachmentPanel,</text>
+  <text class="box-text" x="264" y="376">SearchCommand, layout,</text>
+  <text class="box-text" x="264" y="394">ui/ primitives (Radix)</text>
+
+  <rect class="box" x="68" y="418" width="166" height="104"/>
+  <text class="box-title" x="86" y="442">Zustand Stores</text>
+  <text class="box-text" x="86" y="464">useAuthStore</text>
+  <text class="box-text" x="86" y="482">useOwnerStore</text>
+  <text class="box-text" x="86" y="500">useTheme/Language/License</text>
+
+  <rect class="box" x="246" y="418" width="166" height="104"/>
+  <text class="box-title" x="264" y="442">Client Libs</text>
+  <text class="box-text" x="264" y="464">src/lib/pdf/*</text>
+  <text class="box-text" x="264" y="482">irl, ownerProfiles,</text>
+  <text class="box-text" x="264" y="500">leaseContractDocument</text>
+
+  <rect class="box-purple" x="68" y="534" width="344" height="106"/>
+  <text class="box-title" x="86" y="558">PDF Generation (Renderer)</text>
+  <text class="box-text" x="86" y="580">@react-pdf/renderer: quittance, recu, reminder,</text>
+  <text class="box-text" x="86" y="598">inspection, chargeReconciliation, documentTemplates,</text>
+  <text class="box-text" x="86" y="616">fiscalSummary — buffers sent to main for save dialogs</text>
+  <text class="tag" x="86" y="634">RENDERED IN UI</text>
+
+  <rect class="box-slate" x="68" y="652" width="344" height="80"/>
+  <text class="box-title" x="86" y="676">i18n &amp; Theme</text>
+  <text class="box-text" x="86" y="696">src/i18n (react-i18next: fr/en), src/theme</text>
+  <text class="box-text" x="86" y="714">Tailwind CSS, framer-motion, lucide-react</text>
+
+  <rect class="box-slate" x="68" y="744" width="344" height="96"/>
+  <text class="box-title" x="86" y="768">Browser-Safe Runtime</text>
+  <text class="box-text" x="86" y="790">recharts (analytics), pdfjs-dist (PDF preview),</text>
+  <text class="box-text" x="86" y="808">react-hook-form + zod (form validation)</text>
+  <text class="box-text" x="86" y="826">All data access goes through window.api</text>
+
+  <!-- LANE 2: BRIDGE -->
+  <rect class="lane" x="468" y="138" width="260" height="720"/>
+  <text class="lane-title" x="498" y="172">Secure Bridge</text>
+  <text class="small" x="498" y="190">preload + shared contract + Zod validation</text>
+
+  <rect class="boundary" x="496" y="208" width="204" height="150"/>
+  <text class="box-title" x="516" y="234">Preload API</text>
+  <text class="box-text" x="516" y="256">electron/preload.ts</text>
+  <text class="box-text" x="516" y="276">contextBridge exposes</text>
+  <text class="box-text" x="516" y="294">window.api (typed)</text>
+  <text class="box-text" x="516" y="312">Invoke + on/off channels</text>
+  <text class="tag" x="516" y="336">CONTEXT ISOLATION</text>
+
+  <rect class="box-blue" x="496" y="378" width="204" height="128"/>
+  <text class="box-title" x="516" y="402">Typed IPC Contract</text>
+  <text class="box-text" x="516" y="424">src/shared/ipc.ts</text>
+  <text class="box-text" x="516" y="442">BaillioApi surface,</text>
+  <text class="box-text" x="516" y="460">invoke + window channels</text>
+  <text class="box-text" x="516" y="480">src/env.d.ts entity types</text>
+
+  <rect class="box-amber" x="496" y="526" width="204" height="118"/>
+  <text class="box-title" x="516" y="550">IPC Validation</text>
+  <text class="box-text" x="516" y="572">src/shared/ipcValidation.ts</text>
+  <text class="box-text" x="516" y="590">Zod schemas validate all</text>
+  <text class="box-text" x="516" y="608">main-process invoke args</text>
+  <text class="box-text" x="516" y="626">Rejects malformed input</text>
+
+  <rect class="box-slate" x="496" y="664" width="204" height="106"/>
+  <text class="box-title" x="516" y="688">Shared Domain</text>
+  <text class="box-text" x="516" y="710">src/shared/leaseContract.ts</text>
+  <text class="box-text" x="516" y="728">Cross-layer types used by</text>
+  <text class="box-text" x="516" y="746">renderer and main process</text>
+
+  <rect class="box-red" x="496" y="790" width="204" height="50"/>
+  <text class="box-title" x="516" y="816">Renderer -&gt; Main only</text>
+  <text class="small" x="516" y="832">No direct Node APIs in UI</text>
+
+  <!-- LANE 3: MAIN PROCESS -->
+  <rect class="lane" x="756" y="138" width="644" height="720"/>
+  <text class="lane-title" x="786" y="172">Main Process (electron/)</text>
+  <text class="small" x="786" y="190">Windows, IPC handlers, domain services, persistence, OS integration</text>
+
+  <rect class="box-blue" x="784" y="208" width="298" height="122"/>
+  <text class="box-title" x="804" y="232">Electron Main</text>
+  <text class="box-text" x="804" y="254">electron/main.ts — BrowserWindow,</text>
+  <text class="box-text" x="804" y="272">IPC registration, dialogs, shell.openPath</text>
+  <text class="box-text" x="804" y="290">appIdentity, appRuntime, auth.ts</text>
+  <text class="tag-red" x="804" y="316">NODE + ELECTRON ACCESS</text>
+
+  <rect class="box" x="1098" y="208" width="284" height="122"/>
+  <text class="box-title" x="1118" y="232">Security &amp; Runtime</text>
+  <text class="box-text" x="1118" y="254">security/csp.ts — CSP headers</text>
+  <text class="box-text" x="1118" y="272">security/attachments.ts — path guards</text>
+  <text class="box-text" x="1118" y="290">diagnostics.ts, license.ts,</text>
+  <text class="box-text" x="1118" y="308">autoUpdate.ts (electron-updater)</text>
+
+  <rect class="box-green" x="784" y="346" width="298" height="158"/>
+  <text class="box-title" x="804" y="370">Domain Query Modules</text>
+  <text class="box-text" x="804" y="392">electron/db/queries/</text>
+  <text class="box-text" x="804" y="410">properties, tenants, leases,</text>
+  <text class="box-text" x="804" y="428">payments, documents, inspections,</text>
+  <text class="box-text" x="804" y="446">attachments, fiscalExpenses, irl,</text>
+  <text class="box-text" x="804" y="464">manualReminders, paymentReminders,</text>
+  <text class="box-text" x="804" y="482">bankImports, autoRent,</text>
+  <text class="box-text" x="804" y="500">chargeReconciliations</text>
+
+  <rect class="box-green" x="1098" y="346" width="284" height="158"/>
+  <text class="box-title" x="1118" y="370">Main Services</text>
+  <text class="box-text" x="1118" y="392">electron/services/</text>
+  <text class="box-text" x="1118" y="410">dashboard.ts — aggregate metrics</text>
+  <text class="box-text" x="1118" y="428">search.ts — cross-entity search</text>
+  <text class="box-text" x="1118" y="446">reminders.ts — derived deadlines</text>
+  <text class="box-text" x="1118" y="464">documents.ts — PDF persistence</text>
+  <text class="box-text" x="1118" y="492">backupManager.ts — archives</text>
+
+  <rect class="box-amber" x="784" y="520" width="298" height="146"/>
+  <text class="box-title" x="804" y="544">SQLite Database</text>
+  <text class="box-text" x="804" y="566">electron/db/database.ts</text>
+  <text class="box-text" x="804" y="584">better-sqlite3, per-account file</text>
+  <text class="box-text" x="804" y="602">userData/leasefrance.db (WAL, FK)</text>
+  <text class="box-text" x="804" y="620">db/migrations/ — incremental</text>
+  <text class="box-text" x="804" y="638">db/irlSeed.ts — IRL indices seed</text>
+  <text class="tag" x="804" y="660">better-sqlite3 + WAL</text>
+
+  <rect class="box-amber" x="1098" y="520" width="284" height="146"/>
+  <text class="box-title" x="1118" y="544">Filesystem Storage</text>
+  <text class="box-text" x="1118" y="566">Attachments copied to</text>
+  <text class="box-text" x="1118" y="584">userData/storage/attachments/</text>
+  <text class="box-text" x="1118" y="602">PDF document paths recorded</text>
+  <text class="box-text" x="1118" y="620">Backup archives</text>
+  <text class="box-text" x="1118" y="638">Diagnostic logs</text>
+
+  <rect class="box-purple" x="784" y="682" width="598" height="72"/>
+  <text class="box-title" x="804" y="706">Auth &amp; Account Isolation</text>
+  <text class="box-text" x="804" y="726">electron/auth.ts — local account, password hash, session unlock</text>
+  <text class="box-text" x="804" y="744">One SQLite DB + attachments dir per owner account</text>
+
+  <rect class="box-red" x="784" y="770" width="598" height="72"/>
+  <text class="box-title" x="804" y="794">OS Integration</text>
+  <text class="box-text" x="804" y="812">dialog.showOpenDialog / showSaveDialog — pick files, save PDFs</text>
+  <text class="box-text" x="804" y="830">shell.openPath — open PDFs, videos, backup folders</text>
+
+  <!-- LANE 4: BUILD / QUALITY (bottom) -->
+  <rect class="lane" x="40" y="880" width="690" height="138"/>
+  <text class="lane-title" x="70" y="914">Build &amp; Packaging</text>
+  <text class="box-text" x="70" y="940">electron-vite builds renderer + preload + main bundles (scripts/build.mjs).</text>
+  <text class="box-text" x="70" y="960">electron-builder packages desktop installers (electron-builder.yml).</text>
+  <text class="box-text" x="70" y="980">scripts/dev.mjs unsets ELECTRON_RUN_AS_NODE to keep Electron APIs available in dev.</text>
+  <text class="box-text" x="70" y="1000">Production obfuscates main/preload JS; DevTools disabled; frameless window.</text>
+
+  <rect class="lane" x="756" y="880" width="644" height="138"/>
+  <text class="lane-title" x="786" y="914">Quality &amp; Data Flow</text>
+  <text class="box-text" x="786" y="940">TypeScript typecheck (tsc --noEmit) + Vitest (UI, queries, auth, backup, security, smoke).</text>
+  <text class="box-text" x="786" y="960">Flow: UI -&gt; window.api -&gt; preload invoke -&gt; main validates (Zod) -&gt; queries/services -&gt; SQLite/FS.</text>
+  <text class="box-text" x="786" y="980">PDFs generated in renderer, persisted via main through OS dialogs, paths recorded in documents table.</text>
+  <text class="box-text" x="786" y="1000">Auto-update via electron-updater; license + diagnostics run in main.</text>
+
+  <!-- ARROWS -->
+  <!-- Renderer -> Preload -->
+  <path class="arrow-blue" d="M412 244 C450 244, 470 280, 496 280"/>
+  <!-- Preload -> Main -->
+  <path class="arrow-blue" d="M700 280 C740 280, 760 260, 784 260"/>
+  <!-- Main -> Queries -->
+  <path class="arrow" d="M933 330 L933 346"/>
+  <!-- Main -> Services -->
+  <path class="arrow" d="M1082 268 C1100 268, 1220 268, 1240 346"/>
+  <!-- Queries -> SQLite -->
+  <path class="arrow-green" d="M933 504 L933 520"/>
+  <!-- Services -> SQLite (dashed) -->
+  <path class="dash" d="M1200 504 L1100 520"/>
+  <!-- Services -> FS -->
+  <path class="arrow-green" d="M1240 504 L1240 520"/>
+  <!-- SQLite <-> Auth -->
+  <path class="dash" d="M933 666 L933 682"/>
+  <!-- FS -> OS -->
+  <path class="arrow" d="M1240 666 L1240 770"/>
+  <!-- Bridge inner links -->
+  <path class="dash" d="M598 358 L598 378"/>
+  <path class="dash" d="M598 506 L598 526"/>
+  <path class="dash" d="M598 644 L598 664"/>
+
+  <!-- Data flow callout arrows -->
+  <path class="arrow" d="M598 840 L598 860"/>
+</svg>
