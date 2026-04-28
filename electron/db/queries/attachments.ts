@@ -2,7 +2,7 @@ import { getDb } from '../database'
 
 export interface Attachment {
   id: number
-  entity_type: string   // 'tenant' | 'lease' | 'inspection'
+  entity_type: string   // 'tenant' | 'lease' | 'inspection' | 'property'
   entity_id: number
   slot: string | null    // e.g. 'id_document', 'income_proof', or null for general
   file_name: string

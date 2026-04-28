@@ -53,6 +53,11 @@ export interface BaillioInvokeApi {
     update: (id: number, data: PropertyInput, expectedUpdatedAt: string) => Promise<Property>
     delete: (id: number) => Promise<boolean>
   }
+  propertyDiagnostics: {
+    getAll: () => Promise<PropertyDiagnostics[]>
+    getByProperty: (propertyId: number) => Promise<PropertyDiagnostics | null>
+    upsert: (propertyId: number, data: PropertyDiagnosticsInput) => Promise<PropertyDiagnostics>
+  }
   tenants: {
     getAll: () => Promise<Tenant[]>
     count: () => Promise<number>

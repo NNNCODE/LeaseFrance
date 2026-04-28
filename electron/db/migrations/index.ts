@@ -16,6 +16,7 @@ import { up as baseline } from './001_baseline'
 import { up as addLeaseContractDetails } from './002_lease_contract_details'
 import { up as addQueryIndexes } from './003_query_indexes'
 import { up as addOwnerProfileBindings } from './004_owner_profile_bindings'
+import { up as addPropertyDiagnostics } from './005_property_diagnostics'
 
 interface Migration {
   /** Target version after this migration completes (monotonically increasing). */
@@ -29,6 +30,7 @@ const migrations: Migration[] = [
   { version: 2, description: 'Lease contract details', up: addLeaseContractDetails },
   { version: 3, description: 'Query indexes', up: addQueryIndexes },
   { version: 4, description: 'Owner profile bindings', up: addOwnerProfileBindings },
+  { version: 5, description: 'Property diagnostics register', up: addPropertyDiagnostics },
 ]
 
 /**

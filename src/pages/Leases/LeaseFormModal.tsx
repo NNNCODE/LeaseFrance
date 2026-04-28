@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Save, TrendingUp, X } from 'lucide-react'
+import { AlertTriangle, Save, TrendingUp, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import DateInput from '@/components/ui/date-input'
@@ -8,6 +8,7 @@ import { formatOwnerDisplayName } from '@/lib/ownerProfiles'
 import { Input } from '@/components/ui/input'
 import { useOwnerStore } from '@/stores/useOwnerStore'
 import { formatQuarter } from '@/lib/irl'
+import { getDpeRule } from '@/lib/propertyDiagnostics'
 import { formatCurrency } from '@/lib/utils'
 import { emptyLeaseForm, formatLeaseErrorMessage, LEASE_TYPES, statusLabel } from './leasePageUtils'
 
@@ -25,6 +26,7 @@ export default function LeaseFormModal({
   const { t } = useTranslation()
   const owners = useOwnerStore((state) => state.owners)
   const [properties, setProperties] = useState<Property[]>([])
+  const [diagnosticsByProperty, setDiagnosticsByProperty] = useState<Map<number, PropertyDiagnostics>>(new Map())
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [irlIndices, setIrlIndices] = useState<IrlIndex[]>([])
   const [form, setForm] = useState<LeaseInput>(
@@ -56,10 +58,12 @@ export default function LeaseFormModal({
   useEffect(() => {
     Promise.all([
       window.api.properties.getAll(),
+      window.api.propertyDiagnostics.getAll(),
       window.api.tenants.getAll(),
       window.api.irl.getAll(),
-    ]).then(([nextProperties, nextTenants, nextIrl]) => {
+    ]).then(([nextProperties, nextDiagnostics, nextTenants, nextIrl]) => {
       setProperties(nextProperties)
+      setDiagnosticsByProperty(new Map(nextDiagnostics.map((entry) => [entry.property_id, entry])))
       setTenants(nextTenants)
       setIrlIndices(nextIrl)
       if (!initial) {
@@ -87,6 +91,10 @@ export default function LeaseFormModal({
   }
 
   const selectedProperty = properties.find((property) => property.id === form.property_id) ?? null
+  const selectedDiagnostics = selectedProperty ? diagnosticsByProperty.get(selectedProperty.id) ?? null : null
+  const dpeRule = selectedProperty
+    ? getDpeRule(selectedDiagnostics, form.start_date || new Date().toISOString().slice(0, 10))
+    : null
   const inheritedOwnerLabel = selectedProperty?.owner_profile_id
     ? formatOwnerDisplayName(
         owners.find((owner) => owner.id === selectedProperty.owner_profile_id) ?? null,
@@ -110,6 +118,12 @@ export default function LeaseFormModal({
     if (form.rent_amount <= 0) return setError(t('leases.form.errors.rentPositive'))
     if (form.type === 'mobilite' && !form.end_date) {
       return setError(t('leases.form.errors.mobilityEndDateRequired'))
+    }
+    if (dpeRule?.severity === 'blocked') {
+      return setError(t('leases.form.errors.dpeBlocked', {
+        date: dpeRule.restrictionDate,
+        dpeClass: dpeRule.dpeClass,
+      }))
     }
 
     setSaving(true)
@@ -191,6 +205,29 @@ export default function LeaseFormModal({
               ))}
             </select>
           </div>
+
+          {dpeRule && dpeRule.severity !== 'none' ? (
+            <div className={`flex items-start gap-2 rounded-xl border px-3 py-2 text-xs leading-5 ${
+              dpeRule.severity === 'blocked'
+                ? 'border-danger/30 bg-danger/10 text-danger'
+                : 'border-warning/30 bg-warning/10 text-warning'
+            }`}>
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <span>
+                {t(
+                  dpeRule.severity === 'blocked'
+                    ? 'leases.form.dpeNotice.blocked'
+                    : dpeRule.severity === 'warning'
+                      ? 'leases.form.dpeNotice.warning'
+                      : 'leases.form.dpeNotice.missing',
+                  {
+                    date: dpeRule.restrictionDate,
+                    dpeClass: dpeRule.dpeClass,
+                  },
+                )}
+              </span>
+            </div>
+          ) : null}
 
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium text-textMuted">{t('leases.ownerProfile')}</label>

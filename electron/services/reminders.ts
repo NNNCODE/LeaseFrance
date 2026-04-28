@@ -1,5 +1,6 @@
 import * as leasesDb from '../db/queries/leases'
 import * as manualRemindersDb from '../db/queries/manualReminders'
+import * as propertyDiagnosticsDb from '../db/queries/propertyDiagnostics'
 import { getRelevantAnniversaryDate, isAnniversaryWithinDays, isRevisionEligible } from '../../src/lib/irl'
 
 export interface ReminderFeedItem {
@@ -10,10 +11,11 @@ export interface ReminderFeedItem {
   due_date: string
   notes: string | null
   lease_id: number | null
+  property_id?: number | null
   property_name: string | null
   tenant_label: string | null
   status: 'pending' | 'done'
-  derived_kind?: 'lease_end' | 'irl_revision'
+  derived_kind?: 'lease_end' | 'irl_revision' | 'diagnostic_expiry'
 }
 
 export interface ReminderFeedStats {
@@ -92,6 +94,49 @@ function buildDerivedReminders(leases: leasesDb.Lease[], now = new Date()): Remi
   return reminders
 }
 
+const DIAGNOSTIC_EXPIRY_FIELDS = [
+  { field: 'dpe_expires_at', label: 'DPE' },
+  { field: 'lead_expires_at', label: 'Plomb' },
+  { field: 'gas_expires_at', label: 'Gaz' },
+  { field: 'electricity_expires_at', label: 'Electricite' },
+  { field: 'erp_expires_at', label: 'ERP' },
+  { field: 'noise_expires_at', label: 'Bruit' },
+] as const
+
+function buildDiagnosticReminders(
+  diagnostics: propertyDiagnosticsDb.PropertyDiagnostics[],
+  now = new Date(),
+): ReminderFeedItem[] {
+  const reminders: ReminderFeedItem[] = []
+
+  for (const diagnostic of diagnostics) {
+    for (const { field, label } of DIAGNOSTIC_EXPIRY_FIELDS) {
+      const dueDate = diagnostic[field]
+      if (!dueDate) continue
+
+      const dueInDays = daysUntil(dueDate, now)
+      if (dueInDays < -30 || dueInDays > 120) continue
+
+      reminders.push({
+        id: `diagnostic-${field}-${diagnostic.property_id}`,
+        source: 'derived',
+        title: `Diagnostic ${label}`,
+        category: 'diagnostic',
+        due_date: dueDate,
+        notes: `Diagnostic ${label} a renouveler pour ${diagnostic.property_name}.`,
+        lease_id: null,
+        property_id: diagnostic.property_id,
+        property_name: diagnostic.property_name,
+        tenant_label: null,
+        status: 'pending',
+        derived_kind: 'diagnostic_expiry',
+      })
+    }
+  }
+
+  return reminders
+}
+
 function normalizeManual(reminders: manualRemindersDb.ManualReminder[]): ReminderFeedItem[] {
   return reminders.map((reminder) => ({
     id: `manual-${reminder.id}`,
@@ -112,11 +157,13 @@ function normalizeManual(reminders: manualRemindersDb.ManualReminder[]): Reminde
 export function getReminderFeed(now = new Date()): ReminderFeed {
   const leases = leasesDb.getAll()
   const manualReminders = manualRemindersDb.getAll()
+  const diagnostics = propertyDiagnosticsDb.getAll()
 
   const derived = buildDerivedReminders(leases, now)
+  const diagnosticDerived = buildDiagnosticReminders(diagnostics, now)
   const normalizedManual = normalizeManual(manualReminders)
 
-  const pendingItems = [...derived, ...normalizedManual.filter((item) => item.status === 'pending')]
+  const pendingItems = [...derived, ...diagnosticDerived, ...normalizedManual.filter((item) => item.status === 'pending')]
     .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
 
   const completedManual = normalizedManual

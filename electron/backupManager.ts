@@ -412,6 +412,7 @@ export interface BackupPreviewResult {
 
 const TABLE_LABELS: Array<[string, string]> = [
   ['properties', 'Biens'],
+  ['property_diagnostics', 'Diagnostics biens'],
   ['tenants', 'Locataires'],
   ['leases', 'Baux'],
   ['payments', 'Paiements'],

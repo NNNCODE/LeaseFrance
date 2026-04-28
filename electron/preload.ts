@@ -117,6 +117,11 @@ const api: BaillioApi = {
     update: invoke('properties:update'),
     delete: invoke('properties:delete'),
   },
+  propertyDiagnostics: {
+    getAll: invoke('propertyDiagnostics:getAll'),
+    getByProperty: invoke('propertyDiagnostics:getByProperty'),
+    upsert: invoke('propertyDiagnostics:upsert'),
+  },
   tenants: {
     getAll: invoke('tenants:getAll'),
     count: invoke('tenants:count'),

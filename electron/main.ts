@@ -22,6 +22,7 @@ import {
   verifyBackupFile, previewBackupFile,
 } from './backupManager'
 import * as propertiesDb from './db/queries/properties'
+import * as propertyDiagnosticsDb from './db/queries/propertyDiagnostics'
 import * as tenantsDb from './db/queries/tenants'
 import * as leasesDb from './db/queries/leases'
 import * as paymentsDb from './db/queries/payments'
@@ -295,6 +296,10 @@ handle('properties:count', () => propertiesDb.count())
 handle('properties:create', (data) => propertiesDb.create(data))
 handle('properties:update', (id, data, expectedUpdatedAt) => propertiesDb.update(id, data, expectedUpdatedAt))
 handle('properties:delete', (id) => propertiesDb.remove(id))
+
+handle('propertyDiagnostics:getAll', () => propertyDiagnosticsDb.getAll())
+handle('propertyDiagnostics:getByProperty', (propertyId) => propertyDiagnosticsDb.getByProperty(propertyId))
+handle('propertyDiagnostics:upsert', (propertyId, data) => propertyDiagnosticsDb.upsert(propertyId, data))
 
 // Tenants IPC
 handle('tenants:getAll', () => tenantsDb.getAll())

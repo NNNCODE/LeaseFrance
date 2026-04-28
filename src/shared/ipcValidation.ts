@@ -14,6 +14,7 @@ const versionToken = z.string().trim().min(1)
 const uint8Array = z.instanceof(Uint8Array).refine((value) => value.byteLength > 0, 'Expected a non-empty binary payload.')
 
 const propertyType = z.enum(['appartement', 'maison', 'studio', 'parking', 'autre'])
+const dpeClass = z.enum(['A', 'B', 'C', 'D', 'E', 'F', 'G'])
 const leaseType = z.enum(['vide', 'meuble', 'mobilite'])
 const leaseStatus = z.enum(['active', 'ended', 'terminated'])
 const paymentMethod = z.enum(['virement', 'cheque', 'especes', 'prelevement'])
@@ -25,7 +26,7 @@ const manualReminderStatus = z.enum(['pending', 'done'])
 const documentStatus = z.enum(['generated', 'sent', 'archived'])
 const searchFilterKey = z.enum(['all', 'properties', 'tenants', 'leases', 'payments', 'reminders', 'inspections'])
 const fiscalExpenseCategory = z.enum(['taxe_fonciere', 'travaux', 'assurance_pno', 'frais_gestion', 'interets_emprunt', 'autre'])
-const attachmentEntityType = z.enum(['tenant', 'lease', 'inspection'])
+const attachmentEntityType = z.enum(['tenant', 'lease', 'inspection', 'property'])
 const backupPassword = z.string().min(1).optional()
 const documentType = z.enum([
   'quittance',
@@ -51,6 +52,27 @@ const propertyInput = z.object({
   type: propertyType,
   area_m2: nonNegativeNumber.nullable().optional(),
   owner_profile_id: optionalNullableText,
+})
+
+const propertyDiagnosticsInput = z.object({
+  dpe_class: dpeClass.nullable().optional(),
+  dpe_ges_class: dpeClass.nullable().optional(),
+  dpe_performed_at: isoDate.nullable().optional(),
+  dpe_expires_at: isoDate.nullable().optional(),
+  dpe_ademe_number: optionalNullableText,
+  dpe_energy_estimate: optionalNullableText,
+  lead_performed_at: isoDate.nullable().optional(),
+  lead_expires_at: isoDate.nullable().optional(),
+  gas_performed_at: isoDate.nullable().optional(),
+  gas_expires_at: isoDate.nullable().optional(),
+  electricity_performed_at: isoDate.nullable().optional(),
+  electricity_expires_at: isoDate.nullable().optional(),
+  erp_performed_at: isoDate.nullable().optional(),
+  erp_expires_at: isoDate.nullable().optional(),
+  noise_performed_at: isoDate.nullable().optional(),
+  noise_expires_at: isoDate.nullable().optional(),
+  asbestos_available: z.boolean().optional(),
+  notes: optionalNullableText,
 })
 
 const tenantInput = z.object({
@@ -238,6 +260,8 @@ const invokeArgSchemas = {
   'properties:create': z.tuple([propertyInput]),
   'properties:update': z.tuple([positiveInt, propertyInput, versionToken]),
   'properties:delete': z.tuple([positiveInt]),
+  'propertyDiagnostics:getByProperty': z.tuple([positiveInt]),
+  'propertyDiagnostics:upsert': z.tuple([positiveInt, propertyDiagnosticsInput]),
   'tenants:create': z.tuple([tenantInput]),
   'tenants:update': z.tuple([positiveInt, tenantInput, versionToken]),
   'tenants:delete': z.tuple([positiveInt]),

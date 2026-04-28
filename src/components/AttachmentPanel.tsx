@@ -22,7 +22,7 @@ import { formatDateTime } from '@/lib/utils'
 // ── Props ─────────────────────────────────────────────────────────────────────
 
 interface AttachmentPanelProps {
-  entityType: 'tenant' | 'lease' | 'inspection'
+  entityType: 'tenant' | 'lease' | 'inspection' | 'property'
   entityId: number
   /** Named slots for structured uploads (e.g. dossier items). */
   slots?: Array<{

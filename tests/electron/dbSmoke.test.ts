@@ -38,6 +38,7 @@ const EXPECTED_TABLES = [
   'fiscal_expenses',
   'attachments',
   'bank_imports',
+  'property_diagnostics',
 ]
 
 const EXPECTED_INDEXES = [
@@ -51,6 +52,8 @@ const EXPECTED_INDEXES = [
   'idx_fiscal_expenses_year_property_category_created',
   'idx_attachments_entity_slot_created',
   'idx_documents_generated_at',
+  'idx_property_diagnostics_property',
+  'idx_property_diagnostics_dpe_expiry',
 ]
 
 // ── Tests ────────────────────────────────────────────────────────────────────
@@ -87,10 +90,10 @@ describe.skipIf(!!loadError)('Database migration smoke tests', () => {
     }
   })
 
-  it('sets user_version to 4 after migrations', () => {
+  it('sets user_version to 5 after migrations', () => {
     runMigrations!(db)
     const version = db.pragma('user_version', { simple: true }) as number
-    expect(version).toBe(4)
+    expect(version).toBe(5)
   })
 
   it('is idempotent — running migrations twice does not throw', () => {
@@ -98,7 +101,7 @@ describe.skipIf(!!loadError)('Database migration smoke tests', () => {
     expect(() => runMigrations!(db)).not.toThrow()
 
     const version = db.pragma('user_version', { simple: true }) as number
-    expect(version).toBe(4)
+    expect(version).toBe(5)
   })
 
   it('creates the expected secondary indexes', () => {
@@ -251,7 +254,7 @@ describe.skipIf(!!loadError)('Database migration smoke tests', () => {
     expect(tenantCols).toContain('dossier_id_document')
 
     // user_version stamped
-    expect(db.pragma('user_version', { simple: true })).toBe(4)
+    expect(db.pragma('user_version', { simple: true })).toBe(5)
   })
 
   it('deduplicates payments when upgrading a pre-migration DB with duplicates', () => {

@@ -308,7 +308,71 @@
     "typeMaison": "别墅",
     "typeStudio": "单间",
     "typeParking": "停车位",
-    "typeAutre": "其他"
+    "typeAutre": "其他",
+    "diagnostics": {
+      "action": "诊断",
+      "title": "房产诊断",
+      "dpeTitle": "能源性能",
+      "dpeDesc": "跟踪 DPE、GES、ADEME 编号和到期日。",
+      "dpeClass": "DPE 等级",
+      "gesClass": "GES 等级",
+      "noDpeClass": "未填写",
+      "performedAt": "完成日期",
+      "expiresAt": "到期日期",
+      "ademeNumber": "ADEME 编号",
+      "ademePlaceholder": "例如 2475E1234567A",
+      "energyEstimate": "年度估算",
+      "energyEstimatePlaceholder": "例如 每年 620 至 890 EUR",
+      "otherTitle": "其他诊断",
+      "otherDesc": "填写日期以生成自动提醒。",
+      "asbestosAvailable": "石棉档案可用",
+      "attachmentsTitle": "诊断文件",
+      "otherAttachments": "其他诊断附件",
+      "notes": "备注",
+      "notesPlaceholder": "备注、待复查项目、附件说明...",
+      "save": "保存诊断",
+      "dpeBadge": "DPE {{value}}",
+      "missingBadge": "缺少 DPE",
+      "dpeExpires": "DPE 至 {{date}}",
+      "fields": {
+        "lead": "铅",
+        "gas": "燃气",
+        "electricity": "电气",
+        "erp": "ERP",
+        "noise": "噪音"
+      },
+      "slots": {
+        "dpe": "DPE",
+        "erp": "风险状态",
+        "lead": "铅诊断",
+        "gas": "燃气诊断",
+        "electricity": "电气诊断",
+        "noise": "噪音诊断",
+        "asbestos": "石棉档案"
+      },
+      "rule": {
+        "ok": {
+          "badge": "合规",
+          "desc": "DPE 已填写。"
+        },
+        "missing_dpe": {
+          "badge": "缺少 DPE",
+          "desc": "生成租约或房源前请添加 DPE。"
+        },
+        "g_blocked": {
+          "badge": "禁止出租",
+          "desc": "DPE {{dpeClass}} 房屋自 {{date}} 起不得用于已签署、续签或默认续期的租约。"
+        },
+        "f_deadline": {
+          "badge": "2028 截止",
+          "desc": "DPE {{dpeClass}} 房屋自 {{date}} 起不得出租。"
+        },
+        "e_deadline": {
+          "badge": "2034 截止",
+          "desc": "DPE {{dpeClass}} 房屋自 {{date}} 起不得出租。"
+        }
+      }
+    }
   },
   "tenants": {
     "title": "租户管理",
@@ -547,12 +611,18 @@
       "irlValue": "IRL 数值",
       "exampleIrl": "例如：143.46",
       "status": "状态",
+      "dpeNotice": {
+        "missing": "此房产尚未填写 DPE。生成签署文件前，请先在房产诊断中补充。",
+        "warning": "DPE {{dpeClass}}：自 {{date}} 起将禁止出租。请提前安排改造或选择其他房产。",
+        "blocked": "DPE {{dpeClass}}：自 {{date}} 起，已签署、续签或默认续期的租约禁止出租。"
+      },
       "errors": {
         "selectProperty": "请选择房产。",
         "selectTenant": "请选择租户。",
         "startDateRequired": "请输入开始日期。",
         "rentPositive": "租金必须大于 0。",
         "mobilityEndDateRequired": "流动租约必须填写结束日期。",
+        "dpeBlocked": "DPE {{dpeClass}} 房屋自 {{date}} 起禁止出租。此房产不能保存为该租约。",
         "save": "无法保存租约：{{error}}"
       }
     }
@@ -983,7 +1053,8 @@
       "leaseEndDesc": "租约接近结束日期，请检查续租、退租或通知流程。",
       "irlRevisionTitle": "可进行 IRL 调整",
       "irlRevisionDesc": "租约周年日已到，可考虑按 IRL 调整。",
-      "irlRevisionDescWithQuarter": "租约周年日。当前参考值：{{quarter}}。"
+      "irlRevisionDescWithQuarter": "租约周年日。当前参考值：{{quarter}}。",
+      "diagnosticExpiryTitle": "诊断即将到期"
     }
   },
   "inspections": {

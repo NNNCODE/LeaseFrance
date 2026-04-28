@@ -308,7 +308,71 @@
     "typeMaison": "Maison",
     "typeStudio": "Studio",
     "typeParking": "Parking",
-    "typeAutre": "Autre"
+    "typeAutre": "Autre",
+    "diagnostics": {
+      "action": "Diagnostics",
+      "title": "Diagnostics du bien",
+      "dpeTitle": "Performance energetique",
+      "dpeDesc": "Suivi DPE, GES, numero ADEME et echeance.",
+      "dpeClass": "Classe DPE",
+      "gesClass": "Classe GES",
+      "noDpeClass": "Non renseignee",
+      "performedAt": "Realise le",
+      "expiresAt": "Expire le",
+      "ademeNumber": "Numero ADEME",
+      "ademePlaceholder": "ex. 2475E1234567A",
+      "energyEstimate": "Estimation annuelle",
+      "energyEstimatePlaceholder": "ex. entre 620 EUR et 890 EUR/an",
+      "otherTitle": "Autres diagnostics",
+      "otherDesc": "Renseignez les dates pour alimenter les rappels automatiques.",
+      "asbestosAvailable": "Dossier amiante disponible",
+      "attachmentsTitle": "Pieces du dossier de diagnostic",
+      "otherAttachments": "Autres pieces de diagnostic",
+      "notes": "Notes",
+      "notesPlaceholder": "Commentaires, controles a refaire, precision sur les annexes...",
+      "save": "Enregistrer les diagnostics",
+      "dpeBadge": "DPE {{value}}",
+      "missingBadge": "DPE manquant",
+      "dpeExpires": "DPE jusqu'au {{date}}",
+      "fields": {
+        "lead": "Plomb",
+        "gas": "Gaz",
+        "electricity": "Electricite",
+        "erp": "ERP",
+        "noise": "Bruit"
+      },
+      "slots": {
+        "dpe": "DPE",
+        "erp": "Etat des risques",
+        "lead": "Constat plomb",
+        "gas": "Diagnostic gaz",
+        "electricity": "Diagnostic electricite",
+        "noise": "Diagnostic bruit",
+        "asbestos": "Dossier amiante"
+      },
+      "rule": {
+        "ok": {
+          "badge": "Conforme",
+          "desc": "DPE renseigne."
+        },
+        "missing_dpe": {
+          "badge": "DPE manquant",
+          "desc": "Ajoutez le DPE avant de generer un bail ou une annonce."
+        },
+        "g_blocked": {
+          "badge": "Location bloquee",
+          "desc": "Un logement DPE {{dpeClass}} est interdit a la location depuis le {{date}} pour les baux signes, renouveles ou reconduits."
+        },
+        "f_deadline": {
+          "badge": "Echeance 2028",
+          "desc": "Un logement DPE {{dpeClass}} devient interdit a la location a partir du {{date}}."
+        },
+        "e_deadline": {
+          "badge": "Echeance 2034",
+          "desc": "Un logement DPE {{dpeClass}} devient interdit a la location a partir du {{date}}."
+        }
+      }
+    }
   },
   "tenants": {
     "title": "Locataires",
@@ -547,12 +611,18 @@
       "irlValue": "Valeur IRL",
       "exampleIrl": "ex. 143.46",
       "status": "Statut",
+      "dpeNotice": {
+        "missing": "Aucun DPE n'est renseigne pour ce bien. Ajoutez-le depuis les diagnostics du bien avant de produire le dossier signe.",
+        "warning": "DPE {{dpeClass}} : interdiction de location a partir du {{date}}. Anticipez les travaux ou un autre bien avant cette date.",
+        "blocked": "DPE {{dpeClass}} : location bloquee depuis le {{date}} pour les baux signes, renouveles ou reconduits."
+      },
       "errors": {
         "selectProperty": "Selectionnez un bien.",
         "selectTenant": "Selectionnez un locataire.",
         "startDateRequired": "La date de debut est requise.",
         "rentPositive": "Le loyer doit etre superieur a 0.",
         "mobilityEndDateRequired": "Le bail mobilite requiert une date de fin.",
+        "dpeBlocked": "La location DPE {{dpeClass}} est bloquee depuis le {{date}}. Le bail ne peut pas etre enregistre avec ce bien.",
         "save": "Impossible d'enregistrer le bail : {{error}}"
       }
     }
@@ -983,7 +1053,8 @@
       "leaseEndDesc": "Le bail approche de son terme. Verifiez renouvellement, sortie ou conge.",
       "irlRevisionTitle": "Revision IRL possible",
       "irlRevisionDesc": "Date anniversaire du bail pour une eventuelle revision IRL.",
-      "irlRevisionDescWithQuarter": "Date anniversaire du bail. Reference actuelle : {{quarter}}."
+      "irlRevisionDescWithQuarter": "Date anniversaire du bail. Reference actuelle : {{quarter}}.",
+      "diagnosticExpiryTitle": "Diagnostic a renouveler"
     }
   },
   "inspections": {

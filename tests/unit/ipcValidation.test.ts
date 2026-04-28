@@ -16,6 +16,24 @@ describe('validateInvokeArgs', () => {
     expect(() => validateInvokeArgs('attachments:upload', ['document', 1, null])).toThrow(/attachments:upload/)
   })
 
+  it('accepts property diagnostic payloads and property attachments', () => {
+    expect(validateInvokeArgs('attachments:upload', ['property', 1, 'dpe'])).toEqual(['property', 1, 'dpe'])
+
+    const [, input] = validateInvokeArgs('propertyDiagnostics:upsert', [1, {
+      dpe_class: 'G',
+      dpe_ges_class: 'F',
+      dpe_performed_at: '2024-01-15',
+      dpe_expires_at: '2034-01-15',
+      dpe_ademe_number: '2475E1234567A',
+      asbestos_available: true,
+      notes: 'Dossier complet',
+    }])
+
+    expect(input.dpe_class).toBe('G')
+    expect(input.asbestos_available).toBe(true)
+    expect(() => validateInvokeArgs('propertyDiagnostics:upsert', [1, { dpe_class: 'H' }])).toThrow(/propertyDiagnostics:upsert/)
+  })
+
   it('accepts optional trailing IPC arguments', () => {
     const [password] = validateInvokeArgs('backup:create', [])
     expect(password).toBeUndefined()

@@ -137,6 +137,56 @@ interface PropertyInput {
   owner_profile_id?: string | null
 }
 
+type DpeClass = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G'
+
+interface PropertyDiagnostics {
+  id: number
+  property_id: number
+  dpe_class: DpeClass | null
+  dpe_ges_class: DpeClass | null
+  dpe_performed_at: string | null
+  dpe_expires_at: string | null
+  dpe_ademe_number: string | null
+  dpe_energy_estimate: string | null
+  lead_performed_at: string | null
+  lead_expires_at: string | null
+  gas_performed_at: string | null
+  gas_expires_at: string | null
+  electricity_performed_at: string | null
+  electricity_expires_at: string | null
+  erp_performed_at: string | null
+  erp_expires_at: string | null
+  noise_performed_at: string | null
+  noise_expires_at: string | null
+  asbestos_available: boolean
+  notes: string | null
+  created_at: string
+  updated_at: string
+  property_name: string
+  property_city: string
+}
+
+interface PropertyDiagnosticsInput {
+  dpe_class?: DpeClass | null
+  dpe_ges_class?: DpeClass | null
+  dpe_performed_at?: string | null
+  dpe_expires_at?: string | null
+  dpe_ademe_number?: string | null
+  dpe_energy_estimate?: string | null
+  lead_performed_at?: string | null
+  lead_expires_at?: string | null
+  gas_performed_at?: string | null
+  gas_expires_at?: string | null
+  electricity_performed_at?: string | null
+  electricity_expires_at?: string | null
+  erp_performed_at?: string | null
+  erp_expires_at?: string | null
+  noise_performed_at?: string | null
+  noise_expires_at?: string | null
+  asbestos_available?: boolean
+  notes?: string | null
+}
+
 interface Lease {
   id: number
   property_id: number
@@ -451,10 +501,11 @@ interface ReminderFeedItem {
   due_date: string
   notes: string | null
   lease_id: number | null
+  property_id?: number | null
   property_name: string | null
   tenant_label: string | null
   status: 'pending' | 'done'
-  derived_kind?: 'lease_end' | 'irl_revision'
+  derived_kind?: 'lease_end' | 'irl_revision' | 'diagnostic_expiry'
 }
 
 interface ReminderFeedStats {
@@ -548,7 +599,7 @@ interface FiscalExpenseInput {
 
 interface Attachment {
   id: number
-  entity_type: 'tenant' | 'lease' | 'inspection'
+  entity_type: 'tenant' | 'lease' | 'inspection' | 'property'
   entity_id: number
   slot: string | null
   file_name: string

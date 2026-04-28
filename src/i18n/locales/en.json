@@ -308,7 +308,71 @@
     "typeMaison": "House",
     "typeStudio": "Studio",
     "typeParking": "Parking",
-    "typeAutre": "Other"
+    "typeAutre": "Other",
+    "diagnostics": {
+      "action": "Diagnostics",
+      "title": "Property diagnostics",
+      "dpeTitle": "Energy performance",
+      "dpeDesc": "Track DPE, GES, ADEME number and expiry.",
+      "dpeClass": "DPE class",
+      "gesClass": "GES class",
+      "noDpeClass": "Not set",
+      "performedAt": "Performed on",
+      "expiresAt": "Expires on",
+      "ademeNumber": "ADEME number",
+      "ademePlaceholder": "e.g. 2475E1234567A",
+      "energyEstimate": "Annual estimate",
+      "energyEstimatePlaceholder": "e.g. between EUR 620 and EUR 890/year",
+      "otherTitle": "Other diagnostics",
+      "otherDesc": "Enter dates to feed automatic reminders.",
+      "asbestosAvailable": "Asbestos file available",
+      "attachmentsTitle": "Diagnostic file documents",
+      "otherAttachments": "Other diagnostic documents",
+      "notes": "Notes",
+      "notesPlaceholder": "Comments, checks to renew, details about annexes...",
+      "save": "Save diagnostics",
+      "dpeBadge": "DPE {{value}}",
+      "missingBadge": "DPE missing",
+      "dpeExpires": "DPE until {{date}}",
+      "fields": {
+        "lead": "Lead",
+        "gas": "Gas",
+        "electricity": "Electricity",
+        "erp": "ERP",
+        "noise": "Noise"
+      },
+      "slots": {
+        "dpe": "DPE",
+        "erp": "Risk statement",
+        "lead": "Lead report",
+        "gas": "Gas diagnostic",
+        "electricity": "Electricity diagnostic",
+        "noise": "Noise diagnostic",
+        "asbestos": "Asbestos file"
+      },
+      "rule": {
+        "ok": {
+          "badge": "Compliant",
+          "desc": "DPE is recorded."
+        },
+        "missing_dpe": {
+          "badge": "DPE missing",
+          "desc": "Add the DPE before generating a lease or listing."
+        },
+        "g_blocked": {
+          "badge": "Rental blocked",
+          "desc": "A DPE {{dpeClass}} home is banned from rental since {{date}} for signed, renewed or tacitly renewed leases."
+        },
+        "f_deadline": {
+          "badge": "2028 deadline",
+          "desc": "A DPE {{dpeClass}} home becomes banned from rental from {{date}}."
+        },
+        "e_deadline": {
+          "badge": "2034 deadline",
+          "desc": "A DPE {{dpeClass}} home becomes banned from rental from {{date}}."
+        }
+      }
+    }
   },
   "tenants": {
     "title": "Tenants",
@@ -547,12 +611,18 @@
       "irlValue": "IRL value",
       "exampleIrl": "e.g. 143.46",
       "status": "Status",
+      "dpeNotice": {
+        "missing": "No DPE is recorded for this property. Add it from the property diagnostics panel before generating the signed file.",
+        "warning": "DPE {{dpeClass}}: rental ban starts on {{date}}. Plan improvement work or another property before that date.",
+        "blocked": "DPE {{dpeClass}}: rental is blocked since {{date}} for signed, renewed or tacitly renewed leases."
+      },
       "errors": {
         "selectProperty": "Select a property.",
         "selectTenant": "Select a tenant.",
         "startDateRequired": "Start date is required.",
         "rentPositive": "Rent must be greater than 0.",
         "mobilityEndDateRequired": "A mobility lease requires an end date.",
+        "dpeBlocked": "DPE {{dpeClass}} rental is blocked since {{date}}. The lease cannot be saved with this property.",
         "save": "Unable to save the lease: {{error}}"
       }
     }
@@ -983,7 +1053,8 @@
       "leaseEndDesc": "The lease is nearing its end date. Review renewal, move-out or notice steps.",
       "irlRevisionTitle": "IRL revision available",
       "irlRevisionDesc": "Lease anniversary date for a possible IRL revision.",
-      "irlRevisionDescWithQuarter": "Lease anniversary date. Current reference: {{quarter}}."
+      "irlRevisionDescWithQuarter": "Lease anniversary date. Current reference: {{quarter}}.",
+      "diagnosticExpiryTitle": "Diagnostic due"
     }
   },
   "inspections": {

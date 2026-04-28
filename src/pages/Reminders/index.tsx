@@ -61,9 +61,13 @@ function timingMeta(dueDate: string, t: TFunction) {
 
 function categoryMeta(item: ReminderFeedItem) {
   if (item.source === 'derived') {
-    return item.derived_kind === 'irl_revision'
-      ? { labelKey: 'reminders.category.irl', icon: TrendingUp }
-      : { labelKey: 'reminders.category.lease', icon: CalendarClock }
+    if (item.derived_kind === 'irl_revision') {
+      return { labelKey: 'reminders.category.irl', icon: TrendingUp }
+    }
+    if (item.derived_kind === 'diagnostic_expiry') {
+      return { labelKey: 'reminders.category.diagnostic', icon: FileText }
+    }
+    return { labelKey: 'reminders.category.lease', icon: CalendarClock }
   }
 
   return MANUAL_CATEGORY_META[item.category] ?? MANUAL_CATEGORY_META.custom
@@ -86,6 +90,10 @@ function displayReminderTitle(item: ReminderFeedItem, t: TFunction) {
     return t('reminders.derived.leaseEndTitle')
   }
 
+  if (item.derived_kind === 'diagnostic_expiry') {
+    return t('reminders.derived.diagnosticExpiryTitle')
+  }
+
   return item.title
 }
 
@@ -101,6 +109,10 @@ function displayReminderNotes(item: ReminderFeedItem, t: TFunction) {
 
   if (item.derived_kind === 'lease_end') {
     return t('reminders.derived.leaseEndDesc')
+  }
+
+  if (item.derived_kind === 'diagnostic_expiry') {
+    return item.notes
   }
 
   return item.notes
