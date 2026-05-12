@@ -1,6 +1,5 @@
 import { useTranslation } from 'react-i18next'
 import { NavLink } from 'react-router-dom'
-import { motion } from 'framer-motion'
 import {
   LayoutDashboard,
   Building2,
@@ -79,15 +78,13 @@ export default function Sidebar({ onSearchClick }: { onSearchClick?: () => void 
         {bottomItems.map((item) => (
           <NavItem key={item.to} to={item.to} icon={item.icon} label={t(item.labelKey)} />
         ))}
-        <motion.button
-          whileHover={{ x: 2 }}
-          transition={{ duration: 0.15 }}
+        <button
           onClick={lock}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-textMuted hover:bg-surfaceHigh hover:text-danger transition-colors w-full"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-textMuted hover:bg-surfaceHigh hover:text-danger hover:translate-x-0.5 transition-all w-full"
         >
           <Lock className="w-4 h-4 shrink-0" />
           <span>{t('nav.lock')}</span>
-        </motion.button>
+        </button>
       </div>
     </aside>
   )
@@ -105,26 +102,20 @@ function NavItem({
   return (
     <NavLink to={to}>
       {({ isActive }) => (
-        <motion.div
-          whileHover={{ x: 2 }}
-          transition={{ duration: 0.15 }}
+        <div
           className={cn(
             'relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer',
             isActive
               ? 'bg-primary/15 text-primary'
-              : 'text-textMuted hover:bg-surfaceHigh hover:text-textPrimary'
+              : 'text-textMuted hover:bg-surfaceHigh hover:text-textPrimary hover:translate-x-0.5 transition-all'
           )}
         >
           {isActive && (
-            <motion.div
-              layoutId="sidebar-indicator"
-              className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-primary rounded-full"
-              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-            />
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-primary rounded-full" />
           )}
           <Icon className="w-4 h-4 shrink-0" />
           <span>{label}</span>
-        </motion.div>
+        </div>
       )}
     </NavLink>
   )

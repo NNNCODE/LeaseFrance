@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import Topbar from './Topbar'
-import SearchCommand from '@/components/SearchCommand'
+
+const SearchCommand = lazy(() => import('@/components/SearchCommand'))
 
 export default function Layout() {
   const [searchOpen, setSearchOpen] = useState(false)
@@ -30,7 +31,11 @@ export default function Layout() {
           <Outlet />
         </main>
       </div>
-      <SearchCommand open={searchOpen} onClose={closeSearch} />
+      {searchOpen && (
+        <Suspense fallback={null}>
+          <SearchCommand open={searchOpen} onClose={closeSearch} />
+        </Suspense>
+      )}
     </div>
   )
 }

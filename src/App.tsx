@@ -1,26 +1,27 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useLicenseStore } from '@/stores/useLicenseStore'
 import Layout from '@/components/layout/Layout'
-import Activation from '@/pages/Activation'
-import Dashboard from '@/pages/Dashboard'
-import Login from '@/pages/Login'
-import Setup from '@/pages/Setup'
-import Settings from '@/pages/Settings'
-import Properties from '@/pages/Properties'
-import Tenants from '@/pages/Tenants'
-import Leases from '@/pages/Leases'
-import Payments from '@/pages/Payments'
-import Reminders from '@/pages/Reminders'
-import Documents from '@/pages/Documents'
-import Inspections from '@/pages/Inspections'
-import Fiscal from '@/pages/Fiscal'
-import Profile from '@/pages/Profile'
 import { SYSTEM_THEME_QUERY } from '@/theme/config'
 import { useThemeStore } from '@/stores/useThemeStore'
 import { useOwnerStore } from '@/stores/useOwnerStore'
+
+const Activation = lazy(() => import('@/pages/Activation'))
+const Dashboard = lazy(() => import('@/pages/Dashboard'))
+const Login = lazy(() => import('@/pages/Login'))
+const Setup = lazy(() => import('@/pages/Setup'))
+const Settings = lazy(() => import('@/pages/Settings'))
+const Properties = lazy(() => import('@/pages/Properties'))
+const Tenants = lazy(() => import('@/pages/Tenants'))
+const Leases = lazy(() => import('@/pages/Leases'))
+const Payments = lazy(() => import('@/pages/Payments'))
+const Reminders = lazy(() => import('@/pages/Reminders'))
+const Documents = lazy(() => import('@/pages/Documents'))
+const Inspections = lazy(() => import('@/pages/Inspections'))
+const Fiscal = lazy(() => import('@/pages/Fiscal'))
+const Profile = lazy(() => import('@/pages/Profile'))
 
 export default function App() {
   const { t } = useTranslation()
@@ -75,55 +76,71 @@ export default function App() {
   }, [clearOwners, initOwners, status])
 
   if (licenseStatus === 'loading') return <Splash />
-  if (license?.enabled && !license.accessGranted) return <Activation />
+  if (license?.enabled && !license.accessGranted) {
+    return (
+      <Suspense fallback={<Splash />}>
+        <Activation />
+      </Suspense>
+    )
+  }
   if (status === 'loading') return <Splash />
 
   if (status === 'setup') {
     return (
-      <Setup
-        onComplete={(email) => {
-          setPrefilledEmail(email)
-          setAuthNotice(t('auth.setup.accountCreated'))
-          setShowRegister(false)
-        }}
-      />
-    )
-  }
-
-  if (status === 'locked') {
-    if (showRegister) {
-      return (
+      <Suspense fallback={<Splash />}>
         <Setup
-          onBack={() => setShowRegister(false)}
           onComplete={(email) => {
             setPrefilledEmail(email)
             setAuthNotice(t('auth.setup.accountCreated'))
             setShowRegister(false)
           }}
         />
+      </Suspense>
+    )
+  }
+
+  if (status === 'locked') {
+    if (showRegister) {
+      return (
+        <Suspense fallback={<Splash />}>
+          <Setup
+            onBack={() => setShowRegister(false)}
+            onComplete={(email) => {
+              setPrefilledEmail(email)
+              setAuthNotice(t('auth.setup.accountCreated'))
+              setShowRegister(false)
+            }}
+          />
+        </Suspense>
       )
     }
 
-    return <Login onRegister={() => setShowRegister(true)} initialEmail={prefilledEmail} notice={authNotice} />
+    return (
+      <Suspense fallback={<Splash />}>
+        <Login onRegister={() => setShowRegister(true)} initialEmail={prefilledEmail} notice={authNotice} />
+      </Suspense>
+    )
   }
 
   return (
-    <Routes>
-      <Route path="/" element={<Layout />}>
-        <Route index element={<Navigate to="/dashboard" replace />} />
-        <Route path="dashboard"  element={<Dashboard />} />
-        <Route path="properties" element={<Properties />} />
-        <Route path="tenants"    element={<Tenants />} />
-        <Route path="leases"     element={<Leases />} />
-        <Route path="payments"   element={<Payments />} />
-        <Route path="fiscal"     element={<Fiscal />} />
-        <Route path="reminders"  element={<Reminders />} />
-        <Route path="inspections" element={<Inspections />} />
-        <Route path="documents"  element={<Documents />} />
-        <Route path="profile"    element={<Profile />} />
-        <Route path="settings"   element={<Settings />} />
-      </Route>
-    </Routes>
+    <Suspense fallback={<Splash />}>
+      <Routes>
+        <Route path="/" element={<Layout />}>
+          <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route path="dashboard"  element={<Dashboard />} />
+          <Route path="properties" element={<Properties />} />
+          <Route path="tenants"    element={<Tenants />} />
+          <Route path="leases"     element={<Leases />} />
+          <Route path="payments"   element={<Payments />} />
+          <Route path="fiscal"     element={<Fiscal />} />
+          <Route path="reminders"  element={<Reminders />} />
+          <Route path="inspections" element={<Inspections />} />
+          <Route path="documents"  element={<Documents />} />
+          <Route path="profile"    element={<Profile />} />
+          <Route path="settings"   element={<Settings />} />
+        </Route>
+      </Routes>
+    </Suspense>
   )
 }
 

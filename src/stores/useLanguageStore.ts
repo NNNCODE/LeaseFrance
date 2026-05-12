@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import i18n from '@/i18n'
+import { changeAppLanguage } from '@/i18n'
 import { AppLanguage, getStoredLanguage, LANGUAGE_STORAGE_KEY, resolveLanguage } from '@/i18n/config'
 
 interface LanguageStore {
@@ -12,7 +12,7 @@ export const useLanguageStore = create<LanguageStore>((set) => ({
   setLanguage: (lang: string) => {
     const nextLanguage = resolveLanguage(lang)
     localStorage.setItem(LANGUAGE_STORAGE_KEY, nextLanguage)
-    void i18n.changeLanguage(nextLanguage)
+    void changeAppLanguage(nextLanguage)
     set({ language: nextLanguage })
   },
 }))
