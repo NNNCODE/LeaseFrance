@@ -20,6 +20,8 @@ export interface DpeRuleResult {
 }
 
 const DPE_RESTRICTION_DATES: Partial<Record<DpeClass, string>> = {
+  // Service-Public rental restriction schedule for energy-inefficient homes.
+  // Source: https://www.service-public.fr/particuliers/vosdroits/F16096
   G: '2025-01-01',
   F: '2028-01-01',
   E: '2034-01-01',

@@ -18,6 +18,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 
 export default function Settings() {
   const { t } = useTranslation()
+  const licenseEnabled = useLicenseStore((state) => state.license?.enabled === true)
+
   return (
     <div className="flex flex-col gap-6 max-w-2xl">
       <div>
@@ -28,7 +30,7 @@ export default function Settings() {
       <LanguageSection />
       <AppearanceSection />
       <UpdatesSection />
-      <LicenseSection />
+      {licenseEnabled ? <LicenseSection /> : null}
       <DiagnosticsSection />
       <BackupSection />
       <PasswordSection />

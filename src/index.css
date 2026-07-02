@@ -81,7 +81,7 @@
   body {
     background-color: rgb(var(--color-background));
     color: rgb(var(--color-text-primary));
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     user-select: none;

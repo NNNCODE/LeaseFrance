@@ -172,12 +172,12 @@ describe('getIrlDatasetStatus', () => {
 
   it('reports the latest local quarter and lag', () => {
     const status = getIrlDatasetStatus([
-      { year: 2025, quarter: 1, value: 145.4 },
+      { year: 2025, quarter: 1, value: 145.47 },
       { year: 2024, quarter: 4, value: 145.17 },
     ], new Date('2026-03-26T12:00:00Z'))
 
     expect(status.latestLabel).toBe('2025-T1')
-    expect(status.latestValue).toBe(145.4)
+    expect(status.latestValue).toBe(145.47)
     expect(status.quarterLag).toBe(4)
     expect(status.isStale).toBe(true)
   })

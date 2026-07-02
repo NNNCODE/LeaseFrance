@@ -161,6 +161,7 @@ docs/       Architecture, roadmap, security notes, and feature write-ups
 
 - [Architecture](docs/ARCHITECTURE.md)
 - [Security Decisions](docs/SECURITY.md)
+- [Privacy Notes](docs/PRIVACY.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Feature Notes](docs/features/README.md)
 

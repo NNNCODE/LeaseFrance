@@ -160,6 +160,28 @@ Pass criteria:
 - the app remains usable without Baillio-hosted services
 - optional private integrations fail closed and do not block local workflows
 
+### P0-7 Public Release Privacy And Trust Checks
+
+Steps:
+
+1. Export a diagnostics report from Settings.
+2. Inspect the JSON before sharing it outside the machine.
+3. Check the packaged app HTML and CSP for remote font or analytics endpoints.
+4. Open Settings in a build without private license runtime configured.
+5. Check the local IRL dataset against the current INSEE publication before
+   calling rent revision support current.
+
+Pass criteria:
+
+- diagnostics does not include backup passwords, license tokens, or other local
+  secrets
+- any personal data still included in diagnostics is documented for the user
+- the free/offline build does not show a paid license activation panel
+- the app does not load Google Fonts, analytics, telemetry, or other external
+  resources by default
+- public-facing update text does not mention build-time environment variables
+- IRL seed data and DPE restriction dates have source links in code or docs
+
 ## P1 Scenarios: Strongly Recommended
 
 These do not block a basic public showcase alone, but failures here reduce the

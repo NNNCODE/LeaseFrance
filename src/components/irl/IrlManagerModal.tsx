@@ -266,7 +266,7 @@ export default function IrlManagerModal({ indices, onChanged, onClose }: IrlMana
                     step="0.01"
                     value={draft.value}
                     onChange={(event) => setDraftField('value', event.target.value)}
-                    placeholder="145.40"
+                    placeholder="146.60"
                   />
                 </div>
               </div>

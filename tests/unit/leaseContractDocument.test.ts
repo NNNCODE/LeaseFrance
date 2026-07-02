@@ -24,7 +24,7 @@ function makeLease(overrides: Partial<Lease> = {}): Lease {
     deposit_refund_date: null,
     deposit_retained_amount: 0,
     deposit_notes: null,
-    irl_reference_index: 145.4,
+    irl_reference_index: 145.47,
     irl_reference_quarter: '2025-T1',
     contract_details: null,
     status: 'active',

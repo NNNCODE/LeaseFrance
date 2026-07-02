@@ -1148,7 +1148,7 @@
       "rentalUnit": "Logement loue",
       "generalInformation": "Informations generales",
       "roomsAndEquipment": "Pieces et equipements",
-      "legalNote": "Document genere via Baillio. Cette version MVP prevoit une signature du proprietaire et un emplacement de signature pour le locataire.",
+      "legalNote": "Document genere via Baillio. La signature du proprietaire est incluse lorsqu elle est renseignee, et un emplacement reste prevu pour la signature du locataire.",
       "noDetails": "Aucune precision"
     }
   },
@@ -1280,7 +1280,7 @@
         "error": "Dernier controle en erreur"
       },
       "disabledReason": {
-        "notConfigured": "Configurez BAILLIO_UPDATE_URL au build pour activer les mises a jour integrees.",
+        "notConfigured": "Les mises a jour integrees ne sont pas activees dans cette edition. Telechargez les nouvelles versions depuis la page de publication officielle.",
         "unsupportedPlatform": "Les mises a jour integrees ne sont prises en charge que sous Windows.",
         "development": "Les mises a jour sont desactivees par defaut en developpement."
       },
@@ -1334,9 +1334,9 @@
     },
     "diagnostics": {
       "title": "Diagnostic",
-      "desc": "Exportez un etat de support minimal sans inclure le token de licence.",
+      "desc": "Exportez un etat de support minimal sans inclure les secrets locaux.",
       "includesTitle": "Contenu de l export",
-      "includesDesc": "Version de l application, etat licence, etat updates, configuration de sauvegarde, chemins locaux et fin de log licence.",
+      "includesDesc": "Version de l application, etat licence, etat updates, configuration de sauvegarde sans mot de passe, chemins locaux et fin de log licence.",
       "logPath": "Log licence : {{path}}",
       "export": "Exporter le diagnostic",
       "exporting": "Export...",

@@ -7,6 +7,10 @@ import { getAutoUpdateState } from './autoUpdate'
 import { getAppRuntimeLogPath, getAppRuntimeState, getAppRuntimeStatePath } from './appRuntime'
 import { getLicenseState } from './license'
 
+type DiagnosticsBackupSettings = Omit<BackupSettings, 'encryptionPassword'> & {
+  encryptionPasswordConfigured: boolean
+}
+
 interface DiagnosticsReport {
   generatedAt: string
   app: {
@@ -33,7 +37,7 @@ interface DiagnosticsReport {
   }
   license: LicenseState
   updates: AutoUpdateState
-  backup: BackupSettings | null
+  backup: DiagnosticsBackupSettings | null
   appRuntime: ReturnType<typeof getAppRuntimeState>
   logs: {
     appRuntime: {
@@ -79,6 +83,15 @@ function getBackupSettingsSafe(): BackupSettings | null {
   }
 }
 
+function redactBackupSettings(settings: BackupSettings | null): DiagnosticsBackupSettings | null {
+  if (!settings) return null
+  const { encryptionPassword, ...safeSettings } = settings
+  return {
+    ...safeSettings,
+    encryptionPasswordConfigured: Boolean(encryptionPassword),
+  }
+}
+
 export function buildDiagnosticsReport(): DiagnosticsReport {
   const logsDir = getLogsDir()
   const appRuntimeLogPath = getAppRuntimeLogPath()
@@ -112,7 +125,7 @@ export function buildDiagnosticsReport(): DiagnosticsReport {
     },
     license: getLicenseState(),
     updates: getAutoUpdateState(),
-    backup: getBackupSettingsSafe(),
+    backup: redactBackupSettings(getBackupSettingsSafe()),
     appRuntime: getAppRuntimeState(),
     logs: {
       appRuntime: {

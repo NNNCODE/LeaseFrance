@@ -54,7 +54,6 @@ and WebSocket connections to localhost.
 all connections to `'self'`.
 
 Both policies allow:
-- Google Fonts (`style-src`, `font-src`)
 - Data URIs and blobs for images (`img-src`) — needed for signature
   images and PDF preview
 - Blob-backed iframe previews (`frame-src 'self' blob:`) — needed for
@@ -73,8 +72,8 @@ code. Do not rely on obfuscation to protect secrets or logic.
 
 ## 4. Local-Only Architecture
 
-Baillio makes no network requests to external services (except Google
-Fonts CDN for typography). All data stays on the user's machine in
+Baillio makes no network requests to external services by default. All
+data stays on the user's machine in
 `app.getPath('userData')`. There is no telemetry, analytics, or cloud sync.
 
 This eliminates entire threat categories: network eavesdropping,

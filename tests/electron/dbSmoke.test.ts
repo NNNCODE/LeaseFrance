@@ -345,7 +345,7 @@ describe.skipIf(!!loadError)('Database migration smoke tests', () => {
     seedIrlIndices!(db)
 
     const count = (db.prepare('SELECT COUNT(*) as n FROM irl_indices').get() as { n: number }).n
-    expect(count).toBeGreaterThanOrEqual(13)
+    expect(count).toBeGreaterThanOrEqual(18)
   })
 
   it('IRL seed is idempotent', () => {
@@ -372,8 +372,27 @@ describe.skipIf(!!loadError)('Database migration smoke tests', () => {
       .prepare('SELECT value FROM irl_indices WHERE year = ? AND quarter = ?')
       .get(2030, 1) as { value: number } | undefined
 
-    expect(seededQuarter?.value).toBe(145.4)
+    expect(seededQuarter?.value).toBe(145.47)
     expect(customQuarter?.value).toBe(200.01)
+  })
+
+  it('IRL seed corrects previous seed values without replacing user-maintained rows', () => {
+    runMigrations!(db)
+    db.prepare('INSERT INTO irl_indices (year, quarter, value) VALUES (?, ?, ?)').run(2024, 2, 144.44)
+    db.prepare('INSERT INTO irl_indices (year, quarter, value, published_at) VALUES (?, ?, ?, ?)')
+      .run(2025, 1, 999, '2026-01-01T00:00:00.000Z')
+
+    seedIrlIndices!(db)
+
+    const correctedSeed = db
+      .prepare('SELECT value FROM irl_indices WHERE year = ? AND quarter = ?')
+      .get(2024, 2) as { value: number } | undefined
+    const userMaintained = db
+      .prepare('SELECT value FROM irl_indices WHERE year = ? AND quarter = ?')
+      .get(2025, 1) as { value: number } | undefined
+
+    expect(correctedSeed?.value).toBe(145.17)
+    expect(userMaintained?.value).toBe(999)
   })
 
   // ── CRUD basics ───────────────────────────────────────────────────────────

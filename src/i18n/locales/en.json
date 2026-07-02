@@ -1148,7 +1148,7 @@
       "rentalUnit": "Rental unit",
       "generalInformation": "General information",
       "roomsAndEquipment": "Rooms and equipment",
-      "legalNote": "Document generated via Baillio. This MVP version includes the landlord signature and a signature space for the tenant.",
+      "legalNote": "Document generated via Baillio. The landlord signature is included when available, with a signature area reserved for the tenant.",
       "noDetails": "No details provided"
     }
   },
@@ -1280,7 +1280,7 @@
         "error": "Last check failed"
       },
       "disabledReason": {
-        "notConfigured": "Configure BAILLIO_UPDATE_URL at build time to enable built-in updates.",
+        "notConfigured": "Built-in updates are not enabled in this edition. Download new versions from the official release page.",
         "unsupportedPlatform": "Built-in updates are currently supported on Windows only.",
         "development": "Updates are disabled by default in development mode."
       },
@@ -1334,9 +1334,9 @@
     },
     "diagnostics": {
       "title": "Diagnostics",
-      "desc": "Export a minimal support snapshot without including the license token.",
+      "desc": "Export a minimal support snapshot without including local secrets.",
       "includesTitle": "What the export includes",
-      "includesDesc": "App version, license state, update state, backup settings, local paths, and the tail of the license log.",
+      "includesDesc": "App version, license state, update state, backup settings without passwords, local paths, and the tail of the license log.",
       "logPath": "License log: {{path}}",
       "export": "Export diagnostics",
       "exporting": "Exporting...",

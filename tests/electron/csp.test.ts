@@ -6,8 +6,12 @@ describe('buildContentSecurityPolicy', () => {
     const csp = buildContentSecurityPolicy(false)
 
     expect(csp).toContain("script-src 'self' 'wasm-unsafe-eval';")
+    expect(csp).toContain("style-src 'self' 'unsafe-inline';")
+    expect(csp).toContain("font-src 'self' data:;")
     expect(csp).toContain("frame-src 'self' blob:;")
     expect(csp).not.toContain("'unsafe-eval'")
+    expect(csp).not.toContain('fonts.googleapis.com')
+    expect(csp).not.toContain('fonts.gstatic.com')
     expect(csp).not.toContain("ws://localhost:*")
   })
 

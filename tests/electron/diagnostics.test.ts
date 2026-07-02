@@ -168,7 +168,7 @@ beforeEach(() => {
     intervalHours: 24,
     destinationFolder: 'D:\\Backups',
     maxBackups: 5,
-    encryptionPassword: null,
+    encryptionPassword: 'diagnostics-secret',
     lastBackupAt: '2026-04-05T18:00:00.000Z',
     lastBackupPath: 'D:\\Backups\\baillio_auto_2026-04-05.lfbackup',
     lastBackupSizeBytes: 4096,
@@ -214,6 +214,8 @@ describe('diagnostics report', () => {
     expect(report.license.status).toBe('active')
     expect(report.updates.status).toBe('disabled')
     expect(report.backup?.destinationFolder).toBe('D:\\Backups')
+    expect(report.backup?.encryptionPasswordConfigured).toBe(true)
+    expect('encryptionPassword' in (report.backup ?? {})).toBe(false)
     expect(report.appRuntime.lastFatalError?.kind).toBe('render-process-gone')
     expect(report.logs.appRuntime.exists).toBe(true)
     expect(report.logs.appRuntime.tail).toEqual([
@@ -239,12 +241,16 @@ describe('diagnostics report', () => {
     const parsed = JSON.parse(raw) as {
       generatedAt: string
       license: Record<string, unknown>
+      backup: Record<string, unknown>
     }
 
     expect(parsed.generatedAt).toBe('2026-04-06T18:15:04.000Z')
     expect(parsed.license.billingEmail).toBe('buyer@example.com')
     expect(parsed.license.licenseToken).toBeUndefined()
+    expect(parsed.backup.encryptionPassword).toBeUndefined()
+    expect(parsed.backup.encryptionPasswordConfigured).toBe(true)
     expect(raw.includes('licenseToken')).toBe(false)
+    expect(raw.includes('diagnostics-secret')).toBe(false)
   })
 
   it('creates the logs folder before asking the OS to open it', async () => {
