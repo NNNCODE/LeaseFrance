@@ -6,6 +6,7 @@ out/
 dist/
 build/auto-update.json
 build/license-runtime.json
+.tmp/
 
 # Electron builder output
 release/
@@ -24,6 +25,7 @@ Thumbs.db
 
 # Editor
 .vscode/
+.vs/
 *.suo
 *.ntvs*
 *.njsproj

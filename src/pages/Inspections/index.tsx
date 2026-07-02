@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { pdf } from '@react-pdf/renderer'
 import { useTranslation } from 'react-i18next'
 import {
   CalendarDays,
@@ -18,7 +17,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { resolveOwnerProfileForLease } from '@/lib/ownerProfiles'
-import { InspectionPDF, type InspectionPdfData } from '@/lib/pdf/inspection'
+import type { InspectionPdfData } from '@/lib/pdf/inspection'
 import { formatDate } from '@/lib/utils'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useOwnerStore } from '@/stores/useOwnerStore'
@@ -213,6 +212,10 @@ export default function Inspections() {
         ? resolveOwnerProfileForLease(owners, lease, fallbackOwnerProfile)
         : fallbackOwnerProfile
       const data = buildInspectionPdfData(inspection, ownerProfile, t('nav.profile'))
+      const [{ pdf }, { InspectionPDF }] = await Promise.all([
+        import('@react-pdf/renderer'),
+        import('@/lib/pdf/inspection'),
+      ])
       const blob = await pdf(<InspectionPDF data={data} />).toBlob()
       const buffer = new Uint8Array(await blob.arrayBuffer())
       const result = await window.api.documents.savePdf(

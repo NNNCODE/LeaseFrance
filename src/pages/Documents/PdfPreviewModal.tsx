@@ -1,11 +1,13 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { AlertTriangle, FolderOpen, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import PdfCanvasPreview from '@/components/PdfCanvasPreview'
 import { Button } from '@/components/ui/button'
 import { formatDate } from '@/lib/utils'
 import { getDocumentMeta } from './documentPageUtils'
+
+// Lazy so the heavy pdfjs-dist bundle loads only when this preview opens.
+const PdfCanvasPreview = lazy(() => import('@/components/PdfCanvasPreview'))
 
 interface PdfPreviewModalProps {
   doc: DocumentRecord
@@ -108,7 +110,9 @@ export default function PdfPreviewModal({ doc, onClose }: PdfPreviewModalProps) 
               <p className="text-sm text-textMuted">{error}</p>
             </div>
           ) : pdfData ? (
-            <PdfCanvasPreview data={pdfData} />
+            <Suspense fallback={<div className="h-full w-full animate-pulse rounded-lg bg-muted/40" />}>
+              <PdfCanvasPreview data={pdfData} />
+            </Suspense>
           ) : null}
         </div>
       </motion.div>

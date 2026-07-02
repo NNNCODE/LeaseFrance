@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import {
@@ -14,10 +14,12 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
-import PdfCanvasPreview from '@/components/PdfCanvasPreview'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { formatDateTime } from '@/lib/utils'
+
+// Lazy so the heavy pdfjs-dist bundle loads only when a PDF preview is opened.
+const PdfCanvasPreview = lazy(() => import('@/components/PdfCanvasPreview'))
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
@@ -492,7 +494,9 @@ function AttachmentPreviewModal({
             )
           ) : pdfData && isPdf ? (
             <div className="h-full w-full overflow-hidden">
-              <PdfCanvasPreview data={pdfData} />
+              <Suspense fallback={<div className="h-full w-full animate-pulse rounded-lg bg-muted/40" />}>
+                <PdfCanvasPreview data={pdfData} />
+              </Suspense>
             </div>
           ) : (
             <div className="flex flex-col items-center gap-3">

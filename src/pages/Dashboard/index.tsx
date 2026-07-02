@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
@@ -14,10 +14,8 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { DOSSIER_ITEMS } from '@/pages/Tenants/tenantFileHelpers'
-import {
-  AreaChart, Area, XAxis, YAxis,
-  CartesianGrid, Tooltip, ResponsiveContainer,
-} from 'recharts'
+
+const RevenueChart = lazy(() => import('./RevenueChart'))
 
 // ── Types locaux ───────────────────────────────────────────────────────────────
 
@@ -274,30 +272,9 @@ export default function Dashboard() {
               {!hasChartData ? (
                 <EmptyState message={t('dashboard.noRevenueData')} />
               ) : (
-                <ResponsiveContainer width="100%" height={200}>
-                  <AreaChart data={revenueData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="var(--chart-primary)" stopOpacity={0.25} />
-                        <stop offset="95%" stopColor="var(--chart-primary)" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
-                    <XAxis dataKey="month" tick={{ fill: 'var(--chart-axis)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fill: '#64748B', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}€`} />
-                    <Tooltip
-                      contentStyle={{
-                        background: 'var(--chart-tooltip-background)',
-                        border: '1px solid var(--chart-tooltip-border)',
-                        borderRadius: '8px',
-                        color: 'var(--chart-tooltip-text)',
-                        fontSize: '12px',
-                      }}
-                      formatter={(v: number) => [`${v} €`, t('dashboard.revenue')]}
-                    />
-                    <Area type="monotone" dataKey="revenus" stroke="var(--chart-primary)" strokeWidth={2} fill="url(#colorRev)" />
-                  </AreaChart>
-                </ResponsiveContainer>
+                <Suspense fallback={<div className="h-[200px] w-full animate-pulse rounded-xl bg-muted/40" />}>
+                  <RevenueChart data={revenueData} />
+                </Suspense>
               )}
             </CardContent>
           </Card>

@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { pdf } from '@react-pdf/renderer'
 import {
   CalendarDays,
   Download,
@@ -16,7 +15,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { resolveOwnerProfileForLease } from '@/lib/ownerProfiles'
-import { ChargeReconciliationPDF, type ChargeReconciliationPdfData } from '@/lib/pdf/chargeReconciliation'
+import type { ChargeReconciliationPdfData } from '@/lib/pdf/chargeReconciliation'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useOwnerStore } from '@/stores/useOwnerStore'
@@ -270,6 +269,10 @@ export default function ChargeReconciliationModal({
     setError('')
 
     try {
+      const [{ pdf }, { ChargeReconciliationPDF }] = await Promise.all([
+        import('@react-pdf/renderer'),
+        import('@/lib/pdf/chargeReconciliation'),
+      ])
       const blob = await pdf(<ChargeReconciliationPDF data={buildPdfData(lease, row, payments, ownerProfile)} />).toBlob()
       const buffer = new Uint8Array(await blob.arrayBuffer())
       const result = await window.api.documents.savePdf(

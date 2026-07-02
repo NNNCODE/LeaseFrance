@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { pdf } from '@react-pdf/renderer'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowRightLeft, CheckCircle2, CreditCard, Plus, RefreshCw, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { resolveOwnerProfileForLease } from '@/lib/ownerProfiles'
 import { formatCurrency } from '@/lib/utils'
-import { QuittancePDF, type QuittanceData } from '@/lib/pdf/quittance'
-import { RecuPDF, type RecuData } from '@/lib/pdf/recu'
+import type { QuittanceData } from '@/lib/pdf/quittance'
+import type { RecuData } from '@/lib/pdf/recu'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useOwnerStore } from '@/stores/useOwnerStore'
 import PaymentBankImportModal from './PaymentBankImportModal'
@@ -158,15 +157,18 @@ export default function Payments() {
     }
 
     const periodToken = `${payment.period_year}-${String(payment.period_month).padStart(2, '0')}`
+    const { pdf } = await import('@react-pdf/renderer')
     let blob: Blob
     let fileName: string
     let docType: string
 
     if (isFullPayment) {
+      const { QuittancePDF } = await import('@/lib/pdf/quittance')
       blob = await pdf(<QuittancePDF data={baseData as QuittanceData} />).toBlob()
       fileName = `quittance_${payment.tenant_last_name}_${periodToken}.pdf`
       docType = 'quittance'
     } else {
+      const { RecuPDF } = await import('@/lib/pdf/recu')
       blob = await pdf(<RecuPDF data={baseData as RecuData} />).toBlob()
       fileName = `recu_${payment.tenant_last_name}_${periodToken}.pdf`
       docType = 'recu'

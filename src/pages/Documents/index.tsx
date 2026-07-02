@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { pdf } from '@react-pdf/renderer'
 import { AnimatePresence, motion } from 'framer-motion'
 import { FileText, Search, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -7,17 +6,13 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { buildFurnishedLeaseContractPdfData } from '@/lib/leaseContractDocument'
-import {
-  DepositReceiptPDF,
-  DepositSettlementPDF,
-  RentRevisionNoticePDF,
-  type DepositReceiptPdfData,
-  type DepositSettlementPdfData,
-  type RentRevisionNoticePdfData,
+import type {
+  DepositReceiptPdfData,
+  DepositSettlementPdfData,
+  RentRevisionNoticePdfData,
 } from '@/lib/pdf/documentTemplates'
-import { FurnishedLeaseContractPDF } from '@/lib/pdf/furnishedLeaseContract'
-import { QuittancePDF, type QuittanceData } from '@/lib/pdf/quittance'
-import { RecuPDF, type RecuData } from '@/lib/pdf/recu'
+import type { QuittanceData } from '@/lib/pdf/quittance'
+import type { RecuData } from '@/lib/pdf/recu'
 import { resolveOwnerProfileForLease } from '@/lib/ownerProfiles'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useOwnerStore } from '@/stores/useOwnerStore'
@@ -232,8 +227,10 @@ export default function Documents() {
           leaseType: lease.type,
         }
         const month = MONTHS[payment.period_month - 1]
+        const { pdf } = await import('@react-pdf/renderer')
 
         if (full) {
+          const { QuittancePDF } = await import('@/lib/pdf/quittance')
           const blob = await pdf(<QuittancePDF data={baseData as QuittanceData} />).toBlob()
           return saveGeneratedPdf(
             payment.lease_id,
@@ -243,6 +240,7 @@ export default function Documents() {
           )
         }
 
+        const { RecuPDF } = await import('@/lib/pdf/recu')
         const blob = await pdf(<RecuPDF data={baseData as RecuData} />).toBlob()
         return saveGeneratedPdf(
           payment.lease_id,
@@ -287,6 +285,10 @@ export default function Documents() {
           newLabel: context.revision.newLabel,
         }
 
+        const [{ pdf }, { RentRevisionNoticePDF }] = await Promise.all([
+          import('@react-pdf/renderer'),
+          import('@/lib/pdf/documentTemplates'),
+        ])
         const blob = await pdf(<RentRevisionNoticePDF data={data} />).toBlob()
         return saveGeneratedPdf(
           lease.id,
@@ -313,6 +315,10 @@ export default function Documents() {
         )
 
         const data = buildFurnishedLeaseContractPdfData(persistedLease, ownerProfile, request.contractDetails)
+        const [{ pdf }, { FurnishedLeaseContractPDF }] = await Promise.all([
+          import('@react-pdf/renderer'),
+          import('@/lib/pdf/furnishedLeaseContract'),
+        ])
         const blob = await pdf(<FurnishedLeaseContractPDF data={data} />).toBlob()
         return saveGeneratedPdf(
           persistedLease.id,
@@ -348,6 +354,10 @@ export default function Documents() {
           depositAmount: lease.deposit_amount,
         }
 
+        const [{ pdf }, { DepositReceiptPDF }] = await Promise.all([
+          import('@react-pdf/renderer'),
+          import('@/lib/pdf/documentTemplates'),
+        ])
         const blob = await pdf(<DepositReceiptPDF data={data} />).toBlob()
         return saveGeneratedPdf(
           lease.id,
@@ -386,6 +396,10 @@ export default function Documents() {
           notes: lease.deposit_notes,
         }
 
+        const [{ pdf }, { DepositSettlementPDF }] = await Promise.all([
+          import('@react-pdf/renderer'),
+          import('@/lib/pdf/documentTemplates'),
+        ])
         const blob = await pdf(<DepositSettlementPDF data={data} />).toBlob()
         return saveGeneratedPdf(
           lease.id,

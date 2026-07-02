@@ -61,6 +61,7 @@ import type { BaillioInvokeChannels, BaillioWindowChannels } from '../src/shared
 import { validateInvokeArgs } from '../src/shared/ipcValidation'
 import { ATTACHMENT_DIALOG_EXTENSIONS, validateAttachmentFileSelection } from './security/attachments'
 import { buildContentSecurityPolicy } from './security/csp'
+import { isAllowedExternalUrl } from './security/externalLinks'
 
 const isDev = process.env['ELECTRON_RENDERER_URL'] !== undefined
 
@@ -240,7 +241,11 @@ function createWindow(): void {
 
   // Bloquer l'ouverture de nouvelles fenêtres
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url)
+    if (isAllowedExternalUrl(url)) {
+      void shell.openExternal(url).catch(() => {
+        // Ignore OS-level failures; the renderer must not gain a fallback path.
+      })
+    }
     return { action: 'deny' }
   })
 

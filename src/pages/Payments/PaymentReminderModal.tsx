@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
-import { pdf } from '@react-pdf/renderer'
 import {
   AlertCircle,
   CalendarDays,
@@ -14,7 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import DateInput from '@/components/ui/date-input'
-import { ReminderLetterPDF, type ReminderLetterData } from '@/lib/pdf/reminder'
+import type { ReminderLetterData } from '@/lib/pdf/reminder'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { monthLabel, paymentVersionToken } from './paymentPageUtils'
 
@@ -128,6 +127,10 @@ export default function PaymentReminderModal({
     setError('')
 
     try {
+      const [{ pdf }, { ReminderLetterPDF }] = await Promise.all([
+        import('@react-pdf/renderer'),
+        import('@/lib/pdf/reminder'),
+      ])
       const blob = await pdf(<ReminderLetterPDF data={reminderData} />).toBlob()
       const buffer = new Uint8Array(await blob.arrayBuffer())
       const fileName = `${stage}_${payment.tenant_last_name}_${fileSafePeriod(payment.period_month, payment.period_year)}.pdf`

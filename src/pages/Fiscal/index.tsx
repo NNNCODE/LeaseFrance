@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { pdf } from '@react-pdf/renderer'
 import { useTranslation } from 'react-i18next'
 import {
   AlertTriangle,
@@ -21,7 +20,6 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { FiscalSummaryPDF } from '@/lib/pdf/fiscalSummary'
 import { formatCurrency } from '@/lib/utils'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useOwnerStore } from '@/stores/useOwnerStore'
@@ -143,6 +141,10 @@ export default function Fiscal() {
     setNotice('')
 
     try {
+      const [{ pdf }, { FiscalSummaryPDF }] = await Promise.all([
+        import('@react-pdf/renderer'),
+        import('@/lib/pdf/fiscalSummary'),
+      ])
       const blob = await pdf(
         <FiscalSummaryPDF
           data={{
