@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs'
-import { join } from 'path'
+import { join, resolve } from 'path'
 import { tmpdir } from 'os'
 import { randomBytes } from 'crypto'
 
@@ -27,6 +27,8 @@ describe('configureUserDataPath', () => {
   })
 
   afterEach(() => {
+    delete process.env.BAILLIO_USER_DATA_DIR
+    delete process.env.RENTFLOW_USER_DATA_DIR
     rmSync(TEST_DIR, { recursive: true, force: true })
   })
 
@@ -48,5 +50,26 @@ describe('configureUserDataPath', () => {
     expect(existsSync(legacyDir)).toBe(false)
     expect(setName).toHaveBeenCalledWith('Baillio')
     expect(setPath).toHaveBeenCalledWith('userData', join(TEST_DIR, 'Baillio'))
+  })
+
+  it('uses an explicit userData override without migrating legacy data', async () => {
+    const overrideDir = join(TEST_DIR, 'acceptance-profile', 'Baillio')
+    const legacyDir = join(TEST_DIR, 'lease-france')
+    mkdirSync(legacyDir, { recursive: true })
+    writeFileSync(join(legacyDir, 'accounts.json'), JSON.stringify({
+      accounts: [{ id: 'acc-legacy', email: 'legacy@example.com' }],
+    }), 'utf-8')
+    process.env.BAILLIO_USER_DATA_DIR = overrideDir
+
+    vi.resetModules()
+    const { configureUserDataPath } = await import('../../electron/appIdentity')
+
+    const userDataPath = configureUserDataPath()
+
+    expect(userDataPath).toBe(resolve(overrideDir))
+    expect(existsSync(overrideDir)).toBe(true)
+    expect(existsSync(join(legacyDir, 'accounts.json'))).toBe(true)
+    expect(setName).toHaveBeenCalledWith('Baillio')
+    expect(setPath).toHaveBeenCalledWith('userData', resolve(overrideDir))
   })
 })

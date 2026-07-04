@@ -1,10 +1,19 @@
 import { app } from 'electron'
 import { existsSync, mkdirSync, readdirSync, renameSync, rmSync } from 'fs'
-import { join } from 'path'
+import { join, resolve } from 'path'
 
 const PRODUCT_NAME = 'Baillio'
 const LEGACY_USER_DATA_DIRS = ['LeaseFrance', 'lease-france']
 const EPHEMERAL_LOCK_ENTRIES = new Set(['SingletonCookie', 'SingletonLock'])
+const USER_DATA_DIR_ENVS = ['BAILLIO_USER_DATA_DIR', 'RENTFLOW_USER_DATA_DIR'] as const
+
+function userDataOverridePath(): string | null {
+  for (const key of USER_DATA_DIR_ENVS) {
+    const value = process.env[key]?.trim()
+    if (value) return resolve(value)
+  }
+  return null
+}
 
 function desiredUserDataPath(): string {
   return join(app.getPath('appData'), PRODUCT_NAME)
@@ -33,9 +42,10 @@ function mergeLegacyUserDataDirectory(sourceDir: string, targetDir: string): voi
 }
 
 export function configureUserDataPath(): string {
-  const targetDir = desiredUserDataPath()
+  const overrideDir = userDataOverridePath()
+  const targetDir = overrideDir ?? desiredUserDataPath()
 
-  if (!existsSync(targetDir)) {
+  if (!overrideDir && !existsSync(targetDir)) {
     for (const legacyName of LEGACY_USER_DATA_DIRS) {
       const legacyDir = join(app.getPath('appData'), legacyName)
       if (!existsSync(legacyDir)) continue
@@ -45,8 +55,10 @@ export function configureUserDataPath(): string {
   }
 
   mkdirSync(targetDir, { recursive: true })
-  for (const legacyName of LEGACY_USER_DATA_DIRS) {
-    mergeLegacyUserDataDirectory(join(app.getPath('appData'), legacyName), targetDir)
+  if (!overrideDir) {
+    for (const legacyName of LEGACY_USER_DATA_DIRS) {
+      mergeLegacyUserDataDirectory(join(app.getPath('appData'), legacyName), targetDir)
+    }
   }
 
   app.setName(PRODUCT_NAME)

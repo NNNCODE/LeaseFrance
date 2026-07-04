@@ -19,6 +19,10 @@ release/
 *.log
 npm-debug.log*
 
+# Local acceptance-test artifacts
+.acceptance-evidence/
+.acceptance-tmp/
+
 # OS
 .DS_Store
 Thumbs.db

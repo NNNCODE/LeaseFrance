@@ -52,6 +52,30 @@ Baillio is currently a Windows-first desktop application.
 - Packaging: NSIS installer via `electron-builder`
 - Other desktop platforms are not the current focus
 
+## Public Windows Download
+
+Public Windows installers are published from GitHub Releases:
+
+```text
+https://github.com/NNNCODE/LeaseFrance/releases
+```
+
+Download the latest `Baillio Setup <version>.exe` asset from the release page.
+Current public builds are not code-signed, so Windows may show an "Unknown
+publisher" or SmartScreen warning. Verify that the installer came from the
+official GitHub Release before choosing "More info" and "Run anyway".
+
+Each release should publish a SHA256 checksum next to the installer. On Windows,
+you can verify a downloaded installer with:
+
+```powershell
+Get-FileHash -Algorithm SHA256 ".\Baillio Setup <version>.exe"
+```
+
+Baillio stores data locally, typically under `%APPDATA%/Baillio`. Before
+upgrading from an older build, create a backup from Settings and keep it outside
+the app data folder.
+
 ## Quick Start
 
 ### Requirements
@@ -162,6 +186,7 @@ docs/       Architecture, roadmap, security notes, and feature write-ups
 - [Architecture](docs/ARCHITECTURE.md)
 - [Security Decisions](docs/SECURITY.md)
 - [Privacy Notes](docs/PRIVACY.md)
+- [Release Notes Template](docs/RELEASE_NOTES_TEMPLATE.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Feature Notes](docs/features/README.md)
 
