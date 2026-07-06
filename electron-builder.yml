@@ -30,7 +30,9 @@ win:
     - target: nsis
       arch: [x64]
   icon: build/icon.ico
-  signAndEditExecutable: false
+  # true lets rcedit embed build/icon.ico and version metadata into Baillio.exe.
+  # No code signing happens unless a certificate is configured.
+  signAndEditExecutable: true
 
 nsis:
   oneClick: false
