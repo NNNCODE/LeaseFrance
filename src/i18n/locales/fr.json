@@ -352,8 +352,8 @@
       },
       "rule": {
         "ok": {
-          "badge": "Conforme",
-          "desc": "DPE renseigne."
+          "badge": "DPE renseigne",
+          "desc": "DPE renseigne. Verifiez les regles applicables au logement."
         },
         "missing_dpe": {
           "badge": "DPE manquant",
@@ -928,7 +928,7 @@
         },
         "furnished_lease_contract": {
           "title": "Contrat de location meublee",
-          "description": "Modele officiel meuble avec champs complementaires."
+          "description": "Modele de bail meuble avec champs complementaires. A relire avant signature."
         },
         "deposit_receipt": {
           "title": "Recu de depot",
@@ -1430,7 +1430,7 @@
   },
   "profile": {
     "title": "Profil du propriétaire",
-    "subtitle": "Vos informations personnelles utilisées dans les documents officiels",
+    "subtitle": "Vos informations personnelles utilisées dans les documents générés",
     "fullName": "Nom complet",
     "email": "E-mail",
     "address": "Adresse",
@@ -1441,7 +1441,7 @@
     "infoTitle": "Utilisation de vos informations",
     "infoDesc": "Ces informations sont reprises sur les nouveaux documents générés avec ce profil bailleur. Si un bail ou un bien utilise déjà un autre profil bailleur, ce choix reste prioritaire. Les PDF déjà générés ne sont pas modifiés.",
     "signature": "Signature",
-    "signatureDesc": "Votre signature apparait sur les documents officiels generes.",
+    "signatureDesc": "Votre signature apparait sur les documents generes.",
     "uploadSignature": "Charger une image",
     "removeSignature": "Supprimer",
     "drawSignature": "Dessiner",

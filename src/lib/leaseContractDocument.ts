@@ -215,7 +215,7 @@ export function getFurnishedLeaseContractAdvisories(
   if (!details.heatingMode) warnings.push('Mode de chauffage non precise.')
   if (!details.hotWaterMode) warnings.push('Mode de production d eau chaude non precise.')
   if (!details.dpeClass?.trim()) warnings.push('Classe DPE non renseignee.')
-  if (lease.type !== 'meuble') warnings.push('Ce generateur cible le bail meublé officiel.')
+  if (lease.type !== 'meuble') warnings.push('Ce generateur cible le bail meublé.')
   return warnings
 }
 

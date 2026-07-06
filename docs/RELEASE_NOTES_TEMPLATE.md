@@ -83,7 +83,8 @@ cannot recover a lost backup password.
 - Generated rental and fiscal documents should be reviewed before use; the app
   is not legal or tax advice.
 
-## Privacy
+## Privacy And Disclaimer
 
 See [docs/PRIVACY.md](PRIVACY.md) for what stays local and what may appear in
-diagnostic exports.
+diagnostic exports. See [docs/DISCLAIMER.md](DISCLAIMER.md) for the legal, tax,
+and document-review boundaries of the app.

@@ -33,6 +33,10 @@ This repository is distributed under the MIT License.
 - Backup, restore, diagnostics, and support logs
 - Packaged Windows installer builds
 
+Baillio is an assistance tool, not legal, tax, or accounting advice. Users must
+verify generated documents and reference data before relying on them. See
+[docs/DISCLAIMER.md](docs/DISCLAIMER.md).
+
 ## Technology Stack
 
 - Electron
@@ -186,6 +190,7 @@ docs/       Architecture, roadmap, security notes, and feature write-ups
 - [Architecture](docs/ARCHITECTURE.md)
 - [Security Decisions](docs/SECURITY.md)
 - [Privacy Notes](docs/PRIVACY.md)
+- [Disclaimer](docs/DISCLAIMER.md)
 - [Release Notes Template](docs/RELEASE_NOTES_TEMPLATE.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Feature Notes](docs/features/README.md)

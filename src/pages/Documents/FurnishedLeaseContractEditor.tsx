@@ -49,7 +49,7 @@ export default function FurnishedLeaseContractEditor({
     <div className="flex flex-col gap-4">
       <div className="bg-surfaceHigh rounded-lg p-3 text-xs text-textMuted">
         Bailleur repris depuis le profil. Bien et locataire repris depuis le bail selectionne.
-        Les champs ci-dessous couvrent les mentions complementaires du contrat meublé officiel.
+        Les champs ci-dessous couvrent les mentions complementaires du contrat de location meublé.
       </div>
 
       {blockingIssues.length > 0 && (

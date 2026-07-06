@@ -352,8 +352,8 @@
       },
       "rule": {
         "ok": {
-          "badge": "合规",
-          "desc": "DPE 已填写。"
+          "badge": "DPE 已填写",
+          "desc": "DPE 已填写。请自行核对适用于该房产的规定。"
         },
         "missing_dpe": {
           "badge": "缺少 DPE",
@@ -928,7 +928,7 @@
         },
         "furnished_lease_contract": {
           "title": "带家具租赁合同",
-          "description": "官方带家具租赁模板，含补充字段。"
+          "description": "带家具租赁合同模板，含补充字段。签署前请仔细核对。"
         },
         "deposit_receipt": {
           "title": "押金收据",
@@ -1430,7 +1430,7 @@
   },
   "profile": {
     "title": "房东资料",
-    "subtitle": "用于官方文档的个人信息",
+    "subtitle": "用于生成文档的个人信息",
     "fullName": "全名",
     "email": "电子邮箱",
     "address": "地址",
@@ -1439,9 +1439,9 @@
     "notProvided": "未填写",
     "notProvidedF": "未填写",
     "infoTitle": "您的信息用途",
-    "infoDesc": "您的姓名、地址和电话将出现在应用生成的租金收据和文档上。请确保这些信息完整且最新，以保证文档的法律合规性。",
+    "infoDesc": "您的姓名、地址和电话将出现在应用生成的租金收据和文档上。请保持这些信息完整且最新，并在发送前核对每份生成的文档。",
     "signature": "签名",
-    "signatureDesc": "您的签名将出现在生成的官方文档上。",
+    "signatureDesc": "您的签名将出现在生成的文档上。",
     "uploadSignature": "上传图片",
     "removeSignature": "删除",
     "drawSignature": "手写",
