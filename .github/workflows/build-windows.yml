@@ -48,8 +48,11 @@ jobs:
           if (-not (Test-Path (Join-Path $target "rcedit-x64.exe"))) { Write-Error "rcedit-x64.exe missing after extraction"; exit 1 }
           exit 0
 
+      # --publish never: on CI electron-builder otherwise tries to auto-publish
+      # to GitHub Releases and fails without a token; releases are attached
+      # manually from verified artifacts.
       - name: Build Windows installer
-        run: npm run dist
+        run: npm run dist -- --publish never
 
       - name: Compute SHA256 checksums
         shell: pwsh
