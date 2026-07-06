@@ -1,0 +1,52 @@
+name: Windows build
+
+# Builds the Windows installer from public source on CI.
+# This traceable pipeline is a prerequisite for SignPath Foundation code
+# signing; the signing submission step is added once the project is approved.
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies (rebuilds better-sqlite3 for Electron)
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build Windows installer
+        run: npm run dist
+
+      - name: Compute SHA256 checksums
+        shell: pwsh
+        run: |
+          Get-ChildItem dist -Filter *.exe | ForEach-Object {
+            $h = (Get-FileHash $_.FullName -Algorithm SHA256).Hash
+            "$h  $($_.Name)" | Set-Content -Encoding ascii "$($_.FullName).sha256"
+            Write-Output "$h  $($_.Name)"
+          }
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: |
+            dist/*.exe
+            dist/*.exe.sha256
+          if-no-files-found: error
