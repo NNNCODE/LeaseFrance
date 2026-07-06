@@ -25,7 +25,7 @@ This file is for Claude Code. Keep it short, concrete, and repo-specific.
 
 ## Tech Stack
 
-- Electron 31
+- Electron 42
 - React 18
 - TypeScript
 - electron-vite
