@@ -29,6 +29,8 @@ win:
   target:
     - target: nsis
       arch: [x64]
+  # Hyphenated name so GitHub Release asset URLs stay stable (spaces get rewritten).
+  artifactName: "Baillio-Setup-${version}.${ext}"
   icon: build/icon.ico
   # true lets rcedit embed build/icon.ico and version metadata into Baillio.exe.
   # No code signing happens unless a certificate is configured.
