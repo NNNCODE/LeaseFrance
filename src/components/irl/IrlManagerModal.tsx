@@ -170,6 +170,18 @@ export default function IrlManagerModal({ indices, onChanged, onClose }: IrlMana
                   </p>
                 </div>
               )}
+              <p className="mt-2 text-[11px] text-textMuted">
+                Source officielle:{' '}
+                <a
+                  href="https://www.insee.fr/fr/statistiques/serie/001515333"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline underline-offset-2 hover:text-textPrimary transition-colors"
+                >
+                  INSEE serie 001515333
+                </a>
+                {' '}- verifiez le dernier trimestre publie avant une revision.
+              </p>
             </div>
 
             <div className="overflow-y-auto px-6 py-4 flex-1">
