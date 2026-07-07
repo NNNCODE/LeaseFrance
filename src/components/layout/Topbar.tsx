@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
-import { Bell, Home, Search } from 'lucide-react'
+import { Bell, Search } from 'lucide-react'
+import BrandMark from '@/components/BrandMark'
 import { Button } from '@/components/ui/button'
 import WindowControls from './WindowControls'
 
@@ -8,8 +9,8 @@ export default function Topbar({ onSearchClick }: { onSearchClick?: () => void }
   return (
     <header className="flex items-center justify-between h-14 px-6 border-b border-border bg-background/95 drag shrink-0">
       <div className="flex items-center gap-3">
-        <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-primary/10 border border-primary/20">
-          <Home className="w-4 h-4 text-primary" />
+        <div className="flex items-center justify-center w-8 h-8">
+          <BrandMark className="w-7 h-7" idPrefix="bmt" />
         </div>
         <div>
           <p className="text-sm font-semibold text-textPrimary">Baillio</p>

@@ -1,22 +1,11 @@
 ﻿# Regenerates build/icon.ico (Baillio app icon).
-# Design: indigo->violet rounded tile + white house glyph with door/window negative space,
-# matching the in-app sidebar logo (primary #6366F1 on dark surfaces).
+# Design: white rounded tile + brand mark (ascending bars, swoosh, dot),
+# matching the Baillio wordmark logo and the website brand assets.
 # Usage: powershell -ExecutionPolicy Bypass -File scripts/generate-icon.ps1
 Add-Type -AssemblyName System.Drawing
 
 $repo = Split-Path -Parent $PSScriptRoot
 $icoPath = Join-Path $repo 'build\icon.ico'
-
-function New-RoundedRectPath([float]$x, [float]$y, [float]$w, [float]$h, [float]$r) {
-  $p = New-Object System.Drawing.Drawing2D.GraphicsPath
-  $d = 2 * $r
-  $p.AddArc($x, $y, $d, $d, 180, 90)
-  $p.AddArc($x + $w - $d, $y, $d, $d, 270, 90)
-  $p.AddArc($x + $w - $d, $y + $h - $d, $d, $d, 0, 90)
-  $p.AddArc($x, $y + $h - $d, $d, $d, 90, 90)
-  $p.CloseFigure()
-  return $p
-}
 
 function New-IconBitmap([int]$s) {
   $bmp = New-Object System.Drawing.Bitmap($s, $s, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
@@ -24,72 +13,71 @@ function New-IconBitmap([int]$s) {
   $g.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
   $g.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality
 
-  # Rounded gradient tile
-  $m = [float]($s * 0.03)
-  $w = [float]($s - 2 * $m)
-  $r = [float]($w * 0.23)
-  $tile = New-RoundedRectPath $m $m $w $w $r
-  $bg = New-Object System.Drawing.Drawing2D.LinearGradientBrush(
-    (New-Object System.Drawing.PointF(0, 0)),
-    (New-Object System.Drawing.PointF($s, $s)),
-    [System.Drawing.Color]::FromArgb(255, 76, 70, 229),
-    [System.Drawing.Color]::FromArgb(255, 150, 92, 255))
-  $bg.WrapMode = [System.Drawing.Drawing2D.WrapMode]::TileFlipXY
-  $g.FillPath($bg, $tile)
+  # White rounded tile with a hairline border
+  $m = [float]($s * 0.03); $w = [float]($s - 2 * $m); $r = [float]($w * 0.22); $d = 2 * $r
+  $tile = New-Object System.Drawing.Drawing2D.GraphicsPath
+  $tile.AddArc($m, $m, $d, $d, 180, 90); $tile.AddArc($m + $w - $d, $m, $d, $d, 270, 90)
+  $tile.AddArc($m + $w - $d, $m + $w - $d, $d, $d, 0, 90); $tile.AddArc($m, $m + $w - $d, $d, $d, 90, 90)
+  $tile.CloseFigure()
+  $g.FillPath([System.Drawing.Brushes]::White, $tile)
+  if ($s -ge 32) {
+    $pen = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(28, 24, 24, 60), [float]([math]::Max(1, $s * 0.012)))
+    $g.DrawPath($pen, $tile)
+  }
 
-  # Soft top sheen
-  $sheen = New-Object System.Drawing.Drawing2D.LinearGradientBrush(
-    (New-Object System.Drawing.PointF(0, $m)),
-    (New-Object System.Drawing.PointF(0, [float]($m + $w * 0.6))),
-    [System.Drawing.Color]::FromArgb(48, 255, 255, 255),
-    [System.Drawing.Color]::FromArgb(0, 255, 255, 255))
-  $sheen.WrapMode = [System.Drawing.Drawing2D.WrapMode]::TileFlipXY
-  $g.FillPath($sheen, $tile)
+  # Mark geometry in 0..1 space of the mark area (centered, 72% of tile)
+  $ox = [float]($s * 0.14); $oy = [float]($s * 0.14); $u = [float]($s * 0.72)
+  function XY([float]$x, [float]$y) { New-Object System.Drawing.PointF(($script:ox + $x * $script:u), ($script:oy + $y * $script:u)) }
+  Set-Variable -Name ox -Value $ox -Scope Script; Set-Variable -Name oy -Value $oy -Scope Script; Set-Variable -Name u -Value $u -Scope Script
 
-  # House silhouette (pentagon), white with faint vertical tint
-  $pts = @(
-    (New-Object System.Drawing.PointF([float]($s * 0.500), [float]($s * 0.215))),
-    (New-Object System.Drawing.PointF([float]($s * 0.790), [float]($s * 0.470))),
-    (New-Object System.Drawing.PointF([float]($s * 0.790), [float]($s * 0.785))),
-    (New-Object System.Drawing.PointF([float]($s * 0.210), [float]($s * 0.785))),
-    (New-Object System.Drawing.PointF([float]($s * 0.210), [float]($s * 0.470)))
+  # Ascending bars with slanted tops, cyan -> indigo gradient
+  $barGrad = New-Object System.Drawing.Drawing2D.LinearGradientBrush(
+    (XY 0.05 0.10), (XY 0.75 0.95),
+    [System.Drawing.Color]::FromArgb(255, 56, 182, 232),
+    [System.Drawing.Color]::FromArgb(255, 91, 76, 230))
+  $barGrad.WrapMode = [System.Drawing.Drawing2D.WrapMode]::TileFlipXY
+  $bw = 0.17; $gap = 0.07; $slant = 0.06
+  $bars = @(
+    @{ x = 0.03; top = 0.44 },
+    @{ x = 0.03 + $bw + $gap; top = 0.27 },
+    @{ x = 0.03 + 2 * ($bw + $gap); top = 0.06 }
   )
-  # Shadow pass (skipped at tiny sizes where it reads as noise)
-  if ($s -ge 24) {
-    $shadowPts = $pts | ForEach-Object { New-Object System.Drawing.PointF($_.X, [float]($_.Y + $s * 0.018)) }
-    $shadowBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(52, 20, 12, 60))
-    $g.FillPolygon($shadowBrush, [System.Drawing.PointF[]]$shadowPts)
+  foreach ($b in $bars) {
+    $pts = @(
+      (XY $b.x ($b.top + $slant)),
+      (XY ($b.x + $bw) $b.top),
+      (XY ($b.x + $bw) 1.0),
+      (XY $b.x 1.0)
+    )
+    $g.FillPolygon($barGrad, [System.Drawing.PointF[]]$pts)
   }
-  # Body
-  $houseBrush = New-Object System.Drawing.Drawing2D.LinearGradientBrush(
-    (New-Object System.Drawing.PointF(0, [float]($s * 0.215))),
-    (New-Object System.Drawing.PointF(0, [float]($s * 0.785))),
-    [System.Drawing.Color]::FromArgb(255, 255, 255, 255),
-    [System.Drawing.Color]::FromArgb(255, 224, 223, 252))
-  $houseBrush.WrapMode = [System.Drawing.Drawing2D.WrapMode]::TileFlipXY
-  $g.FillPolygon($houseBrush, [System.Drawing.PointF[]]$pts)
 
-  # Door cutout (rounded top), filled with the tile gradient so it reads as negative space
-  $doorPath = New-Object System.Drawing.Drawing2D.GraphicsPath
-  if ($s -lt 24) {
-    $dx = [float]($s * 0.395); $dw = [float]($s * 0.21)
-    $dTop = [float]($s * 0.50)
-  } else {
-    $dx = [float]($s * 0.425); $dw = [float]($s * 0.15)
-    $dTop = [float]($s * 0.565)
-  }
-  $dBottom = [float]($s * 0.785)
-  $doorPath.AddArc($dx, $dTop, $dw, $dw, 180, 180)
-  $doorPath.AddLine([float]($dx + $dw), [float]($dTop + $dw / 2), [float]($dx + $dw), $dBottom)
-  $doorPath.AddLine([float]($dx + $dw), $dBottom, $dx, $dBottom)
-  $doorPath.CloseFigure()
-  $g.FillPath($bg, $doorPath)
+  # White cut: erase everything below the separation curve, then draw the
+  # purple swoosh back on top.
+  $white = New-Object System.Drawing.Drawing2D.GraphicsPath
+  $white.AddBezier((XY -0.06 1.02), (XY 0.22 0.90), (XY 0.55 0.66), (XY 0.86 0.56))
+  $white.AddLine((XY 0.86 0.56), (XY 1.10 0.56))
+  $white.AddLine((XY 1.10 0.56), (XY 1.10 1.30))
+  $white.AddLine((XY 1.10 1.30), (XY -0.06 1.30))
+  $white.CloseFigure()
+  $g.FillPath([System.Drawing.Brushes]::White, $white)
 
-  # Round window above the door (skipped at tiny sizes)
-  if ($s -ge 24) {
-    $wr = [float]($s * 0.052)
-    $g.FillEllipse($bg, [float]($s * 0.5 - $wr), [float]($s * 0.40 - $wr), [float](2 * $wr), [float](2 * $wr))
-  }
+  $swooshGrad = New-Object System.Drawing.Drawing2D.LinearGradientBrush(
+    (XY 0.0 0.95), (XY 0.86 0.58),
+    [System.Drawing.Color]::FromArgb(255, 89, 55, 219),
+    [System.Drawing.Color]::FromArgb(255, 124, 58, 237))
+  $swooshGrad.WrapMode = [System.Drawing.Drawing2D.WrapMode]::TileFlipXY
+  $sw = New-Object System.Drawing.Drawing2D.GraphicsPath
+  $sw.AddBezier((XY 0.00 0.99), (XY 0.24 0.87), (XY 0.54 0.68), (XY 0.86 0.60))
+  $sw.AddLine((XY 0.86 0.60), (XY 0.86 0.78))
+  $sw.AddBezier((XY 0.86 0.78), (XY 0.50 0.88), (XY 0.24 0.97), (XY 0.02 1.06))
+  $sw.CloseFigure()
+  $g.FillPath($swooshGrad, $sw)
+
+  # Dot (i-dot) right of the tallest bar
+  $dotBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(255, 109, 40, 217))
+  $dc = XY 0.87 0.36; $dr = [float](0.09 * $u)
+  $g.FillEllipse($dotBrush, ($dc.X - $dr), ($dc.Y - $dr), (2 * $dr), (2 * $dr))
 
   $g.Dispose()
   return $bmp

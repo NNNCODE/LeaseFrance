@@ -1,12 +1,12 @@
 import { motion } from 'framer-motion'
 import {
   CalendarClock,
-  Home,
   ReceiptText,
   ShieldCheck,
   Sparkles,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import BrandMark from '@/components/BrandMark'
 import WindowControls from './WindowControls'
 
 interface AuthShellProps {
@@ -53,8 +53,8 @@ export default function AuthShell({
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-background">
       <header className="drag flex h-14 items-center justify-between border-b border-border bg-background/95 px-5 shrink-0">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10">
-            <Home className="h-4 w-4 text-primary" />
+          <div className="flex h-9 w-9 items-center justify-center">
+            <BrandMark className="h-8 w-8" idPrefix="bma" />
           </div>
           <div>
             <p className="text-[11px] uppercase tracking-[0.24em] text-textMuted">Baillio Desktop</p>

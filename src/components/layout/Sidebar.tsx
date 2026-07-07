@@ -11,11 +11,11 @@ import {
   FolderOpen,
   ScrollText,
   Settings,
-  Home,
   Lock,
   UserCircle2,
   Search,
 } from 'lucide-react'
+import BrandMark from '@/components/BrandMark'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/useAuthStore'
 
@@ -44,8 +44,8 @@ export default function Sidebar({ onSearchClick }: { onSearchClick?: () => void 
     <aside className="flex flex-col w-60 h-full bg-surface border-r border-border shrink-0">
       {/* Logo */}
       <div className="flex items-center gap-3 px-5 h-14 border-b border-border drag">
-        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/20 no-drag">
-          <Home className="w-4 h-4 text-primary" />
+        <div className="flex items-center justify-center w-8 h-8 no-drag">
+          <BrandMark className="w-7 h-7" idPrefix="bms" />
         </div>
         <span className="font-semibold text-textPrimary text-sm tracking-wide no-drag">
           Baillio
