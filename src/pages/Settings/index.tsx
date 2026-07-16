@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   UserCircle2, Lock, Trash2, Eye, EyeOff, AlertTriangle, CheckCircle2,
   ChevronRight, Copy, Download, KeyRound, Upload, FolderOpen, HardDrive, RefreshCw,
-  Clock, ShieldCheck, Timer, ChevronDown, Globe, Monitor, Moon, Sun, LifeBuoy,
+  Clock, ShieldCheck, Timer, ChevronDown, Globe, Monitor, Moon, Sun, LifeBuoy, Mail,
 } from 'lucide-react'
 import { formatDateTime } from '@/lib/utils'
 import { useAuthStore } from '@/stores/useAuthStore'
@@ -32,6 +32,7 @@ export default function Settings() {
       <UpdatesSection />
       {licenseEnabled ? <LicenseSection /> : null}
       <DiagnosticsSection />
+      <FeedbackSection />
       <BackupSection />
       <PasswordSection />
       <RecoveryKeySection />
@@ -678,6 +679,57 @@ function DiagnosticsSection() {
             <p>{error}</p>
           </div>
         ) : null}
+      </CardContent>
+    </Card>
+  )
+}
+
+const FEEDBACK_EMAIL = 'support@baillio.space'
+
+function buildFeedbackMailto(t: (key: string, opts?: Record<string, unknown>) => string, version: string): string {
+  const subject = encodeURIComponent(t('settings.feedback.subject'))
+  const body = encodeURIComponent(
+    [
+      t('settings.feedback.bodyIntro', { version: version || '?' }),
+      '',
+      t('settings.feedback.bodyLike'),
+      '',
+      t('settings.feedback.bodyImprove'),
+      '',
+      t('settings.feedback.bodyIssue'),
+    ].join('\n')
+  )
+  return `mailto:${FEEDBACK_EMAIL}?subject=${subject}&body=${body}`
+}
+
+function FeedbackSection() {
+  const { t } = useTranslation()
+  const [version, setVersion] = useState('')
+
+  useEffect(() => {
+    let mounted = true
+    window.api.updates.getState()
+      .then((state) => { if (mounted) setVersion(state.currentVersion) })
+      .catch(() => {})
+    return () => { mounted = false }
+  }, [])
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <Mail className="w-4 h-4 text-primary" />
+          <CardTitle>{t('settings.feedback.title')}</CardTitle>
+        </div>
+        <CardDescription>{t('settings.feedback.desc')}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Button asChild size="sm">
+          <a href={buildFeedbackMailto(t, version)} target="_blank" rel="noreferrer">
+            <Mail className="w-3.5 h-3.5" />
+            {t('settings.feedback.send')}
+          </a>
+        </Button>
       </CardContent>
     </Card>
   )

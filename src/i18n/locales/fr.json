@@ -1343,6 +1343,16 @@
       "exported": "Diagnostic exporte : {{path}}",
       "openLogs": "Ouvrir le dossier des logs"
     },
+    "feedback": {
+      "title": "Donner mon avis",
+      "desc": "Ouvre votre messagerie par defaut pour nous envoyer vos retours. Rien n est transmis automatiquement.",
+      "send": "Envoyer un avis par email",
+      "subject": "Avis Baillio",
+      "bodyIntro": "Version de l application : {{version}}",
+      "bodyLike": "Ce que j aime :",
+      "bodyImprove": "Ce qui pourrait etre ameliore :",
+      "bodyIssue": "Probleme rencontre (le cas echeant) :"
+    },
     "backup": {
       "title": "Sauvegarde et restauration",
       "desc": "Protegez vos donnees en creant des sauvegardes regulieres",

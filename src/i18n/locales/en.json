@@ -1343,6 +1343,16 @@
       "exported": "Diagnostics exported: {{path}}",
       "openLogs": "Open logs folder"
     },
+    "feedback": {
+      "title": "Send feedback",
+      "desc": "Opens your default mail app to send us your feedback. Nothing is sent automatically.",
+      "send": "Send feedback by email",
+      "subject": "Baillio feedback",
+      "bodyIntro": "App version: {{version}}",
+      "bodyLike": "What I like:",
+      "bodyImprove": "What could be improved:",
+      "bodyIssue": "Issue encountered (if any):"
+    },
     "backup": {
       "title": "Backup and restore",
       "desc": "Protect your data by creating regular backups",

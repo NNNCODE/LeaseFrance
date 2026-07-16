@@ -1343,6 +1343,16 @@
       "exported": "诊断信息已导出：{{path}}",
       "openLogs": "打开日志目录"
     },
+    "feedback": {
+      "title": "发送反馈",
+      "desc": "打开你的默认邮件客户端发送反馈，应用不会自动传输任何数据。",
+      "send": "通过邮件发送反馈",
+      "subject": "Baillio 反馈",
+      "bodyIntro": "应用版本：{{version}}",
+      "bodyLike": "喜欢的地方：",
+      "bodyImprove": "可以改进的地方：",
+      "bodyIssue": "遇到的问题（如有）："
+    },
     "backup": {
       "title": "备份与恢复",
       "desc": "通过定期备份保护您的数据",
