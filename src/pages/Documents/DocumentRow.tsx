@@ -3,9 +3,11 @@ import { motion } from 'framer-motion'
 import {
   Archive,
   CheckCircle2,
+  Download,
   Eye,
   FileText,
   FolderOpen,
+  FolderSearch,
   RefreshCw,
   Send,
   Trash2,
@@ -20,6 +22,8 @@ interface DocumentRowProps {
   doc: DocumentRecord
   onOpen: () => void
   onPreview: () => void
+  onExport: () => void
+  onShowInFolder: () => void
   onDelete: () => void
   onStatusChange: (status: string) => void
   onRegenerate: () => void
@@ -29,6 +33,8 @@ export default function DocumentRow({
   doc,
   onOpen,
   onPreview,
+  onExport,
+  onShowInFolder,
   onDelete,
   onStatusChange,
   onRegenerate,
@@ -130,6 +136,24 @@ export default function DocumentRow({
                 className="rounded-lg p-1.5 text-textMuted transition-colors hover:bg-primary/10 hover:text-primary"
               >
                 <FolderOpen className="h-3.5 w-3.5" />
+              </button>
+            )}
+            {doc.file_path && (
+              <button
+                onClick={onExport}
+                title={t('documents.exportCopy')}
+                className="rounded-lg p-1.5 text-textMuted transition-colors hover:bg-primary/10 hover:text-primary"
+              >
+                <Download className="h-3.5 w-3.5" />
+              </button>
+            )}
+            {doc.file_path && (
+              <button
+                onClick={onShowInFolder}
+                title={t('documents.showInFolder')}
+                className="rounded-lg p-1.5 text-textMuted transition-colors hover:bg-primary/10 hover:text-primary"
+              >
+                <FolderSearch className="h-3.5 w-3.5" />
               </button>
             )}
             {canRegenerate && (

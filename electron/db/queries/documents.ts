@@ -40,6 +40,12 @@ export function create(lease_id: number, type: string, file_path: string | null)
   return getAll().find((d) => d.id === result.lastInsertRowid)!
 }
 
+export function getById(id: number): DocumentRecord | undefined {
+  return getDb()
+    .prepare(`${SELECT} WHERE d.id = ?`)
+    .get(id) as DocumentRecord | undefined
+}
+
 export function getByFilePath(filePath: string): DocumentRecord | undefined {
   return getDb()
     .prepare(`${SELECT} WHERE d.file_path = ?`)

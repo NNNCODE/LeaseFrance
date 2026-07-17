@@ -612,6 +612,12 @@ export default function Documents() {
               doc={doc}
               onOpen={() => doc.file_path && window.api.documents.openFile(doc.file_path)}
               onPreview={() => setPreviewDoc(doc)}
+              onExport={() => {
+                void window.api.documents.exportCopy(doc.id)
+              }}
+              onShowInFolder={() => {
+                void window.api.documents.showInFolder(doc.id)
+              }}
               onDelete={() => setDeleting(doc)}
               onStatusChange={(status) => {
                 void handleStatusChange(doc, status)

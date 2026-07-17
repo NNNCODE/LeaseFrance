@@ -294,6 +294,8 @@ const invokeArgSchemas = {
   'documents:updateStatus': z.tuple([positiveInt, documentStatus]),
   'documents:readFile': z.tuple([nonEmptyText]),
   'documents:openFile': z.tuple([nonEmptyText]),
+  'documents:exportCopy': z.tuple([positiveInt]),
+  'documents:showInFolder': z.tuple([positiveInt]),
   'exports:saveFile': exportSaveFileArgs,
   'fiscalExpenses:getByYear': z.tuple([z.number().int().min(2000).max(2100)]),
   'fiscalExpenses:create': z.tuple([fiscalExpenseInput]),

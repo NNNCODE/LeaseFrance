@@ -1,6 +1,6 @@
 import { app, BrowserWindow, shell, ipcMain, dialog, session } from 'electron'
 import { writeFileSync, copyFileSync, existsSync, readFileSync, mkdirSync, unlinkSync, statSync } from 'fs'
-import { join } from 'path'
+import { basename, isAbsolute, join } from 'path'
 import { randomBytes } from 'crypto'
 import { configureUserDataPath } from './appIdentity'
 import { closeDb, getDb, getDbPath } from './db/database'
@@ -367,32 +367,42 @@ handle('reminders:getFeed', () => getReminderFeed())
 handle('documents:getAll', () => documentsDb.getAll())
 handle('documents:getGenerationAvailability', () => getDocumentGenerationAvailability())
 handle('documents:getGenerationSources', () => getDocumentGenerationSources())
-handle('documents:delete', (id) => documentsDb.remove(id))
-handle('documents:savePdf', async (leaseId, fileName, buffer, docType) => {
-  const titleMap: Record<string, string> = {
-    quittance: 'Enregistrer la quittance',
-    recu: 'Enregistrer le recu de loyer',
-    avis_revision_loyer: "Enregistrer l'avis de revision du loyer",
-    contrat_location: 'Enregistrer le contrat de location',
-    contrat_location_meublee: 'Enregistrer le contrat de location meublee',
-    recu_depot_garantie: 'Enregistrer le recu de depot de garantie',
-    solde_depot_garantie: 'Enregistrer le solde de depot de garantie',
-    relance_amiable: 'Enregistrer la relance amiable',
-    mise_en_demeure: 'Enregistrer la mise en demeure',
-    proposition_echeancier: "Enregistrer la proposition d'echeancier",
-    etat_des_lieux_entree: "Enregistrer l'etat des lieux d'entree",
-    etat_des_lieux_sortie: "Enregistrer l'etat des lieux de sortie",
-    regularisation_charges: 'Enregistrer la regularisation annuelle des charges',
+handle('documents:delete', (id) => {
+  const document = documentsDb.getById(id)
+  const removed = documentsDb.remove(id)
+  // Only unlink files we manage; legacy absolute paths point at user-chosen locations.
+  if (removed && document?.file_path && !isAbsolute(document.file_path)) {
+    const fullPath = resolveManagedDocumentPath(document.file_path)
+    try { if (fullPath && existsSync(fullPath)) unlinkSync(fullPath) } catch { /* ignore */ }
   }
+  return removed
+})
+handle('documents:savePdf', async (leaseId, fileName, buffer, docType) => {
+  const dir = getManagedDocumentsDir()
+  const targetPath = uniqueManagedPdfPath(dir, sanitizePdfFileName(fileName))
+  writeFileSync(targetPath, toNodeBuffer(buffer))
+  documentsDb.create(leaseId, docType ?? 'quittance', `${MANAGED_DOCUMENTS_DIR_NAME}/${basename(targetPath)}`)
+  return { saved: true, path: targetPath }
+})
+handle('documents:exportCopy', async (id) => {
+  const document = documentsDb.getById(id)
+  if (!document?.file_path) return { saved: false, path: null }
+  const sourcePath = resolveManagedDocumentPath(document.file_path)
+  if (!sourcePath || !existsSync(sourcePath)) return { saved: false, path: null }
   const { filePath, canceled } = await dialog.showSaveDialog({
-    title: titleMap[docType ?? 'quittance'] ?? 'Enregistrer le document',
-    defaultPath: fileName,
+    title: 'Exporter le document',
+    defaultPath: basename(sourcePath),
     filters: [{ name: 'PDF', extensions: ['pdf'] }],
   })
   if (canceled || !filePath) return { saved: false, path: null }
-  writeFileSync(filePath, toNodeBuffer(buffer))
-  documentsDb.create(leaseId, docType ?? 'quittance', filePath)
+  copyFileSync(sourcePath, filePath)
   return { saved: true, path: filePath }
+})
+handle('documents:showInFolder', (id) => {
+  const document = documentsDb.getById(id)
+  if (!document?.file_path) return
+  const fullPath = resolveManagedDocumentPath(document.file_path)
+  if (fullPath && existsSync(fullPath)) shell.showItemInFolder(fullPath)
 })
 handle('documents:importForLease', async (leaseId, docType) => {
   const titleMap: Record<string, string> = {
@@ -459,9 +469,43 @@ function getAttachmentsDir(): string {
   return dir
 }
 
+// Generated PDFs live inside the per-account storage dir so they follow backups.
+// documents.file_path is relative ("documents/<file>.pdf") for managed files;
+// absolute paths are legacy rows saved before the managed library existed.
+const MANAGED_DOCUMENTS_DIR_NAME = 'documents'
+
+function getManagedDocumentsDir(): string {
+  const dir = join(getCurrentAccountStorageDir(), MANAGED_DOCUMENTS_DIR_NAME)
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
+  return dir
+}
+
+function sanitizePdfFileName(fileName: string): string {
+  const cleaned = basename(fileName).replace(/[<>:"/\\|?*]/g, '_').trim()
+  return cleaned || 'document.pdf'
+}
+
+function uniqueManagedPdfPath(dir: string, fileName: string): string {
+  const ext = '.pdf'
+  const stem = fileName.toLowerCase().endsWith(ext) ? fileName.slice(0, -ext.length) : fileName
+  for (let index = 1; ; index += 1) {
+    const candidate = index === 1 ? `${stem}${ext}` : `${stem}_${index}${ext}`
+    const fullPath = join(dir, candidate)
+    if (!existsSync(fullPath)) return fullPath
+  }
+}
+
+function resolveManagedDocumentPath(storedPath: string): string | null {
+  if (isAbsolute(storedPath)) return storedPath
+  const segments = storedPath.replace(/\\/g, '/').split('/')
+  if (segments.some((segment) => segment === '' || segment === '.' || segment === '..')) return null
+  return join(getCurrentAccountStorageDir(), ...segments)
+}
+
 function resolveKnownDocumentPath(filePath: string): string | null {
   const document = documentsDb.getByFilePath(filePath)
-  return document?.file_path ?? null
+  if (!document?.file_path) return null
+  return resolveManagedDocumentPath(document.file_path)
 }
 
 handle('attachments:getByEntity', (entityType, entityId) => attachmentsDb.getByEntity(entityType, entityId))

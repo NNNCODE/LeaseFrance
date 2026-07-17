@@ -126,6 +126,8 @@ export interface BaillioInvokeApi {
     savePdf: (leaseId: number, fileName: string, buffer: Uint8Array, docType?: string) => Promise<{ saved: boolean; path: string | null }>
     importForLease: (leaseId: number, docType?: string) => Promise<{ imported: boolean; path: string | null }>
     openFile: (filePath: string) => Promise<void>
+    exportCopy: (id: number) => Promise<{ saved: boolean; path: string | null }>
+    showInFolder: (id: number) => Promise<void>
   }
   exports: {
     saveFile: (fileName: string, buffer: Uint8Array, filters?: Array<{ name: string; extensions: string[] }>) => Promise<{ saved: boolean; path: string | null }>

@@ -893,6 +893,8 @@
     "markSent": "Mark as sent",
     "markArchived": "Mark as archived",
     "open": "Open file",
+    "exportCopy": "Export a copy",
+    "showInFolder": "Show in folder",
     "regenerate": "Regenerate",
     "fileMissing": "No linked file.",
     "loadingPdf": "Loading PDF...",

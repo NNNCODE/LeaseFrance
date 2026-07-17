@@ -893,6 +893,8 @@
     "markSent": "标记为已发送",
     "markArchived": "标记为已归档",
     "open": "打开文件",
+    "exportCopy": "导出副本",
+    "showInFolder": "在文件夹中显示",
     "regenerate": "重新生成",
     "fileMissing": "没有关联文件。",
     "loadingPdf": "正在加载 PDF...",

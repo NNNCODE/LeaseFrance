@@ -190,6 +190,8 @@ const api: BaillioApi = {
     updateStatus: invoke('documents:updateStatus'),
     readFile: invoke('documents:readFile'),
     openFile: invoke('documents:openFile'),
+    exportCopy: invoke('documents:exportCopy'),
+    showInFolder: invoke('documents:showInFolder'),
   },
   exports: {
     saveFile: invoke('exports:saveFile'),
