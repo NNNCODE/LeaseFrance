@@ -13,7 +13,7 @@ import {
 } from 'fs'
 import { extname, join } from 'path'
 import { randomBytes, scryptSync, createCipheriv, createDecipheriv } from 'crypto'
-import Database = require('better-sqlite3')
+import Database from 'better-sqlite3'
 import { getCurrentAccountStorageDir, exportCurrentAccountAuth } from './auth'
 import { getDb } from './db/database'
 

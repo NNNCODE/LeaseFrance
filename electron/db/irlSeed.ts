@@ -1,4 +1,4 @@
-import Database = require('better-sqlite3')
+import Database from 'better-sqlite3'
 
 // INSEE series 001515333, general France IRL values.
 // Source: https://www.insee.fr/fr/statistiques/serie/001515333

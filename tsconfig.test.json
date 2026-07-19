@@ -1,10 +1,12 @@
 {
   "compilerOptions": {
     "composite": true,
+    "esModuleInterop": true,
     "jsx": "react-jsx",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "moduleResolution": "bundler",
+    "skipLibCheck": true,
     "strict": true,
     "target": "ES2022",
     "types": ["node", "vitest/globals", "react", "react-dom"],
@@ -12,5 +14,5 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["tests/**/*.ts", "tests/**/*.tsx", "electron/**/*.ts", "src/env.d.ts", "src/types/**/*.d.ts", "src/shared/**/*.ts"]
+  "include": ["tests/**/*.ts", "tests/**/*.tsx", "electron/**/*.ts", "src/**/*.ts", "src/**/*.tsx"]
 }

@@ -1,11 +1,13 @@
 {
   "compilerOptions": {
     "composite": true,
-    "module": "CommonJS",
-    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "module": "node16",
+    "moduleResolution": "node16",
+    "skipLibCheck": true,
     "strict": true,
     "target": "ES2022",
     "types": ["node"]
   },
-  "include": ["electron/**/*.ts", "electron.vite.config.ts", "src/env.d.ts", "src/types/**/*.d.ts", "src/shared/**/*.ts"]
+  "include": ["electron/**/*.ts", "src/env.d.ts", "src/types/**/*.d.ts", "src/shared/**/*.ts", "src/lib/irl.ts"]
 }

@@ -1,4 +1,4 @@
-import Database = require('better-sqlite3')
+import Database from 'better-sqlite3'
 import { mkdirSync } from 'fs'
 import { dirname } from 'path'
 import { getCurrentAccountDbPath } from '../auth'
