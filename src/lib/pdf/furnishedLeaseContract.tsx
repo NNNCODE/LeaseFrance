@@ -429,7 +429,7 @@ function MoneyRow({
   last?: boolean
 }) {
   return (
-    <View style={[s.moneyRow, last ? { borderBottomWidth: 0 } : null]}>
+    <View style={[s.moneyRow, last ? { borderBottomWidth: 0 } : {}]}>
       <Text style={s.moneyLabel}>{label}</Text>
       <Text style={s.moneyValue}>{value}</Text>
     </View>

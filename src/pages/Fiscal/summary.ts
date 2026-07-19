@@ -230,9 +230,10 @@ function buildExpenseSummary(expenses: FiscalExpense[]): FiscalExpenseSummary {
   }
 
   for (const expense of expenses) {
-    const cat = expense.category as keyof Omit<FiscalExpenseSummary, 'total'>
+    const cat = expense.category as string
     if (cat in result && cat !== 'total') {
-      result[cat] = round2(result[cat] + expense.amount)
+      const key = cat as keyof Omit<FiscalExpenseSummary, 'total'>
+      result[key] = round2(result[key] + expense.amount)
     } else {
       result.autre = round2(result.autre + expense.amount)
     }

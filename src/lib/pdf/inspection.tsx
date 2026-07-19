@@ -293,7 +293,7 @@ export function InspectionPDF({ data }: { data: InspectionPdfData }) {
                 key={`${room.area}-${index}`}
                 style={[
                   s.roomRow,
-                  index === array.length - 1 ? { borderBottomWidth: 0 } : null,
+                  index === array.length - 1 ? { borderBottomWidth: 0 } : {},
                 ]}
               >
                 <Text style={[s.roomCell, s.colArea]}>{safeText(room.area, '-')}</Text>

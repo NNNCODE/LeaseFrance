@@ -29,7 +29,7 @@ import { Input } from '@/components/ui/input'
 import { useAttachments, useInspections, useLeases, useTenants } from '@/hooks'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { getLatestMoveInVideoByTenant } from '@/pages/Leases/leasePageUtils'
-import TenantFileModal from './TenantFileModal'
+import TenantFileModal, { type TenantFileForm } from './TenantFileModal'
 import TenantLedgerModal from './TenantLedgerModal'
 import {
   DOSSIER_ITEMS,
@@ -159,7 +159,7 @@ export default function Tenants() {
     reloadAll()
   }
 
-  async function handleSaveDossier(tenantId: number, data: TenantInput, expectedUpdatedAt: string) {
+  async function handleSaveDossier(tenantId: number, data: TenantFileForm, expectedUpdatedAt: string) {
     const current = tenants.find((tenant) => tenant.id === tenantId) ?? dossierTenant
     if (!current) {
       throw new Error('Locataire introuvable.')

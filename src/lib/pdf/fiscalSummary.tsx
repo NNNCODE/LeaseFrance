@@ -289,7 +289,7 @@ export function FiscalSummaryPDF({ data }: { data: FiscalSummaryPdfData }) {
           {summary.properties.map((item, index) => {
             const net = item.totalReceived - item.expenses.total
             return (
-              <View key={item.propertyId} style={[s.tableRow, index === summary.properties.length - 1 ? { borderBottomWidth: 0.5 } : null]}>
+              <View key={item.propertyId} style={[s.tableRow, index === summary.properties.length - 1 ? { borderBottomWidth: 0.5 } : {}]}>
                 <Text style={s.colProperty}>{item.propertyName} ({item.propertyCity})</Text>
                 <Text style={s.colSmall}>{item.occupiedMonths}</Text>
                 <Text style={s.colSmall}>{item.vacantMonths}</Text>

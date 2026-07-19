@@ -4,9 +4,11 @@ import { useTranslation } from 'react-i18next'
 import { getLocaleForLanguage, resolveLanguage, type AppLanguage } from '@/i18n/config'
 import { cn } from '@/lib/utils'
 
-export interface DateInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type' | 'value' | 'onChange'> {
+export interface DateInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type' | 'value' | 'onChange' | 'min' | 'max'> {
   value?: string | null
   onChange?: (value: string | null) => void
+  min?: string
+  max?: string
 }
 
 function isMonthFirst(language: AppLanguage) {

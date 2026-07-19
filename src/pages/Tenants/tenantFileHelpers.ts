@@ -25,7 +25,7 @@ type TenantDossierShape = Pick<
   | 'dossier_notes'
 >
 
-export function hasGuarantor(tenant: Pick<TenantDossierShape, 'guarantor_name' | 'guarantor_email' | 'guarantor_phone' | 'guarantor_address'>): boolean {
+export function hasGuarantor(tenant: Partial<Pick<TenantDossierShape, 'guarantor_name' | 'guarantor_email' | 'guarantor_phone' | 'guarantor_address'>>): boolean {
   return Boolean(
     tenant.guarantor_name
     || tenant.guarantor_email
@@ -34,7 +34,7 @@ export function hasGuarantor(tenant: Pick<TenantDossierShape, 'guarantor_name' |
   )
 }
 
-export function hasEmergencyContact(tenant: Pick<TenantDossierShape, 'emergency_contact_name' | 'emergency_contact_phone' | 'emergency_contact_relation'>): boolean {
+export function hasEmergencyContact(tenant: Partial<Pick<TenantDossierShape, 'emergency_contact_name' | 'emergency_contact_phone' | 'emergency_contact_relation'>>): boolean {
   return Boolean(
     tenant.emergency_contact_name
     || tenant.emergency_contact_phone

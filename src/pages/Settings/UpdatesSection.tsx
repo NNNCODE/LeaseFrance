@@ -159,7 +159,7 @@ export default function UpdatesSection() {
             {cardState.status === 'available' ? (
               <Button size="sm" onClick={handleDownload} disabled={busy}>
                 <Download className="w-3.5 h-3.5" />
-                {cardState.status === 'downloading' || action === 'download'
+                {action === 'download'
                   ? t('settings.updates.downloading')
                   : t('settings.updates.download')}
               </Button>

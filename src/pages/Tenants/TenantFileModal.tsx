@@ -25,7 +25,7 @@ import {
   isDossierKey,
 } from './tenantFileHelpers'
 
-type TenantFileForm = Pick<
+export type TenantFileForm = Pick<
   TenantInput,
   | 'guarantor_name'
   | 'guarantor_email'
