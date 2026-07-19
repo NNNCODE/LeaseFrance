@@ -137,10 +137,11 @@ describe('App license gating', () => {
         profile: {
           name: 'Alice Martin',
           email: 'alice@example.com',
-          address: null,
-          city: null,
-          phone: null,
-          signatureImage: null,
+          address: '',
+          city: '',
+          phone: '',
+          signatureImage: '',
+          createdAt: '2026-01-01 00:00:00',
         },
         error: null,
       })
@@ -161,10 +162,11 @@ describe('App license gating', () => {
       profile: {
         name: 'Alice Martin',
         email: 'alice@example.com',
-        address: null,
-        city: null,
-        phone: null,
-        signatureImage: null,
+        address: '',
+        city: '',
+        phone: '',
+        signatureImage: '',
+        createdAt: '2026-01-01 00:00:00',
       },
       init: vi.fn().mockResolvedValue(undefined),
     })

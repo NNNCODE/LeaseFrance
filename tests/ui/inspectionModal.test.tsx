@@ -51,7 +51,17 @@ function createLease(): Lease {
     tenant_first_name: 'Julie',
     tenant_last_name: 'Bernard',
     property_name: 'Appartement Centre',
+    property_address: '14 rue de Rivoli',
     property_city: 'Paris',
+    property_zip: '75001',
+    property_area_m2: 42,
+    property_owner_profile_id: null,
+    tenant_email: null,
+    tenant_phone: null,
+    tenant_guarantor_name: null,
+    tenant_guarantor_address: null,
+    tenant_guarantor_email: null,
+    tenant_guarantor_phone: null,
   }
 }
 

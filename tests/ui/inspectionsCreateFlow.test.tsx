@@ -72,6 +72,7 @@ function createLease(): Lease {
     property_city: 'Paris',
     property_zip: '75001',
     property_area_m2: 42,
+    property_owner_profile_id: null,
     tenant_first_name: 'Julie',
     tenant_last_name: 'Bernard',
     tenant_email: 'julie@example.com',

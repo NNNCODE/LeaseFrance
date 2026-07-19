@@ -31,7 +31,8 @@ const PROFILE: UserProfile = {
   address: '12 rue de Paris',
   city: 'Paris',
   phone: '0600000000',
-  signatureImage: null,
+  signatureImage: '',
+  createdAt: '2026-01-01 00:00:00',
 }
 
 beforeEach(() => {

@@ -245,6 +245,7 @@ describe('suggestBankImport', () => {
     status: 'pending' as const,
     notes: null,
     created_at: '2025-01-01',
+    updated_at: '2025-01-01',
     property_name: 'Appt Rue de Rivoli',
     property_address: '12 Rue de Rivoli',
     property_city: 'Paris',
@@ -279,6 +280,17 @@ describe('suggestBankImport', () => {
     property_zip: '75001',
     tenant_first_name: 'Jean',
     tenant_last_name: 'Dupont',
+    owner_profile_id: null,
+    contract_details: null,
+    updated_at: '2023-01-01',
+    property_area_m2: null,
+    property_owner_profile_id: null,
+    tenant_email: null,
+    tenant_phone: null,
+    tenant_guarantor_name: null,
+    tenant_guarantor_address: null,
+    tenant_guarantor_email: null,
+    tenant_guarantor_phone: null,
   }
 
   it('suggests mark_existing when amount and name match a pending payment', () => {

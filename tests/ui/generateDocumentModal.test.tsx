@@ -10,6 +10,8 @@ function createLease(overrides: Partial<Lease> = {}): Lease {
     id: 11,
     property_id: 1,
     tenant_id: 2,
+    owner_profile_id: null,
+    property_owner_profile_id: null,
     type: 'vide',
     start_date: '2020-02-15',
     end_date: null,

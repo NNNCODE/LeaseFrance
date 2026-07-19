@@ -49,7 +49,7 @@ describe.skipIf(!!loadError)('property diagnostics query and reminders', () => {
       dpe_ademe_number: ' 2475E1234567A ',
       asbestos_available: true,
       notes: ' DPE initial ',
-    } as propertyDiagnosticsDb.PropertyDiagnosticsInput)
+    } as unknown as propertyDiagnosticsDb.PropertyDiagnosticsInput)
 
     expect(created.dpe_class).toBe('G')
     expect(created.dpe_ges_class).toBe('F')
