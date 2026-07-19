@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
+import { createElement, lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import {
@@ -61,6 +61,10 @@ function getFileIcon(mimeType: string) {
   if (mimeType === 'application/pdf') return FileText
   if (mimeType === 'video/mp4') return Film
   return File
+}
+
+function AttachmentIcon({ mimeType, className }: { mimeType: string; className?: string }) {
+  return createElement(getFileIcon(mimeType), { className })
 }
 
 function formatAttachmentDateTime(value: string) {
@@ -299,7 +303,6 @@ function AttachmentRow({
   onDelete: () => void
 }) {
   const { t } = useTranslation()
-  const FileIcon = getFileIcon(attachment.mime_type)
   const metadata = [
     formatFileSize(attachment.file_size),
     showUploadDate ? t('attachments.uploadedAt', { date: formatAttachmentDateTime(attachment.created_at) }) : null,
@@ -307,7 +310,7 @@ function AttachmentRow({
 
   return (
     <div className="flex items-center gap-3 py-1.5 px-2 rounded-lg hover:bg-surfaceHigh/60 transition-colors group">
-      <FileIcon className="w-4 h-4 text-textMuted shrink-0" />
+      <AttachmentIcon mimeType={attachment.mime_type} className="w-4 h-4 text-textMuted shrink-0" />
       <div className="flex-1 min-w-0">
         <p className="text-xs font-medium text-textPrimary truncate">{attachment.file_name}</p>
         <p className="text-[10px] text-textMuted">{metadata}</p>
@@ -424,7 +427,7 @@ function AttachmentPreviewModal({
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-surfaceHigh/50 shrink-0">
           <div className="flex items-center gap-2 min-w-0">
-            {(() => { const FI = getFileIcon(attachment.mime_type); return <FI className="w-4 h-4 text-textMuted shrink-0" /> })()}
+            <AttachmentIcon mimeType={attachment.mime_type} className="w-4 h-4 text-textMuted shrink-0" />
             <p className="text-sm font-semibold text-textPrimary truncate">{attachment.file_name}</p>
             <span className="text-xs text-textMuted">{formatFileSize(attachment.file_size)}</span>
           </div>

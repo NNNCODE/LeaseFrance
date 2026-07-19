@@ -38,14 +38,13 @@ export default tseslint.config(
     },
   },
   {
-    // Only the two stable react-hooks rules. The newer compiler-oriented rules
-    // (set-state-in-effect, static-components, ...) flag this codebase's standard
-    // load-in-effect pattern everywhere; adopt them only after the hooks migration.
     files: ['src/**/*.{ts,tsx}'],
     plugins: { 'react-hooks': reactHooks },
     rules: {
-      'react-hooks/rules-of-hooks': 'error',
-      'react-hooks/exhaustive-deps': 'warn',
+      ...reactHooks.configs.recommended.rules,
+      // ~20 modals/forms still sync state from props inside effects (reset-on-open
+      // patterns). Restructuring each is riskier than the payoff; revisit per-file.
+      'react-hooks/set-state-in-effect': 'off',
     },
   },
   {

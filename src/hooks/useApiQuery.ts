@@ -41,7 +41,11 @@ export function useApiQuery<T>(
   const [error, setError] = useState('')
 
   const fetcherRef = useRef(fetcher)
-  fetcherRef.current = fetcher
+  // Synced in an effect (not during render) to stay concurrent-mode safe.
+  // Declared before the fetch effect below so reload always sees the latest fetcher.
+  useEffect(() => {
+    fetcherRef.current = fetcher
+  })
 
   // Monotonic token: only the most recent request may write state,
   // so an overlapping reload can never be clobbered by a stale response.
