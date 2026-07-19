@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import type { TFunction } from 'i18next'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
@@ -20,6 +20,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { useApiQuery } from '@/hooks'
 import { formatDate } from '@/lib/utils'
 import ManualReminderModal from './ManualReminderModal'
 
@@ -121,44 +122,31 @@ function displayReminderNotes(item: ReminderFeedItem, t: TFunction) {
 export default function Reminders() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const feedQuery = useApiQuery(() => window.api.reminders.getFeed(), { initial: EMPTY_FEED })
   const [leases, setLeases] = useState<Lease[]>([])
   const [leasesLoaded, setLeasesLoaded] = useState(false)
-  const [feed, setFeed] = useState<ReminderFeed>(EMPTY_FEED)
-  const [loading, setLoading] = useState(true)
   const [formLoading, setFormLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [actionError, setActionError] = useState('')
   const [editing, setEditing] = useState<ManualReminder | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [deleting, setDeleting] = useState<ManualReminder | null>(null)
 
-  async function load() {
-    setLoading(true)
-    setError('')
+  const feed = feedQuery.data
+  const loading = feedQuery.loading
+  const error = actionError || feedQuery.error
 
-    try {
-      setFeed(await window.api.reminders.getFeed())
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    void load()
-  }, [])
-
+  // Leases are only needed once the reminder form opens; keep the lazy load.
   async function ensureLeases() {
     if (leasesLoaded) return true
 
     setFormLoading(true)
-    setError('')
+    setActionError('')
     try {
       setLeases(await window.api.leases.getAll())
       setLeasesLoaded(true)
       return true
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      setActionError(err instanceof Error ? err.message : String(err))
       return false
     } finally {
       setFormLoading(false)
@@ -191,7 +179,7 @@ export default function Reminders() {
     }
     setShowForm(false)
     setEditing(null)
-    await load()
+    await feedQuery.reload()
   }
 
   async function handleStatusChange(reminder: ManualReminder, status: 'pending' | 'done') {
@@ -203,14 +191,14 @@ export default function Reminders() {
       notes: reminder.notes,
       status,
     })
-    await load()
+    await feedQuery.reload()
   }
 
   async function handleDelete() {
     if (!deleting) return
     await window.api.manualReminders.delete(deleting.id)
     setDeleting(null)
-    await load()
+    await feedQuery.reload()
   }
 
   return (
