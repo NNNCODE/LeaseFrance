@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AnimatePresence, motion } from 'framer-motion'
-import { AlertTriangle, CheckCircle2, Copy, Eye, EyeOff, KeyRound, Lock, LogIn, Mail, ShieldCheck, UserPlus, X } from 'lucide-react'
+import { CheckCircle2, Copy, Eye, EyeOff, KeyRound, Lock, LogIn, Mail, ShieldCheck, UserPlus, X } from 'lucide-react'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'

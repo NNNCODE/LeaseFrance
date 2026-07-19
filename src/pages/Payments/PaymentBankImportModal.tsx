@@ -151,7 +151,7 @@ export default function PaymentBankImportModal({
     setIgnoredCount(parsed.length - credits.length)
 
     const fingerprints = credits.map((transaction) => transaction.fingerprint)
-    let duplicateFingerprints: string[] = []
+    let duplicateFingerprints: string[]
     try {
       duplicateFingerprints = await window.api.bankImports.findDuplicates(fingerprints)
     } catch {
@@ -335,6 +335,7 @@ export default function PaymentBankImportModal({
         try {
           await window.api.bankImports.recordImported(importedEntries)
         } catch {
+          // Import history is best-effort; failing to record must not fail the import.
         }
       } else {
         throw new Error('payments.bankImport.errors.noValidRows')

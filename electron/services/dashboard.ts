@@ -19,7 +19,6 @@ type DashboardLease = leasesDb.Lease
 type DashboardPayment = paymentsDb.Payment
 type DashboardTenant = tenantsDb.Tenant
 type DashboardReminder = manualRemindersDb.ManualReminder
-type DashboardAttachment = attachmentsDb.Attachment
 
 export interface DashboardRevenuePoint {
   month: string

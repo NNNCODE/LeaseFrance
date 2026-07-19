@@ -16,7 +16,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { resolveOwnerProfileForLease } from '@/lib/ownerProfiles'
 import type { ChargeReconciliationPdfData } from '@/lib/pdf/chargeReconciliation'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { formatCurrency } from '@/lib/utils'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useOwnerStore } from '@/stores/useOwnerStore'
 

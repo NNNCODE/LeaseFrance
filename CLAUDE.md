@@ -40,13 +40,15 @@ This file is for Claude Code. Keep it short, concrete, and repo-specific.
 npm install
 npm run dev
 npm run typecheck
+npm run lint
+npm run test
 npm run build
 npm run dist
 ```
 
 Notes:
 
-- There is no `lint` script in `package.json`.
+- `npm run lint` runs ESLint (flat config in `eslint.config.mjs`). Baseline is zero errors; do not add new violations.
 - `npm run dev` goes through `scripts/dev.mjs`.
 - `npm run dist` builds first, then packages with `electron-builder`.
 
@@ -72,6 +74,8 @@ This breaks Electron APIs during local development.
   Database access layer.
 - `src/App.tsx`
   Top-level auth gate and routes.
+- `src/hooks/`
+  Renderer data-loading layer: `useApiQuery` (generic query state machine) and per-entity hooks (`useTenants`, `useLeases`, ...). New page-level reads should go through these instead of hand-rolled `useState + useEffect + window.api`.
 - `src/stores/useAuthStore.ts`
   Auth lifecycle and profile state.
 - `src/pages/*`
@@ -207,7 +211,6 @@ Also do targeted checks when relevant:
 
 - Do not assume a missing feature described in old docs actually exists.
 - Do not assume there is a migration framework.
-- Do not assume there is a linter or test suite beyond TypeScript checks.
 - Do not assume fields in the PDF templates are legally correct without checking the current implementation and product intent.
 
 ## Preferred Output From Claude Code

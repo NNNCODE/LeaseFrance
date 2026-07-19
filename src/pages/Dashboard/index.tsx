@@ -6,7 +6,7 @@ import {
   TrendingUp, Users, FileText, AlertTriangle,
   ArrowUpRight, Plus, CheckCircle2, Clock, XCircle,
   InboxIcon, Building2, UserPlus, ScrollText, CreditCard,
-  ChevronRight, Sparkles, CalendarClock, Shield, FolderOpen,
+  ChevronRight, Sparkles, Shield, FolderOpen,
   CalendarDays, Bell, Wallet,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'

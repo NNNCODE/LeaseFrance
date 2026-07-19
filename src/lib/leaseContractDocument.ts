@@ -2,7 +2,6 @@ import {
   createDefaultLeaseContractDetails,
   normalizeLeaseContractDetails,
   type LeaseContractDetails,
-  OTHER_PART_OPTIONS,
 } from '@/shared/leaseContract'
 
 export const HABITAT_TYPE_OPTIONS = [

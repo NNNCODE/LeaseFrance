@@ -506,7 +506,7 @@ function parseCsvDate(value: string) {
 
   if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed
 
-  const slashMatch = trimmed.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})$/)
+  const slashMatch = trimmed.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4})$/)
   if (!slashMatch) return null
 
   const day = slashMatch[1].padStart(2, '0')

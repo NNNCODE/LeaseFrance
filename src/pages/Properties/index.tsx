@@ -26,7 +26,6 @@ const PROPERTY_TYPES = [
   { value: 'autre',       labelKey: 'properties.typeAutre',       icon: Warehouse },
 ] as const
 
-type PropertyType = typeof PROPERTY_TYPES[number]['value']
 
 const emptyForm: PropertyInput = {
   name: '', address: '', city: '', zip: '', type: 'appartement', area_m2: null, owner_profile_id: null,

@@ -11,7 +11,7 @@ import {
   existsSync, mkdirSync, readFileSync, readdirSync,
   statSync, unlinkSync, writeFileSync,
 } from 'fs'
-import { basename, extname, join } from 'path'
+import { extname, join } from 'path'
 import { randomBytes, scryptSync, createCipheriv, createDecipheriv } from 'crypto'
 import Database = require('better-sqlite3')
 import { getCurrentAccountStorageDir, exportCurrentAccountAuth } from './auth'

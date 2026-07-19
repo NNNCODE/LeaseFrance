@@ -8,7 +8,6 @@ import {
 } from '@react-pdf/renderer'
 import {
   type FiscalYearSummary,
-  categoryLabel,
   EXPENSE_CATEGORIES,
 } from '@/pages/Fiscal/summary'
 

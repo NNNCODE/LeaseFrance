@@ -3,9 +3,9 @@ import { writeFileSync, copyFileSync, existsSync, readFileSync, mkdirSync, unlin
 import { basename, isAbsolute, join } from 'path'
 import { randomBytes } from 'crypto'
 import { configureUserDataPath } from './appIdentity'
-import { closeDb, getDb, getDbPath } from './db/database'
+import { closeDb } from './db/database'
 import {
-  deleteAccount, exportCurrentAccountAuth,
+  deleteAccount,
   createOwnerProfile, deleteOwnerProfile,
   getAccountDbPathById, getCurrentAccountStorageDir, getProfile,
   getActiveOwnerProfile, listOwnerProfiles,
