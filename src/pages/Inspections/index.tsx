@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import {
@@ -16,6 +16,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { useAttachments, useInspections, useLeases } from '@/hooks'
 import { resolveOwnerProfileForLease } from '@/lib/ownerProfiles'
 import type { InspectionPdfData } from '@/lib/pdf/inspection'
 import { formatDate } from '@/lib/utils'
@@ -102,11 +103,10 @@ export default function Inspections() {
   const owners = useOwnerStore((state) => state.owners)
   const activeOwner = useOwnerStore((state) => state.activeOwner)
   const fallbackOwnerProfile = activeOwner ?? profile
-  const [inspections, setInspections] = useState<Inspection[]>([])
-  const [leases, setLeases] = useState<Lease[]>([])
-  const [attachments, setAttachments] = useState<Attachment[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const inspectionsQuery = useInspections()
+  const leasesQuery = useLeases()
+  const attachmentsQuery = useAttachments()
+  const [actionError, setActionError] = useState('')
   const [notice, setNotice] = useState('')
   const [editing, setEditing] = useState<Inspection | null>(null)
   const [initialLeaseId, setInitialLeaseId] = useState<number | null>(null)
@@ -114,27 +114,19 @@ export default function Inspections() {
   const [showForm, setShowForm] = useState(false)
   const [busyId, setBusyId] = useState<number | null>(null)
 
-  async function load() {
-    setLoading(true)
-    setError('')
+  const inspections = inspectionsQuery.data
+  const leases = leasesQuery.data
+  const attachments = attachmentsQuery.data
+  const loading = inspectionsQuery.loading || leasesQuery.loading || attachmentsQuery.loading
+  const error = actionError || inspectionsQuery.error || leasesQuery.error || attachmentsQuery.error
 
-    try {
-      const [nextInspections, nextLeases, nextAttachments] = await Promise.all([
-        window.api.inspections.getAll(),
-        window.api.leases.getAll(),
-        window.api.attachments.getAll(),
-      ])
-      setInspections(nextInspections)
-      setLeases(nextLeases)
-      setAttachments(nextAttachments)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
-    } finally {
-      setLoading(false)
-    }
+  async function reloadAll() {
+    await Promise.all([
+      inspectionsQuery.reload(),
+      leasesQuery.reload(),
+      attachmentsQuery.reload(),
+    ])
   }
-
-  useEffect(() => { load() }, [])
 
   const availableLeases = useMemo(
     () => leases.filter((lease) => lease.status === 'active' || lease.status === 'ended'),
@@ -182,21 +174,21 @@ export default function Inspections() {
       setInitialLeaseId(null)
       setShowForm(true)
     }
-    await load()
+    await reloadAll()
   }
 
   async function handleDelete() {
     if (!deleting) return
 
     setBusyId(deleting.id)
-    setError('')
+    setActionError('')
     try {
       await window.api.inspections.delete(deleting.id)
       setNotice(t('inspections.deletedNotice'))
       setDeleting(null)
-      await load()
+      await reloadAll()
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      setActionError(err instanceof Error ? err.message : String(err))
     } finally {
       setBusyId(null)
     }
@@ -204,7 +196,7 @@ export default function Inspections() {
 
   async function handleGeneratePdf(inspection: Inspection) {
     setBusyId(inspection.id)
-    setError('')
+    setActionError('')
 
     try {
       const lease = leases.find((entry) => entry.id === inspection.lease_id) ?? null
@@ -229,7 +221,7 @@ export default function Inspections() {
         setNotice(t('inspections.pdfSavedNotice'))
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      setActionError(err instanceof Error ? err.message : String(err))
     } finally {
       setBusyId(null)
     }
