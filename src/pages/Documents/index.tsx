@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useApiQuery } from '@/hooks'
 import { buildFurnishedLeaseContractPdfData } from '@/lib/leaseContractDocument'
 import type {
   DepositReceiptPdfData,
@@ -38,6 +39,15 @@ import {
 
 const TEMPLATE_PARAMS_KEY = 'lf_doc_template_params'
 
+const EMPTY_AVAILABILITY: DocumentGenerationAvailability = {
+  paymentCertificates: 0,
+  rentRevisionNotices: 0,
+  furnishedLeaseContracts: 0,
+  depositReceipts: 0,
+  depositSettlements: 0,
+  canGenerateAny: false,
+}
+
 interface DocumentsRouteState {
   initialTemplate?: DocumentTemplateKind | null
   templateParams?: Record<string, unknown> | null
@@ -51,22 +61,19 @@ export default function Documents() {
   const owners = useOwnerStore((state) => state.owners)
   const activeOwner = useOwnerStore((state) => state.activeOwner)
   const fallbackOwnerProfile = activeOwner ?? profile
-  const [docs, setDocs] = useState<DocumentRecord[]>([])
+  const docsQuery = useApiQuery(async () => {
+    const [docs, availability] = await Promise.all([
+      window.api.documents.getAll(),
+      window.api.documents.getGenerationAvailability(),
+    ])
+    return { docs, availability }
+  }, { initial: { docs: [] as DocumentRecord[], availability: EMPTY_AVAILABILITY } })
   const [payments, setPayments] = useState<Payment[]>([])
   const [leases, setLeases] = useState<Lease[]>([])
   const [irlIndices, setIrlIndices] = useState<IrlIndex[]>([])
   const [sourcesLoaded, setSourcesLoaded] = useState(false)
-  const [generationAvailability, setGenerationAvailability] = useState<DocumentGenerationAvailability>({
-    paymentCertificates: 0,
-    rentRevisionNotices: 0,
-    furnishedLeaseContracts: 0,
-    depositReceipts: 0,
-    depositSettlements: 0,
-    canGenerateAny: false,
-  })
-  const [loading, setLoading] = useState(true)
   const [generationLoading, setGenerationLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [actionError, setActionError] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [deleting, setDeleting] = useState<DocumentRecord | null>(null)
   const [previewDoc, setPreviewDoc] = useState<DocumentRecord | null>(null)
@@ -77,26 +84,10 @@ export default function Documents() {
   const statusMeta = getDocumentStatusMeta(t)
   const typeFilters = getDocumentTypeFilters(t)
 
-  const load = useCallback(async () => {
-    setLoading(true)
-    setError('')
-    try {
-      const [nextDocs, nextAvailability] = await Promise.all([
-        window.api.documents.getAll(),
-        window.api.documents.getGenerationAvailability(),
-      ])
-      setDocs(nextDocs)
-      setGenerationAvailability(nextAvailability)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    void load()
-  }, [load])
+  const docs = docsQuery.data.docs
+  const generationAvailability = docsQuery.data.availability
+  const loading = docsQuery.loading
+  const error = actionError || docsQuery.error
 
   const filteredDocs = useMemo(() => {
     let result = docs
@@ -147,11 +138,12 @@ export default function Documents() {
     }
   }
 
-  async function ensureGenerationSources() {
+  // Generation sources are only needed when the generate modal opens; keep the lazy load.
+  const ensureGenerationSources = useCallback(async () => {
     if (sourcesLoaded) return true
 
     setGenerationLoading(true)
-    setError('')
+    setActionError('')
     try {
       const sources = await window.api.documents.getGenerationSources()
       setPayments(sources.payments)
@@ -160,12 +152,12 @@ export default function Documents() {
       setSourcesLoaded(true)
       return true
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      setActionError(err instanceof Error ? err.message : String(err))
       return false
     } finally {
       setGenerationLoading(false)
     }
-  }
+  }, [sourcesLoaded])
 
   async function handleGenerate(request: GenerateDocumentRequest): Promise<boolean> {
     const resolveLeaseProfile = (lease: Lease) =>
@@ -418,7 +410,7 @@ export default function Documents() {
     const buffer = new Uint8Array(await blob.arrayBuffer())
     const result = await window.api.documents.savePdf(leaseId, fileName, buffer, docType)
     if (!result.saved) return false
-    await load()
+    await docsQuery.reload()
     return true
   }
 
@@ -426,12 +418,12 @@ export default function Documents() {
     if (!deleting) return
     await window.api.documents.delete(deleting.id)
     setDeleting(null)
-    await load()
+    await docsQuery.reload()
   }
 
   async function handleStatusChange(doc: DocumentRecord, newStatus: string) {
     await window.api.documents.updateStatus(doc.id, newStatus)
-    await load()
+    await docsQuery.reload()
   }
 
   async function handleRegenerate(doc: DocumentRecord) {
