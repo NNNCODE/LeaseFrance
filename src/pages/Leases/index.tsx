@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { AlertTriangle, Plus, TrendingUp } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import IrlManagerModal from '@/components/irl/IrlManagerModal'
 import { Button } from '@/components/ui/button'
+import { useAttachments, useInspections, useIrlIndices, useLeases } from '@/hooks'
 import {
   getIrlDatasetStatus,
   isAnniversaryWithinDays,
@@ -22,10 +23,10 @@ import LeaseRow from './LeaseRow'
 export default function Leases() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const [leases, setLeases] = useState<Lease[]>([])
-  const [irlIndices, setIrlIndices] = useState<IrlIndex[]>([])
-  const [moveInVideosByLease, setMoveInVideosByLease] = useState<Map<number, Attachment>>(new Map())
-  const [loading, setLoading] = useState(true)
+  const leasesQuery = useLeases()
+  const irlQuery = useIrlIndices()
+  const inspectionsQuery = useInspections()
+  const attachmentsQuery = useAttachments()
   const [showForm, setShowForm] = useState(false)
   const [showIrlManager, setShowIrlManager] = useState(false)
   const [editing, setEditing] = useState<Lease | null>(null)
@@ -36,23 +37,24 @@ export default function Leases() {
   const [managingDeposit, setManagingDeposit] = useState<Lease | null>(null)
   const [managingCharges, setManagingCharges] = useState<Lease | null>(null)
 
-  async function load() {
-    setLoading(true)
-    const [nextLeases, nextIrl, nextInspections, nextAttachments] = await Promise.all([
-      window.api.leases.getAll(),
-      window.api.irl.getAll(),
-      window.api.inspections.getAll(),
-      window.api.attachments.getAll(),
-    ])
-    setLeases(nextLeases)
-    setIrlIndices(nextIrl)
-    setMoveInVideosByLease(getLatestMoveInVideoByLease(nextInspections, nextAttachments))
-    setLoading(false)
-  }
+  const leases = leasesQuery.data
+  const irlIndices = irlQuery.data
+  const loading = leasesQuery.loading || irlQuery.loading
+    || inspectionsQuery.loading || attachmentsQuery.loading
 
-  useEffect(() => {
-    void load()
-  }, [])
+  const moveInVideosByLease = useMemo(
+    () => getLatestMoveInVideoByLease(inspectionsQuery.data, attachmentsQuery.data),
+    [inspectionsQuery.data, attachmentsQuery.data],
+  )
+
+  async function load() {
+    await Promise.all([
+      leasesQuery.reload(),
+      irlQuery.reload(),
+      inspectionsQuery.reload(),
+      attachmentsQuery.reload(),
+    ])
+  }
 
   function openAdd() {
     setEditing(null)

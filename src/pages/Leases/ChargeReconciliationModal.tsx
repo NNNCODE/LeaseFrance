@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import {
   CalendarDays,
@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { useApiQuery } from '@/hooks'
 import { resolveOwnerProfileForLease } from '@/lib/ownerProfiles'
 import type { ChargeReconciliationPdfData } from '@/lib/pdf/chargeReconciliation'
 import { formatCurrency } from '@/lib/utils'
@@ -119,35 +120,31 @@ export default function ChargeReconciliationModal({
   const owners = useOwnerStore((state) => state.owners)
   const activeOwner = useOwnerStore((state) => state.activeOwner)
   const ownerProfile = resolveOwnerProfileForLease(owners, lease, activeOwner ?? profile)
-  const [rows, setRows] = useState<ChargeReconciliation[]>([])
-  const [payments, setPayments] = useState<Payment[]>([])
+  const historyQuery = useApiQuery(async () => {
+    const [history, leasePayments] = await Promise.all([
+      window.api.chargeReconciliations.getByLease(lease.id),
+      window.api.payments.getByLease(lease.id),
+    ])
+    return { rows: history, payments: leasePayments }
+  }, {
+    initial: { rows: [] as ChargeReconciliation[], payments: [] as Payment[] },
+    deps: [lease.id],
+  })
   const [form, setForm] = useState<ChargeReconciliationFormState>(buildDefaultForm())
   const [editing, setEditing] = useState<ChargeReconciliation | null>(null)
   const [deleting, setDeleting] = useState<ChargeReconciliation | null>(null)
-  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [busyId, setBusyId] = useState<number | null>(null)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
 
-  async function load() {
-    setLoading(true)
-    setError('')
-    try {
-      const [history, leasePayments] = await Promise.all([
-        window.api.chargeReconciliations.getByLease(lease.id),
-        window.api.payments.getByLease(lease.id),
-      ])
-      setRows(history)
-      setPayments(leasePayments)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
-    } finally {
-      setLoading(false)
-    }
-  }
+  const rows = historyQuery.data.rows
+  const payments = historyQuery.data.payments
+  const loading = historyQuery.loading
 
-  useEffect(() => { load() }, [lease.id])
+  async function load() {
+    await historyQuery.reload()
+  }
 
   const autoCollected = useMemo(
     () => autoCollectedForYear(payments, form.year),
@@ -333,9 +330,9 @@ export default function ChargeReconciliationModal({
             </div>
           ) : null}
 
-          {error ? (
+          {(error || historyQuery.error) ? (
             <div className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
-              {error}
+              {error || historyQuery.error}
             </div>
           ) : null}
 
