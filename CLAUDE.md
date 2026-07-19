@@ -102,8 +102,10 @@ This breaks Electron APIs during local development.
   Rent revision, deposit receipt, deposit settlement PDFs.
 - `src/lib/pdf/fiscalSummary.tsx`
   Fiscal summary PDF.
+- `src/types/*.d.ts`
+  Ambient entity types, one file per domain (tenants, leases, payments, ...).
 - `src/env.d.ts`
-  Renderer-side entity types and `window.api` typings.
+  Vite client reference and the `window.api` declaration (contract lives in `src/shared/ipc.ts`).
 
 ## Architecture Rules
 
@@ -111,12 +113,12 @@ This breaks Electron APIs during local development.
 - New renderer capabilities must go through all of these layers:
   1. `electron/main.ts`
   2. `electron/preload.ts`
-  3. `src/env.d.ts`
+  3. `src/shared/ipc.ts` (API contract) and `src/types/*.d.ts` (entity types)
   4. renderer usage in `src/*`
 - If you add or rename DB fields, update:
-  - schema in `electron/db/database.ts`
+  - a new migration in `electron/db/migrations/`
   - relevant query files in `electron/db/queries/`
-  - entity typings in `src/env.d.ts`
+  - entity typings in `src/types/*.d.ts`
   - forms, tables, and PDF data mapping in the renderer
 
 ## Auth Invariants
@@ -135,9 +137,8 @@ Do not change the auth entry flow casually. Several screens assume this sequence
 ## Database Notes
 
 - SQLite lives in `app.getPath('userData')/leasefrance.db`.
-- Schema creation is currently done in `initSchema()` inside `electron/db/database.ts`.
-- There is no real migration system yet.
-- Schema changes must be backward-safe and idempotent.
+- Schema is managed by numbered migrations in `electron/db/migrations/`, run by `runMigrations()` from `electron/db/database.ts`.
+- Schema changes go in a new migration file and must be backward-safe.
 
 Current core tables:
 
@@ -210,7 +211,7 @@ Also do targeted checks when relevant:
 ## What Not To Assume
 
 - Do not assume a missing feature described in old docs actually exists.
-- Do not assume there is a migration framework.
+- Do not assume `npm run typecheck` catches everything: the root tsconfig is solution-style with `files: []`, so plain `tsc --noEmit` checks nothing. Per-project checks (`tsc -p tsconfig.web.json --noEmit` etc.) currently surface pre-existing errors and are not yet a clean gate.
 - Do not assume fields in the PDF templates are legally correct without checking the current implementation and product intent.
 
 ## Preferred Output From Claude Code
