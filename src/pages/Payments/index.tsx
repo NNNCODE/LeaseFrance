@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowRightLeft, CheckCircle2, CreditCard, Plus, RefreshCw, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useLeases, usePayments } from '@/hooks'
 import { resolveOwnerProfileForLease } from '@/lib/ownerProfiles'
 import { formatCurrency } from '@/lib/utils'
 import type { QuittanceData } from '@/lib/pdf/quittance'
@@ -23,9 +24,8 @@ export default function Payments() {
   const owners = useOwnerStore((state) => state.owners)
   const activeOwner = useOwnerStore((state) => state.activeOwner)
   const fallbackOwnerProfile = activeOwner ?? profile
-  const [payments, setPayments] = useState<Payment[]>([])
-  const [leases, setLeases] = useState<Lease[]>([])
-  const [loading, setLoading] = useState(true)
+  const paymentsQuery = usePayments()
+  const leasesQuery = useLeases()
   const [filter, setFilter] = useState<'all' | 'paid' | 'pending' | 'late'>('all')
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<Payment | null>(null)
@@ -35,8 +35,17 @@ export default function Payments() {
   const [syncResult, setSyncResult] = useState<AutoRentResult | null>(null)
   const [syncing, setSyncing] = useState(false)
 
+  const payments = paymentsQuery.data
+  const leases = leasesQuery.data
+  const loading = paymentsQuery.loading || leasesQuery.loading || syncing
+
+  async function load() {
+    await Promise.all([paymentsQuery.reload(), leasesQuery.reload()])
+  }
+
+  // Generate missing rents / mark late ones before showing the list,
+  // then refresh so the new rows are included.
   async function syncAndLoad() {
-    setLoading(true)
     setSyncing(true)
     try {
       const result = await window.api.payments.generateMissing()
@@ -47,29 +56,12 @@ export default function Payments() {
     } finally {
       setSyncing(false)
     }
-
-    const [nextPayments, nextLeases] = await Promise.all([
-      window.api.payments.getAll(),
-      window.api.leases.getAll(),
-    ])
-    setPayments(nextPayments)
-    setLeases(nextLeases)
-    setLoading(false)
-  }
-
-  async function load() {
-    setLoading(true)
-    const [nextPayments, nextLeases] = await Promise.all([
-      window.api.payments.getAll(),
-      window.api.leases.getAll(),
-    ])
-    setPayments(nextPayments)
-    setLeases(nextLeases)
-    setLoading(false)
+    await load()
   }
 
   useEffect(() => {
     void syncAndLoad()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run the rent sync once per mount
   }, [])
 
   const filtered = useMemo(
