@@ -398,7 +398,7 @@ function AttachmentPreviewModal({
       cancelled = true
       if (objectUrl) URL.revokeObjectURL(objectUrl)
     }
-  }, [attachment.id])
+  }, [attachment.id, attachment.mime_type, t])
 
   const isImage = attachment.mime_type.startsWith('image/')
   const isPdf = attachment.mime_type === 'application/pdf'

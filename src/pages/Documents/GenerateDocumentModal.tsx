@@ -77,14 +77,17 @@ export default function GenerateDocumentModal({
   getTemplateParams,
 }: GenerateDocumentModalProps) {
   const { t } = useTranslation()
-  const revisableLeases = leases
-    .map((lease) => ({ lease, context: getRevisionTemplateContext(lease, irlIndices) }))
-    .filter((entry): entry is { lease: Lease; context: NonNullable<ReturnType<typeof getRevisionTemplateContext>> } => Boolean(entry.context))
-  const furnishedContractLeases = leases.filter(canGenerateFurnishedLeaseContract)
-  const depositReceiptLeases = leases.filter(canGenerateDepositReceipt)
-  const depositSettlementLeases = leases.filter(canGenerateDepositSettlement)
+  const revisableLeases = useMemo(
+    () => leases
+      .map((lease) => ({ lease, context: getRevisionTemplateContext(lease, irlIndices) }))
+      .filter((entry): entry is { lease: Lease; context: NonNullable<ReturnType<typeof getRevisionTemplateContext>> } => Boolean(entry.context)),
+    [leases, irlIndices],
+  )
+  const furnishedContractLeases = useMemo(() => leases.filter(canGenerateFurnishedLeaseContract), [leases])
+  const depositReceiptLeases = useMemo(() => leases.filter(canGenerateDepositReceipt), [leases])
+  const depositSettlementLeases = useMemo(() => leases.filter(canGenerateDepositSettlement), [leases])
 
-  const cards: TemplateCard[] = [
+  const cards: TemplateCard[] = useMemo(() => [
     {
       kind: 'payment_certificate',
       titleKey: 'documents.modal.cards.payment_certificate.title',
@@ -120,7 +123,13 @@ export default function GenerateDocumentModal({
       count: depositSettlementLeases.length,
       icon: FileText,
     },
-  ]
+  ], [
+    payments.length,
+    revisableLeases.length,
+    furnishedContractLeases.length,
+    depositReceiptLeases.length,
+    depositSettlementLeases.length,
+  ])
 
   const [template, setTemplate] = useState<DocumentTemplateKind | null>(null)
   const [selectedId, setSelectedId] = useState(0)
