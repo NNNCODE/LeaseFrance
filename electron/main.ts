@@ -149,6 +149,13 @@ function toNodeBuffer(data: Uint8Array): Buffer {
   return Buffer.from(data)
 }
 
+function requireRow<T>(row: T | undefined, what: string): T {
+  if (row === undefined) {
+    throw new Error(`${what} introuvable. Actualisez la page et reessayez.`)
+  }
+  return row
+}
+
 function handle<Channel extends keyof BaillioInvokeChannels>(
   channel: Channel,
   handler: (...args: BaillioInvokeChannels[Channel]['args']) =>
@@ -299,7 +306,7 @@ handle('owners:delete', (id) => deleteOwnerProfile(id))
 handle('properties:getAll', () => propertiesDb.getAll())
 handle('properties:count', () => propertiesDb.count())
 handle('properties:create', (data) => propertiesDb.create(data))
-handle('properties:update', (id, data, expectedUpdatedAt) => propertiesDb.update(id, data, expectedUpdatedAt))
+handle('properties:update', (id, data, expectedUpdatedAt) => requireRow(propertiesDb.update(id, data, expectedUpdatedAt), 'Bien'))
 handle('properties:delete', (id) => propertiesDb.remove(id))
 
 handle('propertyDiagnostics:getAll', () => propertyDiagnosticsDb.getAll())
@@ -310,16 +317,16 @@ handle('propertyDiagnostics:upsert', (propertyId, data) => propertyDiagnosticsDb
 handle('tenants:getAll', () => tenantsDb.getAll())
 handle('tenants:count', () => tenantsDb.count())
 handle('tenants:create', (data) => tenantsDb.create(data))
-handle('tenants:update', (id, data, expectedUpdatedAt) => tenantsDb.update(id, data, expectedUpdatedAt))
+handle('tenants:update', (id, data, expectedUpdatedAt) => requireRow(tenantsDb.update(id, data, expectedUpdatedAt), 'Locataire'))
 handle('tenants:delete', (id) => tenantsDb.remove(id))
 
 // Leases IPC
 handle('leases:getAll', () => leasesDb.getAll())
 handle('leases:count', () => leasesDb.count())
 handle('leases:create', (data) => leasesDb.create(data))
-handle('leases:update', (id, data, expectedUpdatedAt) => leasesDb.update(id, data, expectedUpdatedAt))
+handle('leases:update', (id, data, expectedUpdatedAt) => requireRow(leasesDb.update(id, data, expectedUpdatedAt), 'Bail'))
 handle('leases:updateContractDetails', (id, contractDetails, expectedUpdatedAt) =>
-  leasesDb.updateContractDetails(id, contractDetails, expectedUpdatedAt))
+  requireRow(leasesDb.updateContractDetails(id, contractDetails, expectedUpdatedAt), 'Bail'))
 handle('leases:delete', (id) => leasesDb.remove(id))
 handle('leases:deleteWithLinkedRecords', (id) => leasesDb.removeWithLinkedRecords(id))
 
@@ -328,8 +335,8 @@ handle('payments:getAll', () => paymentsDb.getAll())
 handle('payments:getByLease', (leaseId) => paymentsDb.getByLease(leaseId))
 handle('payments:getSummary', () => paymentsDb.getSummary())
 handle('payments:create', (data) => paymentsDb.create(data))
-handle('payments:update', (id, data, expectedUpdatedAt) => paymentsDb.update(id, data, expectedUpdatedAt))
-handle('payments:markPaid', (id, date, expectedUpdatedAt) => paymentsDb.markPaid(id, date, expectedUpdatedAt))
+handle('payments:update', (id, data, expectedUpdatedAt) => requireRow(paymentsDb.update(id, data, expectedUpdatedAt), 'Paiement'))
+handle('payments:markPaid', (id, date, expectedUpdatedAt) => requireRow(paymentsDb.markPaid(id, date, expectedUpdatedAt), 'Paiement'))
 handle('payments:delete', (id) => paymentsDb.remove(id))
 
 // Auto-rent IPC
@@ -343,19 +350,19 @@ handle('paymentReminders:create', (data) => paymentRemindersDb.create(data))
 // Inspections IPC
 handle('inspections:getAll', () => inspectionsDb.getAll())
 handle('inspections:create', (data) => inspectionsDb.create(data))
-handle('inspections:update', (id, data) => inspectionsDb.update(id, data))
+handle('inspections:update', (id, data) => requireRow(inspectionsDb.update(id, data), 'Etat des lieux'))
 handle('inspections:delete', (id) => inspectionsDb.remove(id))
 
 // Charge reconciliations IPC
 handle('chargeReconciliations:getByLease', (leaseId) => chargeReconciliationsDb.getByLease(leaseId))
 handle('chargeReconciliations:create', (data) => chargeReconciliationsDb.create(data))
-handle('chargeReconciliations:update', (id, data) => chargeReconciliationsDb.update(id, data))
+handle('chargeReconciliations:update', (id, data) => requireRow(chargeReconciliationsDb.update(id, data), 'Regularisation'))
 handle('chargeReconciliations:delete', (id) => chargeReconciliationsDb.remove(id))
 
 // Manual reminders IPC
 handle('manualReminders:getAll', () => manualRemindersDb.getAll())
 handle('manualReminders:create', (data) => manualRemindersDb.create(data))
-handle('manualReminders:update', (id, data) => manualRemindersDb.update(id, data))
+handle('manualReminders:update', (id, data) => requireRow(manualRemindersDb.update(id, data), 'Rappel'))
 handle('manualReminders:delete', (id) => manualRemindersDb.remove(id))
 
 // Dashboard + search IPC
@@ -450,8 +457,8 @@ handle('exports:saveFile', async (fileName, buffer, filters) => {
 
 // IRL IPC
 handle('irl:getAll', () => irlDb.getAll())
-handle('irl:getByQuarter', (year, quarter) => irlDb.getByQuarter(year, quarter))
-handle('irl:getLatestForQuarter', (quarter) => irlDb.getLatestForQuarter(quarter))
+handle('irl:getByQuarter', (year, quarter) => irlDb.getByQuarter(year, quarter) ?? null)
+handle('irl:getLatestForQuarter', (quarter) => irlDb.getLatestForQuarter(quarter) ?? null)
 handle('irl:upsert', (year, quarter, value) => irlDb.upsert(year, quarter, value))
 handle('irl:delete', (id) => irlDb.remove(id))
 
@@ -459,7 +466,7 @@ handle('irl:delete', (id) => irlDb.remove(id))
 handle('fiscalExpenses:getAll', () => fiscalExpensesDb.getAll())
 handle('fiscalExpenses:getByYear', (year) => fiscalExpensesDb.getByYear(year))
 handle('fiscalExpenses:create', (data) => fiscalExpensesDb.create(data))
-handle('fiscalExpenses:update', (id, data) => fiscalExpensesDb.update(id, data))
+handle('fiscalExpenses:update', (id, data) => requireRow(fiscalExpensesDb.update(id, data), 'Depense'))
 handle('fiscalExpenses:delete', (id) => fiscalExpensesDb.remove(id))
 
 // Attachments IPC

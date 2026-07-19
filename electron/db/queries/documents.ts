@@ -6,7 +6,7 @@ export interface DocumentRecord {
   type: string
   generated_at: string
   file_path: string | null
-  status: string
+  status: 'generated' | 'sent' | 'archived'
   // Joined
   property_name: string
   property_city: string

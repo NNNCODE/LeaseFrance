@@ -1,10 +1,18 @@
 import { getDb } from '../database'
 
+export type FiscalExpenseCategory =
+  | 'taxe_fonciere'
+  | 'travaux'
+  | 'assurance_pno'
+  | 'frais_gestion'
+  | 'interets_emprunt'
+  | 'autre'
+
 export interface FiscalExpense {
   id: number
   property_id: number
   year: number
-  category: string
+  category: FiscalExpenseCategory
   label: string
   amount: number
   notes: string | null

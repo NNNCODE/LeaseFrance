@@ -340,11 +340,14 @@ function formatZodError(error: z.ZodError): string {
     .join('; ')
 }
 
+// Schemas cover only channels that take arguments; zero-arg channels fall through below.
+const invokeSchemaLookup: Partial<Record<keyof BaillioInvokeChannels, z.ZodTypeAny>> = invokeArgSchemas
+
 export function validateInvokeArgs<Channel extends keyof BaillioInvokeChannels>(
   channel: Channel,
   rawArgs: unknown[],
 ): BaillioInvokeChannels[Channel]['args'] {
-  const schema = invokeArgSchemas[channel]
+  const schema = invokeSchemaLookup[channel]
   if (!schema) {
     if (rawArgs.length === 0) return [] as BaillioInvokeChannels[Channel]['args']
     throw new Error(`Missing IPC runtime validation schema for "${channel}".`)
