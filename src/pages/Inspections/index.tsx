@@ -322,7 +322,7 @@ export default function Inspections() {
             onSave={handleSave}
             onClose={() => {
               closeForm()
-              void load()
+              void reloadAll()
             }}
           />
         )}

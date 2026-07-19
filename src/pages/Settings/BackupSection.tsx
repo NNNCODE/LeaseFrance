@@ -319,7 +319,7 @@ export default function BackupSection() {
             <Button
               variant="outline"
               size="sm"
-              onClick={handlePreview}
+              onClick={() => handlePreview()}
               disabled={busy || previewing}
               className="shrink-0"
             >
