@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import {
@@ -26,6 +26,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { useAttachments, useInspections, useLeases, useTenants } from '@/hooks'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { getLatestMoveInVideoByTenant } from '@/pages/Leases/leasePageUtils'
 import TenantFileModal from './TenantFileModal'
@@ -73,9 +74,10 @@ function getTenantVersionToken(tenant: Tenant) {
 
 export default function Tenants() {
   const { t } = useTranslation()
-  const [tenants, setTenants] = useState<Tenant[]>([])
-  const [moveInVideosByTenant, setMoveInVideosByTenant] = useState<Map<number, Attachment>>(new Map())
-  const [loading, setLoading] = useState(true)
+  const tenantsQuery = useTenants()
+  const leasesQuery = useLeases()
+  const inspectionsQuery = useInspections()
+  const attachmentsQuery = useAttachments()
   const [search, setSearch] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<Tenant | null>(null)
@@ -85,20 +87,21 @@ export default function Tenants() {
   const [ledgerTenant, setLedgerTenant] = useState<Tenant | null>(null)
   const [dossierTenant, setDossierTenant] = useState<Tenant | null>(null)
 
-  async function load() {
-    setLoading(true)
-    const [nextTenants, nextLeases, nextInspections, nextAttachments] = await Promise.all([
-      window.api.tenants.getAll(),
-      window.api.leases.getAll(),
-      window.api.inspections.getAll(),
-      window.api.attachments.getAll(),
-    ])
-    setTenants(nextTenants)
-    setMoveInVideosByTenant(getLatestMoveInVideoByTenant(nextLeases, nextInspections, nextAttachments))
-    setLoading(false)
-  }
+  const tenants = tenantsQuery.data
+  const loading = tenantsQuery.loading || leasesQuery.loading
+    || inspectionsQuery.loading || attachmentsQuery.loading
 
-  useEffect(() => { load() }, [])
+  const moveInVideosByTenant = useMemo(
+    () => getLatestMoveInVideoByTenant(leasesQuery.data, inspectionsQuery.data, attachmentsQuery.data),
+    [leasesQuery.data, inspectionsQuery.data, attachmentsQuery.data],
+  )
+
+  function reloadAll() {
+    void tenantsQuery.reload()
+    void leasesQuery.reload()
+    void inspectionsQuery.reload()
+    void attachmentsQuery.reload()
+  }
 
   const filtered = tenants.filter((tenant) => {
     const q = search.toLowerCase()
@@ -153,7 +156,7 @@ export default function Tenants() {
     }
 
     closeForm()
-    load()
+    reloadAll()
   }
 
   async function handleSaveDossier(tenantId: number, data: TenantInput, expectedUpdatedAt: string) {
@@ -167,7 +170,7 @@ export default function Tenants() {
       ...data,
     }, expectedUpdatedAt)
 
-    setTenants((currentTenants) => currentTenants.map((tenant) => (
+    tenantsQuery.setData((currentTenants) => currentTenants.map((tenant) => (
       tenant.id === updated.id ? updated : tenant
     )))
     setDossierTenant(updated)
@@ -181,7 +184,7 @@ export default function Tenants() {
     try {
       await window.api.tenants.delete(deleting.id)
       closeDelete()
-      load()
+      reloadAll()
     } catch (err) {
       setDeleteError(err instanceof Error ? err.message : String(err))
       setDeleteLoading(false)
