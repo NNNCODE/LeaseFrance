@@ -211,7 +211,7 @@ Also do targeted checks when relevant:
 ## What Not To Assume
 
 - Do not assume a missing feature described in old docs actually exists.
-- Do not assume `npm run typecheck` catches everything: the root tsconfig is solution-style with `files: []`, so plain `tsc --noEmit` checks nothing. Per-project checks (`tsc -p tsconfig.web.json --noEmit` etc.) currently surface pre-existing errors and are not yet a clean gate.
+- Do not run plain `tsc --noEmit` and trust it: the root tsconfig is solution-style with `files: []`, so it checks nothing. `npm run typecheck` runs the three per-project checks (web, node, test) and must stay at zero errors.
 - Do not assume fields in the PDF templates are legally correct without checking the current implementation and product intent.
 
 ## Preferred Output From Claude Code
